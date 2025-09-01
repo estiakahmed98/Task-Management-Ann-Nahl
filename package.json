@@ -10,7 +10,9 @@
     "seed:js": "node prisma/seed.js",
     "seed:ts": "tsx prisma/seed.ts",
     "seed:all": "npm run seed:js && npm run seed:ts",
-    "seed": "npx prisma db seed"
+    "seed": "npx prisma db seed",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma migrate deploy && next build"
   },
   "prisma": {
     "seed": "npm run seed:all"
