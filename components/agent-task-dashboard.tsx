@@ -343,7 +343,7 @@ export default function AgentDashboard({ agentId }: AgentDashboardProps) {
   // If viewing client tasks, route to detail component (unchanged)
   if (selectedClient) {
     const ClientTasksView =
-      require("@/components/client-tasks-view").ClientTasksView;
+      require("@/components/client-tasks-view/client-tasks-view").ClientTasksView;
     return (
       <ClientTasksView
         clientId={selectedClient.id}
