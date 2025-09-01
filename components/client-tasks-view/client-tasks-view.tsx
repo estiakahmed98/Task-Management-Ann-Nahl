@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   ArrowLeft, Clock, Play, CheckCircle, AlertCircle, XCircle,
-   TrendingUp, RefreshCw, Activity, ShieldCheck,
+  TrendingUp, RefreshCw, Activity, ShieldCheck,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ClientDashboard } from "@/components/clients/clientsID/client-dashboard";
@@ -18,6 +18,7 @@ import { Client } from "@/types/client";
 
 import TaskList from "@/components/client-tasks-view/TaskList";
 import TaskDialogs from "@/components/client-tasks-view/TaskDialogs";
+import { BackgroundGradient } from "../ui/background-gradient";
 
 /* =========================
    Types exported for children
@@ -27,13 +28,13 @@ export interface Task {
   name: string;
   priority: "low" | "medium" | "high" | "urgent";
   status:
-    | "pending"
-    | "in_progress"
-    | "completed"
-    | "overdue"
-    | "cancelled"
-    | "reassigned"
-    | "qc_approved";
+  | "pending"
+  | "in_progress"
+  | "completed"
+  | "overdue"
+  | "cancelled"
+  | "reassigned"
+  | "qc_approved";
   dueDate: string | null;
   idealDurationMinutes: number | null;
   actualDurationMinutes: number | null;
@@ -225,7 +226,7 @@ export function ClientTasksView({
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
-  
+
 
   // --- API / handlers (kept same) ---
   const fetchClientTasks = useCallback(async () => {
@@ -614,8 +615,7 @@ export function ClientTasksView({
 
         if (successCount > 0) {
           toast.success(
-            `Successfully updated ${successCount} task${successCount !== 1 ? "s" : ""} to ${
-              action === "completed" ? "completed" : action
+            `Successfully updated ${successCount} task${successCount !== 1 ? "s" : ""} to ${action === "completed" ? "completed" : action
             }`
           );
         }
@@ -766,16 +766,15 @@ export function ClientTasksView({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20 p-4 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="mx-auto space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Button
               variant="ghost"
               onClick={onBackToClients}
-              className={`hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-xl p-3 ${
-                isBackButtonDisabled ? "opacity-50 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent" : ""
-              }`}
+              className={`hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-xl p-3 ${isBackButtonDisabled ? "opacity-50 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent" : ""
+                }`}
               disabled={isBackButtonDisabled}
             >
               <ArrowLeft className="h-5 w-5 mr-2" />
@@ -857,18 +856,35 @@ export function ClientTasksView({
 
         <div className="flex justify-end">
           <Dialog open={isClientModalOpen} onOpenChange={setIsClientModalOpen}>
+            {/* Gradient button trigger */}
             <DialogTrigger asChild>
-              <Button variant="secondary">Open Client's Information</Button>
+              <Button
+                className="relative rounded-2xl p-0 bg-transparent hover:bg-transparent"
+                aria-label="Open Client's Information"
+              >
+                <BackgroundGradient className="rounded-2xl">
+                  <div className="rounded-2xl px-5 py-2.5 text-white">
+                    Open Client&apos;s Information
+                  </div>
+                </BackgroundGradient>
+              </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-6xl h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{clientName}</DialogTitle>
-              </DialogHeader>
-              {clientData ? (
-                <ClientDashboard clientData={clientData} />
-              ) : (
-                <div className="py-8 text-center text-sm text-muted-foreground">Loading client info...</div>
-              )}
+
+            {/* Gradient panel in modal */}
+            <DialogContent className="max-w-6xl h-[90vh] overflow-y-auto bg-transparent p-0">
+                <div className="bg-card p-6">
+                  <DialogHeader className="mb-4">
+                    <DialogTitle>{clientName}</DialogTitle>
+                  </DialogHeader>
+
+                  {clientData ? (
+                    <ClientDashboard clientData={clientData} />
+                  ) : (
+                    <div className="py-8 text-center text-sm text-muted-foreground">
+                      Loading client info...
+                    </div>
+                  )}
+                </div>
             </DialogContent>
           </Dialog>
         </div>
