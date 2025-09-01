@@ -11,7 +11,9 @@ import {
   ArrowLeft, Clock, Play, CheckCircle, AlertCircle, XCircle,
    TrendingUp, RefreshCw, Activity, ShieldCheck,
 } from "lucide-react";
-import { DriveImageGallery } from "@/components/drive-image-gallery"; // <-- keep your path as before; adjust if needed
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ClientDashboard } from "@/components/clients/clientsID/client-dashboard";
+import { Client } from "@/types/client";
 
 
 import TaskList from "@/components/client-tasks-view/TaskList";
@@ -219,9 +221,10 @@ export function ClientTasksView({
   const [isUpdating, setIsUpdating] = useState(false);
   const [isBulkCompletionOpen, setIsBulkCompletionOpen] = useState(false);
   const [bulkCompletionLink, setBulkCompletionLink] = useState("");
-  const [clientData, setClientData] = useState<any>(null);
+  const [clientData, setClientData] = useState<Client | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   
 
   // --- API / handlers (kept same) ---
@@ -232,9 +235,6 @@ export function ClientTasksView({
       const agentResponse = await fetch(`/api/tasks/clients/agents/${agentId}`);
       if (!agentResponse.ok) throw new Error(`HTTP error! status: ${agentResponse.status}`);
       const agentData = await agentResponse.json();
-
-      const currentClient = agentData.find((client: any) => client.id === clientId);
-      if (currentClient) setClientData(currentClient);
 
       const response = await fetch(`/api/tasks/client/${clientId}`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -267,6 +267,49 @@ export function ClientTasksView({
       setLoading(false);
     }
   }, [clientId, agentId]);
+
+  // Normalize and fetch full client data for the modal (similar to admin page)
+  const normalizeClientData = useCallback((apiData: any): Client => {
+    const uncategorized = { id: "uncategorized", name: "Uncategorized", description: "" } as any;
+    return {
+      ...apiData,
+      companywebsite:
+        apiData?.companywebsite && typeof apiData.companywebsite === "string" ? apiData.companywebsite : "",
+      tasks: (apiData?.tasks ?? []).map((t: any) => ({
+        ...t,
+        categoryId: t?.category?.id ?? t?.categoryId ?? "uncategorized",
+        category: t?.category ?? uncategorized,
+        name: String(t?.name ?? ""),
+        priority: String(t?.priority ?? "medium"),
+        status: String(t?.status ?? "pending"),
+        templateSiteAsset: {
+          ...t?.templateSiteAsset,
+          type: String(t?.templateSiteAsset?.type ?? ""),
+          name: String(t?.templateSiteAsset?.name ?? ""),
+          url: String(t?.templateSiteAsset?.url ?? ""),
+        },
+      })),
+    } as Client;
+  }, []);
+
+  const fetchClientData = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/clients/${clientId}`, { cache: "no-store" });
+      if (!res.ok) return;
+      const raw = await res.json();
+      const normalized = normalizeClientData(raw);
+      setClientData(normalized);
+    } catch (e) {
+      console.error("Failed to fetch client data:", e);
+    }
+  }, [clientId, normalizeClientData]);
+
+  // Fetch client data when modal opens (and on clientId change)
+  useEffect(() => {
+    if (isClientModalOpen) {
+      fetchClientData();
+    }
+  }, [isClientModalOpen, fetchClientData]);
 
   const handleUpdateTask = useCallback(
     async (taskId: string, updates: any) => {
@@ -812,9 +855,23 @@ export function ClientTasksView({
           </Card>
         </div>
 
-        {clientData?.imageDrivelink && (
-          <DriveImageGallery driveLink={clientData.imageDrivelink} clientName={clientName} />
-        )}
+        <div className="flex justify-end">
+          <Dialog open={isClientModalOpen} onOpenChange={setIsClientModalOpen}>
+            <DialogTrigger asChild>
+              <Button variant="secondary">Open Client's Information</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-6xl h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{clientName}</DialogTitle>
+              </DialogHeader>
+              {clientData ? (
+                <ClientDashboard clientData={clientData} />
+              ) : (
+                <div className="py-8 text-center text-sm text-muted-foreground">Loading client info...</div>
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
 
         {/* Task Management Section */}
         <TaskList
