@@ -509,24 +509,25 @@
 
 // app/api/tasks/create-posting-tasks/route.ts
 
+// ✅ Prisma needs Node runtime on Vercel
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { type NextRequest, NextResponse } from "next/server";
 import type { TaskPriority, TaskStatus } from "@prisma/client";
 import prisma from "@/lib/prisma";
-import { randomUUID } from "crypto";
 import { calculateTaskDueDate, extractCycleNumber } from "@/utils/working-days";
 
+// ---------- Constants ----------
 const ALLOWED_ASSET_TYPES = [
   "social_site",
   "web2_site",
   "other_asset",
 ] as const;
-
 const CAT_SOCIAL_ACTIVITY = "Social Activity";
 const CAT_BLOG_POSTING = "Blog Posting";
 
+// ---------- Helpers ----------
 function normalizeTaskPriority(v: unknown): TaskPriority {
   switch (String(v ?? "").toLowerCase()) {
     case "low":
@@ -541,19 +542,16 @@ function normalizeTaskPriority(v: unknown): TaskPriority {
       return "medium";
   }
 }
-
 function resolveCategoryFromType(assetType?: string): string {
   if (!assetType) return CAT_SOCIAL_ACTIVITY;
   if (assetType === "web2_site") return CAT_BLOG_POSTING;
-  return CAT_SOCIAL_ACTIVITY;
+  return CAT_SOCIAL_ACTIVITY; // social_site + other_asset
 }
-
 function baseNameOf(name: string): string {
   return String(name)
     .replace(/\s*-\s*\d+$/i, "")
     .trim();
 }
-
 function getFrequency(opts: {
   required?: number | null | undefined;
   defaultFreq?: number | null | undefined;
@@ -566,7 +564,6 @@ function getFrequency(opts: {
     return Math.floor(fromDefault);
   return 1;
 }
-
 function countByStatus(tasks: { status: TaskStatus }[]) {
   const base: Record<TaskStatus, number> = {
     pending: 0,
@@ -580,35 +577,30 @@ function countByStatus(tasks: { status: TaskStatus }[]) {
   for (const t of tasks) base[t.status] += 1;
   return base;
 }
-
-// ---------- tiny helpers to make debugging crystal clear ----------
-function debugError(stage: string, err: unknown) {
+function safeErr(err: unknown) {
   const anyErr = err as any;
-  const payload = {
-    stage,
+  return {
     name: anyErr?.name ?? null,
     code: anyErr?.code ?? null,
     message: anyErr?.message ?? String(anyErr),
     meta: anyErr?.meta ?? null,
-    // comment out in final prod if you prefer:
-    stack:
-      typeof anyErr?.stack === "string"
-        ? anyErr.stack.split("\n").slice(0, 3).join("\n")
-        : null,
-    env: {
-      hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
-      node: process.versions?.node,
-    },
   };
-  // full error to server logs:
-  console.error(`[create-posting-tasks] ERROR at ${stage}:`, anyErr);
+}
+function fail(stage: string, err: unknown, http = 500) {
+  const e = safeErr(err);
+  console.error(`[create-posting-tasks] ${stage} ERROR:`, err);
   return NextResponse.json(
-    { message: "Internal Server Error", error: payload },
-    { status: 500 }
+    { message: "Internal Server Error", stage, error: e },
+    { status: http }
   );
 }
+// Node 18+ has global crypto.randomUUID()
+const makeId = () =>
+  `task_${Date.now()}_${
+    globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)
+  }`;
 
-// ---------- GET ----------
+// ---------- GET: preview ----------
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -616,14 +608,19 @@ export async function GET(req: NextRequest) {
     const templateIdRaw = searchParams.get("templateId") ?? undefined;
     const onlyType = searchParams.get("onlyType") ?? undefined;
 
-    if (!clientId) {
+    if (!clientId)
       return NextResponse.json(
         { message: "clientId is required" },
         { status: 400 }
       );
+
+    // Quick DB preflight (surfaces P1001/P1017 immediately)
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (e) {
+      return fail("GET.db-preflight", e);
     }
 
-    let stage = "get.client";
     const client = await prisma.client.findUnique({
       where: { id: clientId },
       select: { id: true },
@@ -634,7 +631,6 @@ export async function GET(req: NextRequest) {
         { status: 404 }
       );
 
-    stage = "get.assignment";
     const templateId =
       templateIdRaw === "none" || templateIdRaw === "" ? null : templateIdRaw;
     const assignment = await prisma.assignment.findFirst({
@@ -657,7 +653,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    stage = "get.sourceTasks";
     const sourceTasks = await prisma.task.findMany({
       where: {
         assignmentId: assignment.id,
@@ -691,7 +686,6 @@ export async function GET(req: NextRequest) {
       sourceTasks.length > 0 &&
       sourceTasks.every((t) => t.status === "qc_approved");
 
-    stage = "get.assignmentAssetSettings";
     const assetIds = Array.from(
       new Set(
         sourceTasks
@@ -712,7 +706,6 @@ export async function GET(req: NextRequest) {
     for (const s of settings)
       requiredByAssetId.set(s.templateSiteAssetId, s.requiredFrequency);
 
-    stage = "get.mapTasks";
     const tasks = sourceTasks.map((src) => {
       const assetId = src.templateSiteAsset?.id;
       const freq = getFrequency({
@@ -747,11 +740,11 @@ export async function GET(req: NextRequest) {
       runtime: "nodejs",
     });
   } catch (err) {
-    return debugError("GET.catch", err);
+    return fail("GET.catch", err);
   }
 }
 
-// ---------- POST ----------
+// ---------- POST: create ----------
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -759,14 +752,19 @@ export async function POST(req: NextRequest) {
     const templateIdRaw: string | undefined = body?.templateId;
     const onlyType: string | undefined = body?.onlyType;
 
-    if (!clientId) {
+    if (!clientId)
       return NextResponse.json(
         { message: "clientId is required" },
         { status: 400 }
       );
+
+    // DB preflight
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (e) {
+      return fail("POST.db-preflight", e);
     }
 
-    let stage = "post.client";
     const client = await prisma.client.findUnique({
       where: { id: clientId },
       select: { id: true },
@@ -777,7 +775,6 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       );
 
-    stage = "post.assignment";
     const templateId = templateIdRaw === "none" ? null : templateIdRaw;
     const assignment = await prisma.assignment.findFirst({
       where: {
@@ -799,7 +796,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    stage = "post.sourceTasks";
     const sourceTasks = await prisma.task.findMany({
       where: {
         assignmentId: assignment.id,
@@ -836,7 +832,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    stage = "post.qcGate";
+    // QC gate
     const notApproved = sourceTasks.filter((t) => t.status !== "qc_approved");
     if (notApproved.length) {
       return NextResponse.json(
@@ -850,7 +846,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    stage = "post.settings";
+    // per-asset frequency overrides
     const assetIds = Array.from(
       new Set(
         sourceTasks
@@ -871,33 +867,44 @@ export async function POST(req: NextRequest) {
     for (const s of settings)
       requiredByAssetId.set(s.templateSiteAssetId, s.requiredFrequency);
 
-    stage = "post.ensureCategories";
+    // Ensure categories WITHOUT relying on unique(name)
+    const ensureCategory = async (name: string) => {
+      const found = await prisma.taskCategory.findFirst({
+        where: { name },
+        select: { id: true, name: true },
+      });
+      if (found) return found;
+      try {
+        return await prisma.taskCategory.create({
+          data: { name },
+          select: { id: true, name: true },
+        });
+      } catch (e) {
+        // In case two lambdas race-create, fetch again
+        const again = await prisma.taskCategory.findFirst({
+          where: { name },
+          select: { id: true, name: true },
+        });
+        if (again) return again;
+        throw e;
+      }
+    };
+
     const [socialCat, blogCat] = await Promise.all([
-      prisma.taskCategory.upsert({
-        where: { name: CAT_SOCIAL_ACTIVITY }, // name must be UNIQUE in DB
-        update: {},
-        create: { name: CAT_SOCIAL_ACTIVITY },
-        select: { id: true, name: true },
-      }),
-      prisma.taskCategory.upsert({
-        where: { name: CAT_BLOG_POSTING }, // name must be UNIQUE in DB
-        update: {},
-        create: { name: CAT_BLOG_POSTING },
-        select: { id: true, name: true },
-      }),
+      ensureCategory(CAT_SOCIAL_ACTIVITY),
+      ensureCategory(CAT_BLOG_POSTING),
     ]);
     const categoryIdByName = new Map<string, string>([
       [socialCat.name, socialCat.id],
       [blogCat.name, blogCat.id],
     ]);
 
-    stage = "post.expandCopies";
+    // Expand copies
     const expandedCopies: {
       src: (typeof sourceTasks)[number];
       name: string;
       catName: string;
     }[] = [];
-
     for (const src of sourceTasks) {
       const assetType = src.templateSiteAsset?.type;
       const assetId = src.templateSiteAsset?.id;
@@ -906,16 +913,14 @@ export async function POST(req: NextRequest) {
         required,
         defaultFreq: src.templateSiteAsset?.defaultPostingFrequency,
       });
-
       const catName = resolveCategoryFromType(assetType);
       const base = baseNameOf(src.name);
-
       for (let i = 1; i <= freq; i++) {
         expandedCopies.push({ src, catName, name: `${base} -${i}` });
       }
     }
 
-    stage = "post.dedupFetch";
+    // De-dup by name within target cats
     const namesToCheck = Array.from(new Set(expandedCopies.map((e) => e.name)));
     const existingCopies = await prisma.task.findMany({
       where: {
@@ -933,7 +938,6 @@ export async function POST(req: NextRequest) {
       ? normalizeTaskPriority(body?.priority)
       : undefined;
 
-    stage = "post.buildPayloads";
     type TaskCreate = Parameters<typeof prisma.task.create>[0]["data"];
     const payloads: TaskCreate[] = [];
 
@@ -950,7 +954,7 @@ export async function POST(req: NextRequest) {
       const dueDate = calculateTaskDueDate(assetCreatedAt, cycleNumber);
 
       payloads.push({
-        id: `task_${Date.now()}_${randomUUID()}`,
+        id: makeId(),
         name: item.name,
         status: "pending",
         priority: overridePriority ?? src.priority,
@@ -981,7 +985,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    stage = "post.createTx";
+    // Create inside a transaction (can chunk if very large)
     const created = await prisma.$transaction((tx) =>
       Promise.all(
         payloads.map((data) =>
@@ -1023,6 +1027,6 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (err) {
-    return debugError("POST.catch", err);
+    return fail("POST.catch", err);
   }
 }
