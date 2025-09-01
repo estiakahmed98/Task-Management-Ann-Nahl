@@ -1,11 +1,12 @@
 "use client";
 
+import { useMemo, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { List, Grid3X3, Search } from "lucide-react";
+import { List, Grid3X3, Search, Copy, Check, Eye, EyeOff } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -75,6 +76,82 @@ export default function TaskList({
     setIsCompletionConfirmOpen(true);
   };
 
+  // ✅ Helpers
+  const isSocialActivity = (t: Task) =>
+    (t.category?.name ?? "").toLowerCase() === "social activity";
+
+  /**
+   * ✅ URL resolve rules:
+   * 1) যদি completionLink থাকে, সেটাই দেখাও (Asset agent complete করার পর এটিই আসবে)
+   * 2) Social হলে completionLink (না থাকলে null)
+   * 3) না হলে asset URL: templateSiteAsset.url -> assetUrl -> url
+   */
+  const computeUrl = (t: Task): string | null => {
+    const cl = (t.completionLink ?? "").trim();
+    if (cl) return cl; // always prefer completion link once provided
+    if (isSocialActivity(t)) return cl || null;
+    return (
+      t.templateSiteAsset?.url ??
+      // নিচের দুটো ফিল্ড ব্যাকএন্ডের অন্য রুট/ফরম্যাট থেকে আসতে পারে:
+      (t as any).assetUrl ??
+      (t as any).url ??
+      null
+    );
+  };
+
+  // ✅ যদি filteredTasks-এর সব টাস্ক Social Activity হয়, তাহলে Asset কলাম hide
+  const hideAssetColumn = useMemo(
+    () => filteredTasks.length > 0 && filteredTasks.every((t) => isSocialActivity(t)),
+    [filteredTasks]
+  );
+
+  // ✅ Copy + Password visibility states
+  const [copied, setCopied] = useState<{ id: string; type: "url" | "password" } | null>(null);
+  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
+
+  const handleCopy = async (text: string, id: string, type: "url" | "password") => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied({ id, type });
+      setTimeout(() => setCopied(null), 1200);
+    } catch (e) {
+      // optionally: toast error
+    }
+  };
+
+  const isPasswordVisible = (id: string) => visiblePasswords.has(id);
+  const togglePassword = (id: string) =>
+    setVisiblePasswords((prev) => {
+      const s = new Set(prev);
+      s.has(id) ? s.delete(id) : s.add(id);
+      return s;
+    });
+
+  /**
+   * 🧲 Sticky URL cache:
+   * - Timer start/pause করার সময় parent যদি partial task দিয়ে state আপডেট করে, nested relation (templateSiteAsset) হারিয়ে যেতে পারে।
+   * - আমরা last known URL cache করে রাখি যাতে URL “চলে না যায়”।
+   */
+  const [lastKnownUrl, setLastKnownUrl] = useState<Map<string, string>>(new Map());
+
+  // filteredTasks আপডেট হলে নতুন URL গুলো cache-এ বসাও
+  useEffect(() => {
+    if (!filteredTasks?.length) return;
+    setLastKnownUrl((prev) => {
+      const next = new Map(prev);
+      for (const t of filteredTasks) {
+        const u = computeUrl(t);
+        if (u) next.set(t.id, u);
+      }
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredTasks]);
+
+  // display helper: cache fallback
+  const getDisplayUrl = (t: Task) => computeUrl(t) ?? lastKnownUrl.get(t.id) ?? null;
+
   return (
     <Card className="border-0 shadow-xl bg-white dark:bg-gray-900 overflow-hidden">
       <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 dark:from-blue-500/20 dark:to-purple-500/20">
@@ -100,7 +177,7 @@ export default function TaskList({
           <div className="relative flex-1 w-full">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <Input
-              placeholder="Search tasks by name, category, or asset..."
+              placeholder="Search tasks by name, category, asset, or completion link..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-12 h-12 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -193,12 +270,27 @@ export default function TaskList({
                   <th className="text-left py-4 px-4 font-semibold text-gray-900 dark:text-gray-50">
                     Category
                   </th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-900 dark:text-gray-50">
-                    Asset
-                  </th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-900 dark:text-gray-50">
+
+                  {!hideAssetColumn && (
+                    <th className="text-left py-4 px-4 font-semibold text-gray-900 dark:text-gray-50">
+                      Asset
+                    </th>
+                  )}
+
+                  <th className="text-left py-16 px-16 font-semibold text-gray-900 dark:text-gray-50">
                     URL
                   </th>
+
+                  <th className="text-left py-16 px-16 font-semibold text-gray-900 dark:text-gray-50">
+                    Email
+                  </th>
+                  <th className="text-left py-4 px-4 font-semibold text-gray-900 dark:text-gray-50">
+                    Username
+                  </th>
+                  <th className="text-left py-4 px-4 font-semibold text-gray-900 dark:text-gray-50">
+                    Password
+                  </th>
+
                   <th className="text-left py-4 px-4 font-semibold text-gray-900 dark:text-gray-50">
                     Performance
                   </th>
@@ -215,6 +307,10 @@ export default function TaskList({
                   const isSelected = selectedTasks.includes(task.id);
                   const isTimerActive =
                     timerState?.taskId === task.id && timerState?.isRunning;
+
+                  const displayUrl = getDisplayUrl(task);
+                  const urlCopied = copied?.id === task.id && copied?.type === "url";
+                  const pwdVisible = isPasswordVisible(task.id);
 
                   return (
                     <tr
@@ -279,21 +375,81 @@ export default function TaskList({
                         </Badge>
                       </td>
 
+                      {!hideAssetColumn && (
+                        <td className="py-4 px-4">
+                          {!isSocialActivity(task) ? (
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {task.templateSiteAsset?.name || "N/A"}
+                            </span>
+                          ) : null}
+                        </td>
+                      )}
+
+                      {/* URL + copy (sticky fallback) */}
                       <td className="py-4 px-4">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {task.templateSiteAsset?.name || "N/A"}
+                        {displayUrl ? (
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={displayUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-600 dark:text-blue-400 font-mono break-all underline underline-offset-2"
+                              title={displayUrl}
+                            >
+                              {displayUrl}
+                            </a>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-md"
+                              onClick={() => handleCopy(displayUrl, task.id, "url")}
+                              aria-label="Copy URL"
+                              title="Copy URL"
+                            >
+                              {urlCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400 dark:text-gray-500">N/A</span>
+                        )}
+                      </td>
+
+                      {/* Email */}
+                      <td className="py-4 px-4">
+                        <span className="text-sm font-mono break-all text-gray-700 dark:text-gray-300">
+                          {task.email || "N/A"}
                         </span>
                       </td>
 
+                      {/* Username */}
                       <td className="py-4 px-4">
-                        {task.templateSiteAsset?.url ? (
-                          <span className="text-sm text-blue-600 dark:text-blue-400 font-mono break-all">
-                            {task.templateSiteAsset.url}
-                          </span>
+                        <span className="text-sm font-mono break-all text-gray-700 dark:text-gray-300">
+                          {task.username || "N/A"}
+                        </span>
+                      </td>
+
+                      {/* Password: masked + eye toggle */}
+                      <td className="py-4 px-4">
+                        {task.password ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-mono break-all text-gray-700 dark:text-gray-300">
+                              {pwdVisible ? task.password : "****"}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-md"
+                              onClick={() => togglePassword(task.id)}
+                              aria-label={pwdVisible ? "Hide password" : "Show password"}
+                              title={pwdVisible ? "Hide password" : "Show password"}
+                            >
+                              {pwdVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                          </div>
                         ) : (
-                          <span className="text-sm text-gray-400 dark:text-gray-500">
-                            N/A
-                          </span>
+                          <span className="text-sm text-gray-400 dark:text-gray-500">N/A</span>
                         )}
                       </td>
 
@@ -352,6 +508,10 @@ export default function TaskList({
               const isTimerActive =
                 timerState?.taskId === task.id && timerState?.isRunning;
               const isThisTaskDisabled = isTaskDisabled(task.id);
+
+              const displayUrl = getDisplayUrl(task);
+              const urlCopied = copied?.id === task.id && copied?.type === "url";
+              const pwdVisible = isPasswordVisible(task.id);
 
               return (
                 <div
@@ -430,26 +590,89 @@ export default function TaskList({
                               : "-"}
                           </Badge>
                         </div>
-                        {task.templateSiteAsset?.name && (
+
+                        {/* Social না হলে Asset নাম দেখাই */}
+                        {!isSocialActivity(task) && task.templateSiteAsset?.name && (
                           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                             <span className="font-medium">Asset:</span>{" "}
                             {task.templateSiteAsset?.name}
                           </p>
                         )}
-                        {task.templateSiteAsset?.url && (
+
+                        {/* URL + copy (sticky fallback) */}
+                        {displayUrl ? (
                           <div className="mb-2">
-                            <div className="text-sm">
+                            <div className="text-sm flex items-center gap-2">
                               <span className="font-medium text-gray-700 dark:text-gray-300">
                                 URL:
                               </span>
-                              <span className="ml-2 text-blue-600 dark:text-blue-400 font-mono break-all">
-                                {task.templateSiteAsset.url}
-                              </span>
+                              <a
+                                href={displayUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 dark:text-blue-400 font-mono break-all underline underline-offset-2"
+                                title={displayUrl}
+                              >
+                                {displayUrl}
+                              </a>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-md"
+                                onClick={() => handleCopy(displayUrl, task.id, "url")}
+                                aria-label="Copy URL"
+                                title="Copy URL"
+                              >
+                                {urlCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                              </Button>
                             </div>
                           </div>
-                        )}
+                        ) : null}
+
+                        {/* Credentials */}
+                        <div className="mt-3 space-y-1">
+                          <div className="text-sm">
+                            <span className="font-medium text-gray-700 dark:text-gray-300">
+                              Email:
+                            </span>{" "}
+                            <span className="font-mono break-all text-gray-700 dark:text-gray-300">
+                              {task.email || "N/A"}
+                            </span>
+                          </div>
+                          <div className="text-sm">
+                            <span className="font-medium text-gray-700 dark:text-gray-300">
+                              Username:
+                            </span>{" "}
+                            <span className="font-mono break-all text-gray-700 dark:text-gray-300">
+                              {task.username || "N/A"}
+                            </span>
+                          </div>
+                          <div className="text-sm flex items-center gap-2">
+                            <span className="font-medium text-gray-700 dark:text-gray-300">
+                              Password:
+                            </span>{" "}
+                            <span className="font-mono break-all text-gray-700 dark:text-gray-300">
+                              {task.password ? (isPasswordVisible(task.id) ? task.password : "****") : "N/A"}
+                            </span>
+                            {task.password && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-md"
+                                onClick={() => togglePassword(task.id)}
+                                aria-label={isPasswordVisible(task.id) ? "Hide password" : "Show password"}
+                                title={isPasswordVisible(task.id) ? "Hide password" : "Show password"}
+                              >
+                                {isPasswordVisible(task.id) ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+
                         {task.comments && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mt-2">
                             {task.comments[0]?.text}
                           </p>
                         )}

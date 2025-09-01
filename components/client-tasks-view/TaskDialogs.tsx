@@ -75,6 +75,10 @@ export default function TaskDialogs({
   tasks: Task[];
   formatTimerDisplay: (seconds: number) => string;
 }) {
+  // ✅ Check if the current task is a Social Activity
+  const isSocialActivity =
+    (taskToComplete?.category?.name ?? "").toLowerCase() === "social activity";
+
   return (
     <>
       {/* Status Update Modal */}
@@ -139,8 +143,8 @@ export default function TaskDialogs({
               Complete Task
             </DialogTitle>
             <DialogDescription className="text-gray-600 dark:text-gray-400">
-              Mark this task as completed and optionally provide a completion
-              link.
+              Mark this task as completed and {isSocialActivity ? "" : "optionally "}
+              provide a completion link{isSocialActivity ? "." : " and credentials if needed."}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
@@ -166,6 +170,7 @@ export default function TaskDialogs({
               </div>
             )}
 
+            {/* Always show completion link */}
             <div className="space-y-2">
               <label
                 htmlFor="completion-link"
@@ -181,54 +186,62 @@ export default function TaskDialogs({
                 onChange={(e) => setCompletionLink(e.target.value)}
                 className="w-full"
               />
-
-              <label
-                htmlFor="email"
-                className="text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="example@gmail.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full"
-              />
-              <label
-                htmlFor="username"
-                className="text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                UserName
-              </label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full"
-              />
-              <label
-                htmlFor="password"
-                className="text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Password
-              </label>
-              <Input
-                id="password"
-                type="text"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Provide a link to the completed work, deliverable, or proof of
-                completion.
-              </p>
             </div>
+
+            {/* Show credentials ONLY when NOT Social Activity */}
+            {!isSocialActivity && (
+              <div className="space-y-2">
+                <label
+                  htmlFor="email"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="example@gmail.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full"
+                />
+
+                <label
+                  htmlFor="username"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Username
+                </label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full"
+                />
+
+                <label
+                  htmlFor="password"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Password
+                </label>
+                <Input
+                  id="password"
+                  type="text"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            )}
+
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Provide a link to the completed work, deliverable, or proof of
+              completion.
+            </p>
           </div>
           <DialogFooter className="flex gap-3">
             <Button
@@ -249,7 +262,7 @@ export default function TaskDialogs({
         </DialogContent>
       </Dialog>
 
-      {/* Bulk Task Completion Dialog */}
+      {/* Bulk Task Completion Dialog (already only asks for a link) */}
       <Dialog
         open={isBulkCompletionOpen}
         onOpenChange={setIsBulkCompletionOpen}
