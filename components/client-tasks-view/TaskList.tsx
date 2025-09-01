@@ -22,7 +22,7 @@ export default function TaskList({
   clientName,
   tasks,
   filteredTasks,
-  overdueCount, // kept to preserve original prop list (even if not used here directly)
+  overdueCount, // kept
   searchTerm,
   setSearchTerm,
   statusFilter,
@@ -71,7 +71,12 @@ export default function TaskList({
   getPriorityBadge: (priority: string) => JSX.Element;
   formatTimerDisplay: (seconds: number) => string;
 }) {
+  // 🔒 Lock rule
+  const isLocked = (t: Task) => t.status === "completed" || t.status === "qc_approved";
+
+  // Complete modal opener (blocked for locked)
   const onRequestComplete = (task: Task) => {
+    if (isLocked(task)) return;
     setTaskToComplete(task);
     setIsCompletionConfirmOpen(true);
   };
@@ -80,32 +85,26 @@ export default function TaskList({
   const isSocialActivity = (t: Task) =>
     (t.category?.name ?? "").toLowerCase() === "social activity";
 
-  /**
-   * ✅ URL resolve rules:
-   * 1) যদি completionLink থাকে, সেটাই দেখাও (Asset agent complete করার পর এটিই আসবে)
-   * 2) Social হলে completionLink (না থাকলে null)
-   * 3) না হলে asset URL: templateSiteAsset.url -> assetUrl -> url
-   */
+  // URL resolve rules (completionLink > socialLink > asset urls)
   const computeUrl = (t: Task): string | null => {
     const cl = (t.completionLink ?? "").trim();
-    if (cl) return cl; // always prefer completion link once provided
+    if (cl) return cl;
     if (isSocialActivity(t)) return cl || null;
     return (
       t.templateSiteAsset?.url ??
-      // নিচের দুটো ফিল্ড ব্যাকএন্ডের অন্য রুট/ফরম্যাট থেকে আসতে পারে:
       (t as any).assetUrl ??
       (t as any).url ??
       null
     );
   };
 
-  // ✅ যদি filteredTasks-এর সব টাস্ক Social Activity হয়, তাহলে Asset কলাম hide
+  // Hide Asset column if all are social
   const hideAssetColumn = useMemo(
     () => filteredTasks.length > 0 && filteredTasks.every((t) => isSocialActivity(t)),
     [filteredTasks]
   );
 
-  // ✅ Copy + Password visibility states
+  // Copy + Password UI
   const [copied, setCopied] = useState<{ id: string; type: "url" | "password" } | null>(null);
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
 
@@ -115,9 +114,7 @@ export default function TaskList({
       await navigator.clipboard.writeText(text);
       setCopied({ id, type });
       setTimeout(() => setCopied(null), 1200);
-    } catch (e) {
-      // optionally: toast error
-    }
+    } catch {}
   };
 
   const isPasswordVisible = (id: string) => visiblePasswords.has(id);
@@ -128,14 +125,9 @@ export default function TaskList({
       return s;
     });
 
-  /**
-   * 🧲 Sticky URL cache:
-   * - Timer start/pause করার সময় parent যদি partial task দিয়ে state আপডেট করে, nested relation (templateSiteAsset) হারিয়ে যেতে পারে।
-   * - আমরা last known URL cache করে রাখি যাতে URL “চলে না যায়”।
-   */
+  // 🧲 Sticky URL cache
   const [lastKnownUrl, setLastKnownUrl] = useState<Map<string, string>>(new Map());
 
-  // filteredTasks আপডেট হলে নতুন URL গুলো cache-এ বসাও
   useEffect(() => {
     if (!filteredTasks?.length) return;
     setLastKnownUrl((prev) => {
@@ -149,8 +141,13 @@ export default function TaskList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredTasks]);
 
-  // display helper: cache fallback
   const getDisplayUrl = (t: Task) => computeUrl(t) ?? lastKnownUrl.get(t.id) ?? null;
+
+  // 🔘 Select-all should ignore locked tasks
+  const unlockedFiltered = useMemo(
+    () => filteredTasks.filter((t) => !isLocked(t)),
+    [filteredTasks]
+  );
 
   return (
     <Card className="border-0 shadow-xl bg-white dark:bg-gray-900 overflow-hidden">
@@ -242,16 +239,12 @@ export default function TaskList({
                   <th className="text-left py-4 px-4 font-semibold text-gray-900 dark:text-gray-50">
                     <Checkbox
                       checked={
-                        selectedTasks.length === filteredTasks.length &&
-                        filteredTasks.length > 0
+                        selectedTasks.length === unlockedFiltered.length &&
+                        unlockedFiltered.length > 0
                       }
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setSelectedTasks(
-                            filteredTasks
-                              .filter((task) => task.status !== "completed")
-                              .map((task) => task.id)
-                          );
+                          setSelectedTasks(unlockedFiltered.map((t) => t.id));
                         } else {
                           setSelectedTasks([]);
                         }
@@ -311,18 +304,20 @@ export default function TaskList({
                   const displayUrl = getDisplayUrl(task);
                   const urlCopied = copied?.id === task.id && copied?.type === "url";
                   const pwdVisible = isPasswordVisible(task.id);
+                  const locked = isLocked(task);
 
                   return (
                     <tr
                       key={task.id}
                       className={`border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
                         isSelected ? "bg-blue-50 dark:bg-blue-900/20" : ""
-                      }`}
+                      } ${locked ? "opacity-60" : ""}`}
                     >
                       <td className="py-4 px-4">
                         <Checkbox
                           checked={isSelected}
                           onCheckedChange={(checked) => {
+                            if (locked) return;
                             if (checked) {
                               setSelectedTasks([...selectedTasks, task.id]);
                             } else {
@@ -331,12 +326,8 @@ export default function TaskList({
                               );
                             }
                           }}
-                          disabled={task.status === "completed"}
-                          className={
-                            task.status === "completed"
-                              ? "cursor-not-allowed opacity-50"
-                              : ""
-                          }
+                          disabled={locked}
+                          className={locked ? "cursor-not-allowed opacity-50" : ""}
                         />
                       </td>
 
@@ -352,7 +343,7 @@ export default function TaskList({
                               </p>
                             )}
                           </div>
-                          {isTimerActive && (
+                          {isTimerActive && !locked && (
                             <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-full">
                               <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
                               <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
@@ -365,9 +356,7 @@ export default function TaskList({
 
                       <td className="py-4 px-4">{getStatusBadge(task.status)}</td>
 
-                      <td className="py-4 px-4">
-                        {getPriorityBadge(task.priority)}
-                      </td>
+                      <td className="py-4 px-4">{getPriorityBadge(task.priority)}</td>
 
                       <td className="py-4 px-4">
                         <Badge variant="outline" className="text-xs">
@@ -385,31 +374,41 @@ export default function TaskList({
                         </td>
                       )}
 
-                      {/* URL + copy (sticky fallback) */}
+                      {/* URL + copy (disabled if locked) */}
                       <td className="py-4 px-4">
                         {displayUrl ? (
-                          <div className="flex items-center gap-2">
-                            <a
-                              href={displayUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-blue-600 dark:text-blue-400 font-mono break-all underline underline-offset-2"
-                              title={displayUrl}
-                            >
+                          locked ? (
+                            <span className="text-sm text-gray-400 dark:text-gray-500">
                               {displayUrl}
-                            </a>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 rounded-md"
-                              onClick={() => handleCopy(displayUrl, task.id, "url")}
-                              aria-label="Copy URL"
-                              title="Copy URL"
-                            >
-                              {urlCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                            </Button>
-                          </div>
+                            </span>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={displayUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-600 dark:text-blue-400 font-mono break-all underline underline-offset-2"
+                                title={displayUrl}
+                              >
+                                {displayUrl}
+                              </a>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-md"
+                                onClick={() => handleCopy(displayUrl, task.id, "url")}
+                                aria-label="Copy URL"
+                                title="Copy URL"
+                              >
+                                {urlCopied ? (
+                                  <Check className="h-4 w-4" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          )
                         ) : (
                           <span className="text-sm text-gray-400 dark:text-gray-500">N/A</span>
                         )}
@@ -429,24 +428,26 @@ export default function TaskList({
                         </span>
                       </td>
 
-                      {/* Password: masked + eye toggle */}
+                      {/* Password: masked + eye toggle (disabled if locked) */}
                       <td className="py-4 px-4">
                         {task.password ? (
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-mono break-all text-gray-700 dark:text-gray-300">
-                              {pwdVisible ? task.password : "****"}
+                              {locked ? "****" : pwdVisible ? task.password : "****"}
                             </span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 rounded-md"
-                              onClick={() => togglePassword(task.id)}
-                              aria-label={pwdVisible ? "Hide password" : "Show password"}
-                              title={pwdVisible ? "Hide password" : "Show password"}
-                            >
-                              {pwdVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
+                            {!locked && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-md"
+                                onClick={() => togglePassword(task.id)}
+                                aria-label={pwdVisible ? "Hide password" : "Show password"}
+                                title={pwdVisible ? "Hide password" : "Show password"}
+                              >
+                                {pwdVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </Button>
+                            )}
                           </div>
                         ) : (
                           <span className="text-sm text-gray-400 dark:text-gray-500">N/A</span>
@@ -488,9 +489,9 @@ export default function TaskList({
                         <TaskTimer
                           task={task}
                           timerState={timerState}
-                          onStartTimer={handleStartTimer}
-                          onPauseTimer={handlePauseTimer}
-                          onResetTimer={handleResetTimer}
+                          onStartTimer={locked ? () => {} : handleStartTimer}
+                          onPauseTimer={locked ? () => {} : handlePauseTimer}
+                          onResetTimer={locked ? () => {} : handleResetTimer}
                           onRequestComplete={onRequestComplete}
                           formatTimerDisplay={formatTimerDisplay}
                         />
@@ -507,11 +508,13 @@ export default function TaskList({
               const isSelected = selectedTasks.includes(task.id);
               const isTimerActive =
                 timerState?.taskId === task.id && timerState?.isRunning;
-              const isThisTaskDisabled = isTaskDisabled(task.id);
 
               const displayUrl = getDisplayUrl(task);
               const urlCopied = copied?.id === task.id && copied?.type === "url";
               const pwdVisible = isPasswordVisible(task.id);
+
+              const locked = isLocked(task);
+              const isThisTaskDisabled = locked || isTaskDisabled(task.id);
 
               return (
                 <div
@@ -520,13 +523,14 @@ export default function TaskList({
                     isSelected
                       ? "border-blue-500 shadow-lg ring-2 ring-blue-500/20"
                       : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                  } ${isThisTaskDisabled ? "opacity-50" : ""}`}
+                  } ${isThisTaskDisabled ? "opacity-60" : ""}`}
                 >
                   <div className="p-6 space-y-4">
                     <div className="flex items-center gap-4 w-full">
                       <Checkbox
                         checked={isSelected}
                         onCheckedChange={(checked) => {
+                          if (locked) return;
                           if (checked) {
                             setSelectedTasks([...selectedTasks, task.id]);
                           } else {
@@ -535,14 +539,8 @@ export default function TaskList({
                             );
                           }
                         }}
-                        disabled={
-                          isThisTaskDisabled || task.status === "completed"
-                        }
-                        className={
-                          isThisTaskDisabled || task.status === "completed"
-                            ? "cursor-not-allowed"
-                            : ""
-                        }
+                        disabled={locked}
+                        className={locked ? "cursor-not-allowed" : ""}
                       />
 
                       <div className="flex-1 min-w-0">
@@ -550,7 +548,7 @@ export default function TaskList({
                           <h3 className="font-semibold text-gray-900 dark:text-gray-50 text-lg truncate">
                             {task.name}
                           </h3>
-                          {isTimerActive && (
+                          {isTimerActive && !locked && (
                             <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-full">
                               <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
                               <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
@@ -591,7 +589,6 @@ export default function TaskList({
                           </Badge>
                         </div>
 
-                        {/* Social না হলে Asset নাম দেখাই */}
                         {!isSocialActivity(task) && task.templateSiteAsset?.name && (
                           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                             <span className="font-medium">Asset:</span>{" "}
@@ -599,33 +596,41 @@ export default function TaskList({
                           </p>
                         )}
 
-                        {/* URL + copy (sticky fallback) */}
+                        {/* URL + copy (disabled if locked) */}
                         {displayUrl ? (
                           <div className="mb-2">
                             <div className="text-sm flex items-center gap-2">
                               <span className="font-medium text-gray-700 dark:text-gray-300">
                                 URL:
                               </span>
-                              <a
-                                href={displayUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 dark:text-blue-400 font-mono break-all underline underline-offset-2"
-                                title={displayUrl}
-                              >
-                                {displayUrl}
-                              </a>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 rounded-md"
-                                onClick={() => handleCopy(displayUrl, task.id, "url")}
-                                aria-label="Copy URL"
-                                title="Copy URL"
-                              >
-                                {urlCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                              </Button>
+                              {locked ? (
+                                <span className="text-gray-400 dark:text-gray-500">
+                                  {displayUrl}
+                                </span>
+                              ) : (
+                                <>
+                                  <a
+                                    href={displayUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 dark:text-blue-400 font-mono break-all underline underline-offset-2"
+                                    title={displayUrl}
+                                  >
+                                    {displayUrl}
+                                  </a>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 rounded-md"
+                                    onClick={() => handleCopy(displayUrl, task.id, "url")}
+                                    aria-label="Copy URL"
+                                    title="Copy URL"
+                                  >
+                                    {urlCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                  </Button>
+                                </>
+                              )}
                             </div>
                           </div>
                         ) : null}
@@ -653,9 +658,9 @@ export default function TaskList({
                               Password:
                             </span>{" "}
                             <span className="font-mono break-all text-gray-700 dark:text-gray-300">
-                              {task.password ? (isPasswordVisible(task.id) ? task.password : "****") : "N/A"}
+                              {task.password ? (locked ? "****" : isPasswordVisible(task.id) ? task.password : "****") : "N/A"}
                             </span>
-                            {task.password && (
+                            {task.password && !locked && (
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -683,9 +688,9 @@ export default function TaskList({
                       <TaskTimer
                         task={task}
                         timerState={timerState}
-                        onStartTimer={handleStartTimer}
-                        onPauseTimer={handlePauseTimer}
-                        onResetTimer={handleResetTimer}
+                        onStartTimer={locked ? () => {} : handleStartTimer}
+                        onPauseTimer={locked ? () => {} : handlePauseTimer}
+                        onResetTimer={locked ? () => {} : handleResetTimer}
                         onRequestComplete={onRequestComplete}
                         formatTimerDisplay={formatTimerDisplay}
                       />
