@@ -1,0 +1,903 @@
+[
+  {
+    "id": "template1",
+    "name": "Standard Marketing Template",
+    "description": "Default template for marketing clients",
+    "createdAt": "2025-03-01T00:00:00.000Z",
+    "updatedAt": "2025-04-21T07:00:48.109Z",
+    "isDefault": false,
+    "packageId": "DFP90",
+    "packageType": "DFP90",
+    "status": "pending",
+    "progress": 25,
+    "startDate": "2025-03-01T00:00:00.000Z",
+    "dueDate": "2025-06-15T00:00:00.000Z",
+    "totalTasks": 11,
+    "completedTasks": 4,
+    "pendingTasks": 3,
+    "inProgressTasks": 4,
+    "hasNewComments": true,
+    "hasIssues": false,
+    "teamMembers": [
+      {
+        "id": "tm1",
+        "name": "Alice Johnson",
+        "email": "alice@example.com",
+        "avatar": "/placeholder.svg?height=60&width=60",
+        "role": "Social Media Manager",
+        "team": "social",
+        "assignedDate": "2025-03-05",
+        "assignedTasks": 6,
+        "completedTasks": 2,
+        "lateTasks": 1
+      },
+      {
+        "id": "tm2",
+        "name": "Bob Smith",
+        "email": "bob@example.com",
+        "avatar": "/placeholder.svg?height=60&width=60",
+        "role": "Content Writer",
+        "team": "content",
+        "assignedDate": "2025-03-05",
+        "assignedTasks": 5,
+        "completedTasks": 1,
+        "lateTasks": 0
+      }
+    ],
+    "socialSites": [
+      {
+        "name": "Facebook",
+        "url": "https://facebook.com",
+        "isRequired": true
+      },
+      {
+        "name": "Twitter",
+        "url": "https://twitter.com",
+        "isRequired": true
+      },
+      {
+        "name": "Instagram",
+        "url": "https://instagram.com",
+        "isRequired": true
+      },
+      {
+        "name": "LinkedIn",
+        "url": "https://linkedin.com",
+        "isRequired": true
+      },
+      {
+        "name": "Pinterest",
+        "url": "https://pinterest.com",
+        "isRequired": false
+      }
+    ],
+    "web2Sites": [
+      {
+        "name": "Medium",
+        "url": "https://medium.com",
+        "isRequired": true
+      },
+      {
+        "name": "Blogger",
+        "url": "https://blogger.com",
+        "isRequired": true
+      },
+      {
+        "name": "WordPress",
+        "url": "https://wordpress.com",
+        "isRequired": false
+      }
+    ],
+    "additionalAssets": [
+      {
+        "name": "Logo Design",
+        "description": "Company logo in vector format",
+        "isRequired": true
+      },
+      {
+        "name": "Banner Images",
+        "description": "Social media banners",
+        "isRequired": true
+      },
+      {
+        "name": "Brand Guidelines",
+        "description": "PDF document",
+        "isRequired": false
+      }
+    ]
+  },
+  {
+    "id": "template2",
+    "name": "Tech Startup Template",
+    "description": "Optimized for tech startups and SaaS companies",
+    "createdAt": "2025-02-15T00:00:00.000Z",
+    "updatedAt": "2025-02-28T00:00:00.000Z",
+    "isDefault": false,
+    "packageId": "DFP120",
+    "packageType": "DFP120",
+    "status": "in-progress",
+    "progress": 60,
+    "startDate": "2025-02-15T00:00:00.000Z",
+    "dueDate": "2025-05-30T00:00:00.000Z",
+    "totalTasks": 15,
+    "completedTasks": 9,
+    "pendingTasks": 3,
+    "inProgressTasks": 3,
+    "hasNewComments": false,
+    "hasIssues": true,
+    "teamMembers": [
+      {
+        "id": "tm4",
+        "name": "David Wilson",
+        "email": "david@example.com",
+        "avatar": "/placeholder.svg?height=60&width=60",
+        "role": "Project Manager",
+        "team": "management",
+        "assignedDate": "2025-02-20",
+        "assignedTasks": 4,
+        "completedTasks": 3,
+        "lateTasks": 0
+      },
+      {
+        "id": "tm5",
+        "name": "Emma Brown",
+        "email": "emma@example.com",
+        "avatar": "/placeholder.svg?height=60&width=60",
+        "role": "Content Strategist",
+        "team": "content",
+        "assignedDate": "2025-02-20",
+        "assignedTasks": 6,
+        "completedTasks": 4,
+        "lateTasks": 1
+      }
+    ],
+    "socialSites": [
+      {
+        "name": "Twitter",
+        "url": "https://twitter.com",
+        "isRequired": true
+      },
+      {
+        "name": "LinkedIn",
+        "url": "https://linkedin.com",
+        "isRequired": true
+      },
+      {
+        "name": "GitHub",
+        "url": "https://github.com",
+        "isRequired": true
+      },
+      {
+        "name": "ProductHunt",
+        "url": "https://producthunt.com",
+        "isRequired": false
+      }
+    ],
+    "web2Sites": [
+      {
+        "name": "Medium",
+        "url": "https://medium.com",
+        "isRequired": true
+      },
+      {
+        "name": "Dev.to",
+        "url": "https://dev.to",
+        "isRequired": true
+      },
+      {
+        "name": "Hacker News",
+        "url": "https://news.ycombinator.com",
+        "isRequired": false
+      }
+    ],
+    "additionalAssets": [
+      {
+        "name": "Product Screenshots",
+        "description": "High-resolution product screenshots",
+        "isRequired": true
+      },
+      {
+        "name": "Demo Videos",
+        "description": "Product demo videos",
+        "isRequired": true
+      },
+      {
+        "name": "Technical Documentation",
+        "description": "API documentation",
+        "isRequired": false
+      }
+    ]
+  },
+  {
+    "id": "template3",
+    "name": "E-commerce Package",
+    "description": "Complete template for online stores and e-commerce businesses",
+    "createdAt": "2025-01-10T00:00:00.000Z",
+    "updatedAt": "2025-02-05T00:00:00.000Z",
+    "isDefault": false,
+    "packageId": "DFP180",
+    "packageType": "DFP180",
+    "status": "completed",
+    "progress": 100,
+    "startDate": "2025-01-10T00:00:00.000Z",
+    "dueDate": "2025-03-15T00:00:00.000Z",
+    "totalTasks": 20,
+    "completedTasks": 20,
+    "pendingTasks": 0,
+    "inProgressTasks": 0,
+    "hasNewComments": false,
+    "hasIssues": false,
+    "teamMembers": [
+      {
+        "id": "tm7",
+        "name": "Grace Lee",
+        "email": "grace@example.com",
+        "avatar": "/placeholder.svg?height=60&width=60",
+        "role": "Social Media Coordinator",
+        "team": "social",
+        "assignedDate": "2025-01-15",
+        "assignedTasks": 7,
+        "completedTasks": 7,
+        "lateTasks": 0
+      },
+      {
+        "id": "tm8",
+        "name": "Henry Garcia",
+        "email": "henry@example.com",
+        "avatar": "/placeholder.svg?height=60&width=60",
+        "role": "Content Creator",
+        "team": "content",
+        "assignedDate": "2025-01-15",
+        "assignedTasks": 6,
+        "completedTasks": 6,
+        "lateTasks": 0
+      }
+    ],
+    "socialSites": [
+      {
+        "name": "Facebook",
+        "url": "https://facebook.com",
+        "isRequired": true
+      },
+      {
+        "name": "Instagram",
+        "url": "https://instagram.com",
+        "isRequired": true
+      },
+      {
+        "name": "Pinterest",
+        "url": "https://pinterest.com",
+        "isRequired": true
+      },
+      {
+        "name": "TikTok",
+        "url": "https://tiktok.com",
+        "isRequired": true
+      },
+      {
+        "name": "YouTube",
+        "url": "https://youtube.com",
+        "isRequired": true
+      }
+    ],
+    "web2Sites": [
+      {
+        "name": "Shopify Blog",
+        "url": "https://shopify.com/blog",
+        "isRequired": true
+      },
+      {
+        "name": "Medium",
+        "url": "https://medium.com",
+        "isRequired": true
+      },
+      {
+        "name": "WordPress",
+        "url": "https://wordpress.com",
+        "isRequired": true
+      }
+    ],
+    "additionalAssets": [
+      {
+        "name": "Product Photos",
+        "description": "High-quality product photography",
+        "isRequired": true
+      },
+      {
+        "name": "Brand Style Guide",
+        "description": "Complete brand guidelines",
+        "isRequired": true
+      },
+      {
+        "name": "Email Templates",
+        "description": "Marketing email templates",
+        "isRequired": true
+      }
+    ]
+  },
+  {
+    "id": "template-1745216915688",
+    "name": "New Template Demo",
+    "description": "Demo Template.",
+    "packageId": "DFP90",
+    "packageType": "DFP90",
+    "isDefault": false,
+    "status": "pending",
+    "progress": 0,
+    "startDate": "2025-04-21T06:28:35.688Z",
+    "dueDate": "2025-07-20T06:28:35.688Z",
+    "totalTasks": 21,
+    "completedTasks": 0,
+    "pendingTasks": 21,
+    "inProgressTasks": 0,
+    "hasNewComments": false,
+    "hasIssues": false,
+    "teamMembers": [],
+    "socialSites": [
+      {
+        "name": "Social Site 1",
+        "url": "https://www.facebook.com",
+        "isRequired": true
+      },
+      {
+        "name": "Social Site 2",
+        "url": "https://www.facebook.com",
+        "isRequired": true
+      },
+      {
+        "name": "Social Site 3",
+        "url": "https://www.facebook.com",
+        "isRequired": true
+      },
+      {
+        "name": " Social Site 4",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 5",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 6",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 7",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 8",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 9",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 10",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 11",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      }
+    ],
+    "web2Sites": [
+      {
+        "name": "Web 2.0 Site 1",
+        "url": "https://www.google.com",
+        "isRequired": true
+      },
+      {
+        "name": "Web 2.0 Site 2",
+        "url": "https://www.google.com",
+        "isRequired": true
+      },
+      {
+        "name": "Web 2.0 Site 3",
+        "url": "https://www.google.com",
+        "isRequired": false
+      },
+      {
+        "name": " Web 2.0 Site 4",
+        "url": "https://www.google.com",
+        "isRequired": false
+      },
+      {
+        "name": "Web 2.0 Site 5",
+        "url": "https://www.google.com",
+        "isRequired": false
+      }
+    ],
+    "additionalAssets": [
+      {
+        "name": "Asset 1",
+        "description": "Asset 1",
+        "isRequired": true
+      },
+      {
+        "name": "Asset 2",
+        "description": "Asset 2",
+        "isRequired": false
+      },
+      {
+        "name": "Asset 3",
+        "description": "Asset 3",
+        "isRequired": false
+      },
+      {
+        "name": "Asset 4",
+        "description": "Asset 4",
+        "isRequired": false
+      },
+      {
+        "name": "Asset 5",
+        "description": "Asset 5",
+        "isRequired": false
+      }
+    ],
+    "createdAt": "2025-04-21T06:28:35.771Z",
+    "updatedAt": "2025-04-21T06:30:23.854Z"
+  },
+  {
+    "id": "template-1745217077675",
+    "name": "New Template Demo (Copy)",
+    "description": "Demo Template.",
+    "packageId": "DFP90",
+    "packageType": "DFP90",
+    "isDefault": true,
+    "status": "pending",
+    "progress": 0,
+    "startDate": "2025-04-21T06:28:35.688Z",
+    "dueDate": "2025-07-20T06:28:35.688Z",
+    "totalTasks": 21,
+    "completedTasks": 0,
+    "pendingTasks": 21,
+    "inProgressTasks": 0,
+    "hasNewComments": false,
+    "hasIssues": false,
+    "teamMembers": [],
+    "socialSites": [
+      {
+        "name": "Social Site 1",
+        "url": "https://www.facebook.com",
+        "isRequired": true
+      },
+      {
+        "name": "Social Site 2",
+        "url": "https://www.facebook.com",
+        "isRequired": true
+      },
+      {
+        "name": "Social Site 3",
+        "url": "https://www.facebook.com",
+        "isRequired": true
+      },
+      {
+        "name": " Social Site 4",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 5",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 6",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 7",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 8",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 9",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 10",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 11",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      }
+    ],
+    "web2Sites": [
+      {
+        "name": "Web 2.0 Site 1",
+        "url": "https://www.google.com",
+        "isRequired": true
+      },
+      {
+        "name": "Web 2.0 Site 2",
+        "url": "https://www.google.com",
+        "isRequired": true
+      },
+      {
+        "name": "Web 2.0 Site 3",
+        "url": "https://www.google.com",
+        "isRequired": false
+      },
+      {
+        "name": " Web 2.0 Site 4",
+        "url": "https://www.google.com",
+        "isRequired": false
+      },
+      {
+        "name": "Web 2.0 Site 5",
+        "url": "https://www.google.com",
+        "isRequired": false
+      }
+    ],
+    "additionalAssets": [
+      {
+        "name": "Asset 1",
+        "description": "Asset 1",
+        "isRequired": true
+      },
+      {
+        "name": "Asset 2",
+        "description": "Asset 2",
+        "isRequired": false
+      },
+      {
+        "name": "Asset 3",
+        "description": "Asset 3",
+        "isRequired": false
+      },
+      {
+        "name": "Asset 4",
+        "description": "Asset 4",
+        "isRequired": false
+      },
+      {
+        "name": "Asset 5",
+        "description": "Asset 5",
+        "isRequired": false
+      }
+    ],
+    "createdAt": "2025-04-21T06:31:17.747Z",
+    "updatedAt": "2025-06-15T09:16:27.239Z"
+  },
+  {
+    "id": "template-1745217740922",
+    "name": "Tech Startup Template (Copy)",
+    "description": "Optimized for tech startups and SaaS companies",
+    "createdAt": "2025-04-21T06:42:20.993Z",
+    "updatedAt": "2025-04-21T06:43:27.670Z",
+    "isDefault": false,
+    "packageId": "DFP120",
+    "packageType": "DFP120",
+    "status": "in-progress",
+    "progress": 60,
+    "startDate": "2025-02-15T00:00:00.000Z",
+    "dueDate": "2025-05-30T00:00:00.000Z",
+    "totalTasks": 11,
+    "completedTasks": 9,
+    "pendingTasks": -1,
+    "inProgressTasks": 3,
+    "hasNewComments": false,
+    "hasIssues": true,
+    "teamMembers": [
+      {
+        "id": "tm4",
+        "name": "David Wilson",
+        "email": "david@example.com",
+        "avatar": "/placeholder.svg?height=60&width=60",
+        "role": "Project Manager",
+        "team": "management",
+        "assignedDate": "2025-02-20",
+        "assignedTasks": 4,
+        "completedTasks": 3,
+        "lateTasks": 0
+      },
+      {
+        "id": "tm5",
+        "name": "Emma Brown",
+        "email": "emma@example.com",
+        "avatar": "/placeholder.svg?height=60&width=60",
+        "role": "Content Strategist",
+        "team": "content",
+        "assignedDate": "2025-02-20",
+        "assignedTasks": 6,
+        "completedTasks": 4,
+        "lateTasks": 1
+      }
+    ],
+    "socialSites": [
+      {
+        "name": "Facebook",
+        "url": "https://facebook.com",
+        "isRequired": true
+      },
+      {
+        "name": "LinkedIn",
+        "url": "https://linkedin.com",
+        "isRequired": true
+      },
+      {
+        "name": "GitHub",
+        "url": "https://github.com",
+        "isRequired": true
+      },
+      {
+        "name": "ProductHunt",
+        "url": "https://producthunt.com",
+        "isRequired": false
+      },
+      {
+        "name": "ins",
+        "url": "https://producthunt.com",
+        "isRequired": false
+      }
+    ],
+    "web2Sites": [
+      {
+        "name": "Medium",
+        "url": "https://medium.com",
+        "isRequired": true
+      },
+      {
+        "name": "Dev.to",
+        "url": "https://dev.to",
+        "isRequired": true
+      },
+      {
+        "name": "Hacker News",
+        "url": "https://news.ycombinator.com",
+        "isRequired": false
+      }
+    ],
+    "additionalAssets": [
+      {
+        "name": "Product Screenshots",
+        "description": "High-resolution product screenshots",
+        "isRequired": true
+      },
+      {
+        "name": "Demo Videos",
+        "description": "Product demo videos",
+        "isRequired": true
+      },
+      {
+        "name": "Technical Documentation",
+        "description": "API documentation",
+        "isRequired": false
+      }
+    ]
+  },
+  {
+    "id": "template-1749979064328",
+    "name": "New Template Demo (Copy) (Copy)",
+    "description": "Demo Template.",
+    "packageId": "DFP90",
+    "packageType": "DFP90",
+    "isDefault": false,
+    "status": "pending",
+    "progress": 0,
+    "startDate": "2025-04-21T06:28:35.688Z",
+    "dueDate": "2025-07-20T06:28:35.688Z",
+    "totalTasks": 21,
+    "completedTasks": 0,
+    "pendingTasks": 21,
+    "inProgressTasks": 0,
+    "hasNewComments": false,
+    "hasIssues": false,
+    "teamMembers": [],
+    "socialSites": [
+      {
+        "name": "Social Site 1",
+        "url": "https://www.facebook.com",
+        "isRequired": true
+      },
+      {
+        "name": "Social Site 2",
+        "url": "https://www.facebook.com",
+        "isRequired": true
+      },
+      {
+        "name": "Social Site 3",
+        "url": "https://www.facebook.com",
+        "isRequired": true
+      },
+      {
+        "name": " Social Site 4",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 5",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 6",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 7",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 8",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 9",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 10",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "Social Site 11",
+        "url": "https://www.facebook.com",
+        "isRequired": false
+      }
+    ],
+    "web2Sites": [
+      {
+        "name": "Web 2.0 Site 1",
+        "url": "https://www.google.com",
+        "isRequired": true
+      },
+      {
+        "name": "Web 2.0 Site 2",
+        "url": "https://www.google.com",
+        "isRequired": true
+      },
+      {
+        "name": "Web 2.0 Site 3",
+        "url": "https://www.google.com",
+        "isRequired": false
+      },
+      {
+        "name": " Web 2.0 Site 4",
+        "url": "https://www.google.com",
+        "isRequired": false
+      },
+      {
+        "name": "Web 2.0 Site 5",
+        "url": "https://www.google.com",
+        "isRequired": false
+      }
+    ],
+    "additionalAssets": [
+      {
+        "name": "Asset 1",
+        "description": "Asset 1",
+        "isRequired": true
+      },
+      {
+        "name": "Asset 2",
+        "description": "Asset 2",
+        "isRequired": false
+      },
+      {
+        "name": "Asset 3",
+        "description": "Asset 3",
+        "isRequired": false
+      },
+      {
+        "name": "Asset 4",
+        "description": "Asset 4",
+        "isRequired": false
+      },
+      {
+        "name": "Asset 5",
+        "description": "Asset 5",
+        "isRequired": false
+      }
+    ],
+    "createdAt": "2025-06-15T09:17:44.401Z",
+    "updatedAt": "2025-06-15T09:17:44.401Z"
+  },
+  {
+    "id": "template-1749980119696",
+    "name": "Standard Marketing Template",
+    "description": "it is premium",
+    "packageId": "DFP90",
+    "packageType": "DFP90",
+    "isDefault": false,
+    "status": "pending",
+    "progress": 0,
+    "startDate": "2025-06-15T09:35:19.696Z",
+    "dueDate": "2025-09-13T09:35:19.696Z",
+    "totalTasks": 11,
+    "completedTasks": 0,
+    "pendingTasks": 11,
+    "inProgressTasks": 0,
+    "hasNewComments": false,
+    "hasIssues": false,
+    "teamMembers": [],
+    "socialSites": [
+      {
+        "name": "facebook",
+        "url": "https://facebook.com",
+        "isRequired": true
+      },
+      {
+        "name": "twitter",
+        "url": "https://facebook.com",
+        "isRequired": true
+      },
+      {
+        "name": "emo",
+        "url": "https://facebook.com",
+        "isRequired": true
+      },
+      {
+        "name": "instagram",
+        "url": "https://facebook.com",
+        "isRequired": false
+      },
+      {
+        "name": "yoyo",
+        "url": "https://facebook.com",
+        "isRequired": false
+      }
+    ],
+    "web2Sites": [
+      {
+        "name": "medium",
+        "url": "https://example.com",
+        "isRequired": true
+      },
+      {
+        "name": "high",
+        "url": "https://example.com",
+        "isRequired": true
+      },
+      {
+        "name": "low",
+        "url": "https://example.com",
+        "isRequired": false
+      }
+    ],
+    "additionalAssets": [
+      {
+        "name": "logo",
+        "description": "fas",
+        "isRequired": true
+      },
+      {
+        "name": "banner",
+        "description": "banner",
+        "isRequired": false
+      },
+      {
+        "name": "logo design",
+        "description": "aksdf",
+        "isRequired": false
+      }
+    ],
+    "createdAt": "2025-06-15T09:35:19.787Z",
+    "updatedAt": "2025-06-15T09:35:19.787Z"
+  }
+]

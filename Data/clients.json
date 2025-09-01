@@ -1,0 +1,882 @@
+[
+  {
+    "id": "client1",
+    "name": "John Smith",
+    "company": "Birds Of Eden Corporation",
+    "designation": "Marketing Director",
+    "avatar": "/placeholder.svg?height=80&width=80&text=JS",
+    "progress": 25,
+    "status": "pending",
+    "package": "DFP90",
+    "startDate": "2025-03-01",
+    "dueDate": "2025-06-15",
+    "totalTasks": 18,
+    "completedTasks": 4,
+    "pendingTasks": 10,
+    "inProgressTasks": 4,
+    "hasNewComments": true,
+    "hasIssues": false,
+    "teamMembers": [
+      {
+        "id": "1753080420765",
+        "name": "Julfigar Zisan",
+        "email": "zisan@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=JZ",
+        "role": "Asset Creator",
+        "team": "assets",
+        "assignedDate": "2025-07-21",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      },
+      {
+        "id": "1753080790176",
+        "name": "Jewel Rana",
+        "email": "jewel@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=JR",
+        "role": "Social Media Specialist",
+        "team": "social",
+        "assignedDate": "2025-07-21",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      },
+      {
+        "id": "1753081113617",
+        "name": "Jewel Rana",
+        "email": "jewel@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=JR",
+        "role": "Social Media Specialist",
+        "team": "social",
+        "assignedDate": "2025-07-21",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      },
+      {
+        "id": "1753081226024",
+        "name": "Estiak Ahmed",
+        "email": "estiak@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=EA",
+        "role": "Social Media Specialist",
+        "team": "social",
+        "assignedDate": "2025-07-21",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      },
+      {
+        "id": "1753097556736",
+        "name": "Faysal Ahmed",
+        "email": "faysal@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=FA",
+        "role": "Asset Creator",
+        "team": "assets",
+        "assignedDate": "2025-07-21",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      }
+    ],
+    "tasks": {
+      "pending": [],
+      "inProgress": [
+        {
+          "id": "task6",
+          "name": "Schedule Twitter content",
+          "category": "social",
+          "priority": "high",
+          "dueDate": "2025-04-05",
+          "assignedTo": {
+            "id": "tm1",
+            "name": "Julfigar Zisan",
+            "avatar": "/placeholder.svg?height=40&width=40",
+            "role": "Asset Creator"
+          },
+          "status": "inProgress",
+          "comments": [],
+          "reports": [
+            {
+              "id": "r2",
+              "text": "We need to reschedule due to a conflict with another campaign.",
+              "author": "Diana Evans",
+              "date": "2025-04-03",
+              "avatar": "/placeholder.svg?height=30&width=30",
+              "severity": "high"
+            }
+          ]
+        },
+        {
+          "id": "task7",
+          "name": "Design new logo",
+          "category": "design",
+          "priority": "high",
+          "dueDate": "2025-04-25",
+          "assignedTo": {
+            "id": "tm3",
+            "name": "Estiak Ahmed",
+            "avatar": "/placeholder.svg?height=40&width=40",
+            "role": "Social Media Specialist"
+          },
+          "status": "inProgress",
+          "comments": [
+            {
+              "id": "c4",
+              "text": "I like the direction, but can we try a few more variations?",
+              "author": "John Smith",
+              "date": "2025-04-15",
+              "avatar": "/placeholder.svg?height=30&width=30"
+            }
+          ],
+          "reports": []
+        },
+        {
+          "id": "task1",
+          "name": "Create Facebook post",
+          "category": "social",
+          "priority": "medium",
+          "dueDate": "2025-04-10",
+          "assignedTo": {
+            "id": "tm1",
+            "name": "Julfigar Zisan",
+            "avatar": "/placeholder.svg?height=40&width=40",
+            "role": "Asset Creator"
+          },
+          "status": "inProgress",
+          "comments": [
+            {
+              "id": "c1",
+              "text": "Please make sure to include the new product images in this post.",
+              "author": "John Smith",
+              "date": "2025-04-02",
+              "avatar": "/placeholder.svg?height=30&width=30"
+            }
+          ],
+          "reports": []
+        },
+        {
+          "id": "task5",
+          "name": "Redesign website homepage",
+          "category": "design",
+          "priority": "high",
+          "dueDate": "2025-04-30",
+          "assignedTo": {
+            "id": "tm3",
+            "name": "Estiak Ahmed",
+            "avatar": "/placeholder.svg?height=40&width=40",
+            "role": "Social Media Specialist"
+          },
+          "status": "inProgress",
+          "comments": [
+            {
+              "id": "c2",
+              "text": "Can we use the new color palette that was approved last week?",
+              "author": "John Smith",
+              "date": "2025-04-08",
+              "avatar": "/placeholder.svg?height=30&width=30"
+            },
+            {
+              "id": "c3",
+              "text": "Please make sure the mobile version is responsive.",
+              "author": "Diana Evans",
+              "date": "2025-04-09",
+              "avatar": "/placeholder.svg?height=30&width=30"
+            }
+          ],
+          "reports": []
+        },
+        {
+          "id": "task4",
+          "name": "Create banner ads",
+          "category": "design",
+          "priority": "medium",
+          "dueDate": "2025-04-18",
+          "assignedTo": {
+            "id": "1753080420765",
+            "name": "Julfigar Zisan",
+            "avatar": "/placeholder.svg?height=60&width=60&text=JZ",
+            "role": "Asset Creator"
+          },
+          "status": "inProgress",
+          "comments": [
+            {
+              "id": "c6",
+              "text": "Please use the dimensions specified in the brief.",
+              "author": "John Smith",
+              "date": "2025-04-10",
+              "avatar": "/placeholder.svg?height=30&width=30"
+            }
+          ],
+          "reports": [
+            {
+              "id": "r3",
+              "text": "The deadline for this task might be too tight given our current workload.",
+              "author": "Diana Evans",
+              "date": "2025-04-11",
+              "avatar": "/placeholder.svg?height=30&width=30",
+              "severity": "low"
+            }
+          ]
+        },
+        {
+          "id": "task-1753101655029",
+          "name": "Demo Task 1",
+          "category": "design",
+          "priority": "medium",
+          "dueDate": "2025-07-25",
+          "assignedTo": {
+            "id": "1753080790176",
+            "name": "Jewel Rana",
+            "avatar": "/placeholder.svg?height=60&width=60&text=JR",
+            "role": "Social Media Specialist"
+          },
+          "status": "inProgress",
+          "comments": [],
+          "reports": []
+        }
+      ],
+      "completed": [
+        {
+          "id": "task8",
+          "name": "Create newsletter",
+          "category": "content",
+          "priority": "medium",
+          "dueDate": "2025-04-01",
+          "assignedTo": {
+            "id": "tm2",
+            "name": "Jewel Rana",
+            "avatar": "/placeholder.svg?height=40&width=40",
+            "role": "Social Media Specialist"
+          },
+          "status": "completed",
+          "comments": [
+            {
+              "id": "c5",
+              "text": "Great job on this newsletter! The open rate was excellent.",
+              "author": "John Smith",
+              "date": "2025-04-02",
+              "avatar": "/placeholder.svg?height=30&width=30"
+            }
+          ],
+          "reports": []
+        },
+        {
+          "id": "task2",
+          "name": "Design Instagram story",
+          "category": "social",
+          "priority": "medium",
+          "dueDate": "2025-04-12",
+          "assignedTo": {
+            "id": "1753081226024",
+            "name": "Estiak Ahmed",
+            "avatar": "/placeholder.svg?height=60&width=60&text=EA",
+            "role": "Social Media Specialist"
+          },
+          "status": "completed",
+          "comments": [],
+          "reports": []
+        },
+        {
+          "id": "task3",
+          "name": "Write blog article",
+          "category": "content",
+          "priority": "high",
+          "dueDate": "2025-04-20",
+          "assignedTo": {
+            "id": "tm2",
+            "name": "Jewel Rana",
+            "avatar": "/placeholder.svg?height=40&width=40",
+            "role": "Social Media Specialist"
+          },
+          "status": "completed",
+          "comments": [],
+          "reports": [
+            {
+              "id": "r1",
+              "text": "The topic needs to be revised as it overlaps with a competitor's recent post.",
+              "author": "Diana Evans",
+              "date": "2025-04-05",
+              "avatar": "/placeholder.svg?height=30&width=30",
+              "severity": "medium"
+            }
+          ]
+        },
+        {
+          "id": "task-1753173648057",
+          "name": "Demo Task Zisan",
+          "category": "social",
+          "priority": "medium",
+          "dueDate": "2025-07-25",
+          "assignedTo": {
+            "id": "1753080420765",
+            "name": "Julfigar Zisan",
+            "avatar": "/placeholder.svg?height=60&width=60&text=JZ",
+            "role": "Asset Creator"
+          },
+          "status": "completed",
+          "comments": [],
+          "reports": []
+        }
+      ],
+      "unassigned": [
+        {
+          "id": "task-1753188099954",
+          "name": "Rama Marquez",
+          "category": "social",
+          "priority": "medium",
+          "dueDate": "2007-06-07",
+          "assignedTo": null,
+          "status": "unassigned",
+          "comments": [],
+          "reports": []
+        }
+      ]
+    },
+    "profilePicture": {},
+    "birthDate": "1998-06-11T18:00:00.000Z",
+    "clientType": "individual",
+    "companyName": "",
+    "companyAddress": "",
+    "companyWebsite": "",
+    "hasWebsite": false,
+    "websiteUrl": "",
+    "desiredDomain": "estiak-ahmed-portfolio.vercel.app",
+    "biography": "I am a passionate professional with over 10 years of experience in my field. My journey began with a deep curiosity about how things work and evolved into a career dedicated to innovation and excellence. I believe in the power of collaboration and continuous learning.\n\nThroughout my career, I've had the opportunity to work with amazing teams on challenging projects that have pushed the boundaries of what's possible. I'm particularly proud of my contributions to sustainability initiatives and community development programs.\n\nWhen I'm not working, you can find me exploring nature trails, experimenting with new recipes, or mentoring young professionals. I'm excited about the future and the endless possibilities it holds for growth and positive impact.",
+    "socialMedia": {
+      "facebook": "https://web.facebook.com/estiakahmed.tusher/",
+      "twitter": "https://twitter.com/EstiakA74501023",
+      "instagram": "https://www.instagram.com/estiakahmmed",
+      "linkedin": "https://www.linkedin.com/in/estiak-ahmed/",
+      "youtube": "https://www.youtube.com/channel/UCBMwsY__6LptGr7rOPOq_1g",
+      "tiktok": "",
+      "pinterest": "https://www.pinterest.com/estiakahmed98/",
+      "reddit": "https://www.reddit.com/user/estiak-ahmed",
+      "snapchat": ""
+    },
+    "selectedArticles": [
+      1,
+      3,
+      5,
+      6,
+      9
+    ],
+    "driveImages": [
+      {
+        "id": "1IWdPytFZMjQaxoT3PMxtX-JNT3vRONdI",
+        "name": "IMG_6551.jpg",
+        "url": "https://drive.google.com/uc?id=1IWdPytFZMjQaxoT3PMxtX-JNT3vRONdI",
+        "originalUrl": "https://drive.google.com/uc?id=1IWdPytFZMjQaxoT3PMxtX-JNT3vRONdI&export=download"
+      },
+      {
+        "id": "1yxK_Ss5RkO6Rw5yWD7VQUUViyV-1UMlm",
+        "name": "IMG_6540.jpg",
+        "url": "https://drive.google.com/uc?id=1yxK_Ss5RkO6Rw5yWD7VQUUViyV-1UMlm",
+        "originalUrl": "https://drive.google.com/uc?id=1yxK_Ss5RkO6Rw5yWD7VQUUViyV-1UMlm&export=download"
+      },
+      {
+        "id": "1FvFBB49qPXy9VCCKT3q5XiHYMXV9leql",
+        "name": "IMG_6554.jpg",
+        "url": "https://drive.google.com/uc?id=1FvFBB49qPXy9VCCKT3q5XiHYMXV9leql",
+        "originalUrl": "https://drive.google.com/uc?id=1FvFBB49qPXy9VCCKT3q5XiHYMXV9leql&export=download"
+      },
+      {
+        "id": "12H2ArRdUPV7lrIbJsZ7IoHQa4WjHk0Py",
+        "name": "IMG_6547.jpg",
+        "url": "https://drive.google.com/uc?id=12H2ArRdUPV7lrIbJsZ7IoHQa4WjHk0Py",
+        "originalUrl": "https://drive.google.com/uc?id=12H2ArRdUPV7lrIbJsZ7IoHQa4WjHk0Py&export=download"
+      }
+    ],
+    "driveLink": "https://drive.google.com/drive/folders/1-MrUc0PHVzBSru3OG-k1Aw-V2SI_Ogv5",
+    "completedAt": "2025-07-22T09:41:42.527Z",
+    "createdAt": "2025-07-22T09:41:42.685Z",
+    "updatedAt": "2025-07-22T09:41:42.685Z"
+  },
+  {
+    "id": "client2",
+    "name": "Sarah Johnson",
+    "company": "TechStart Inc.",
+    "designation": "CEO",
+    "avatar": "/placeholder.svg?height=80&width=80&text=SJ",
+    "progress": 60,
+    "status": "in-progress",
+    "package": "DFP120",
+    "startDate": "2025-02-15",
+    "dueDate": "2025-05-30",
+    "totalTasks": 15,
+    "completedTasks": 9,
+    "pendingTasks": 3,
+    "inProgressTasks": 3,
+    "hasNewComments": false,
+    "hasIssues": true,
+    "teamMembers": [
+      {
+        "id": "1753080790176",
+        "name": "Jewel Rana",
+        "email": "jewel@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=JR",
+        "role": "Social Media Specialist",
+        "team": "social",
+        "assignedDate": "2025-07-21",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      },
+      {
+        "id": "1753081113617",
+        "name": "Jewel Rana",
+        "email": "jewel@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=JR",
+        "role": "Social Media Specialist",
+        "team": "social",
+        "assignedDate": "2025-07-21",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      },
+      {
+        "id": "1753081226024",
+        "name": "Estiak Ahmed",
+        "email": "estiak@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=EA",
+        "role": "Social Media Specialist",
+        "team": "social",
+        "assignedDate": "2025-07-21",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      },
+      {
+        "id": "1753097556736",
+        "name": "Faysal Ahmed",
+        "email": "faysal@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=FA",
+        "role": "Asset Creator",
+        "team": "assets",
+        "assignedDate": "2025-07-21",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      },
+      {
+        "id": "1753080420765",
+        "name": "Julfigar Zisan",
+        "email": "zisan@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=JZ",
+        "role": "Asset Creator",
+        "team": "assets",
+        "assignedDate": "2025-07-21",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      }
+    ],
+    "tasks": {
+      "pending": [],
+      "inProgress": [],
+      "completed": [],
+      "unassigned": [
+        {
+          "id": "task-1753101308773",
+          "name": "Demo 1",
+          "category": "content",
+          "priority": "medium",
+          "dueDate": "2025-07-24",
+          "assignedTo": null,
+          "status": "unassigned",
+          "comments": [],
+          "reports": []
+        }
+      ]
+    },
+    "profilePicture": {},
+    "birthDate": "2009-06-29T17:00:00.000Z",
+    "clientType": "individual",
+    "companyName": "",
+    "companyAddress": "",
+    "companyWebsite": "",
+    "hasWebsite": false,
+    "websiteUrl": "",
+    "desiredDomain": "https://github.com/faysalmohammed2020/bd-weather-clone",
+    "biography": "I am a passionate professional with over 10 years of experience in my field. My journey began with a deep curiosity about how things work and evolved into a career dedicated to innovation and excellence. I believe in the power of collaboration and continuous learning.\n\nThroughout my career, I've had the opportunity to work with amazing teams on challenging projects that have pushed the boundaries of what's possible. I'm particularly proud of my contributions to sustainability initiatives and community development programs.\n\nWhen I'm not working, you can find me exploring nature trails, experimenting with new recipes, or mentoring young professionals. I'm excited about the future and the endless possibilities it holds for growth and positive impact.",
+    "socialMedia": {
+      "facebook": "https://web.facebook.com/estiakahmed.tusher/",
+      "twitter": "https://twitter.com/EstiakA74501023",
+      "instagram": "https://www.instagram.com/estiakahmmed",
+      "linkedin": "https://www.linkedin.com/in/estiak-ahmed/",
+      "youtube": "https://www.youtube.com/channel/UCBMwsY__6LptGr7rOPOq_1g",
+      "tiktok": "",
+      "pinterest": "https://www.pinterest.com/estiakahmed98/",
+      "reddit": "https://www.reddit.com/user/estiak-ahmed",
+      "snapchat": ""
+    },
+    "selectedArticles": [
+      2,
+      4,
+      6,
+      8
+    ],
+    "driveImages": [
+      {
+        "id": "1IWdPytFZMjQaxoT3PMxtX-JNT3vRONdI",
+        "name": "IMG_6551.jpg",
+        "url": "https://drive.google.com/uc?id=1IWdPytFZMjQaxoT3PMxtX-JNT3vRONdI",
+        "originalUrl": "https://drive.google.com/uc?id=1IWdPytFZMjQaxoT3PMxtX-JNT3vRONdI&export=download"
+      },
+      {
+        "id": "1yxK_Ss5RkO6Rw5yWD7VQUUViyV-1UMlm",
+        "name": "IMG_6540.jpg",
+        "url": "https://drive.google.com/uc?id=1yxK_Ss5RkO6Rw5yWD7VQUUViyV-1UMlm",
+        "originalUrl": "https://drive.google.com/uc?id=1yxK_Ss5RkO6Rw5yWD7VQUUViyV-1UMlm&export=download"
+      },
+      {
+        "id": "1FvFBB49qPXy9VCCKT3q5XiHYMXV9leql",
+        "name": "IMG_6554.jpg",
+        "url": "https://drive.google.com/uc?id=1FvFBB49qPXy9VCCKT3q5XiHYMXV9leql",
+        "originalUrl": "https://drive.google.com/uc?id=1FvFBB49qPXy9VCCKT3q5XiHYMXV9leql&export=download"
+      },
+      {
+        "id": "12H2ArRdUPV7lrIbJsZ7IoHQa4WjHk0Py",
+        "name": "IMG_6547.jpg",
+        "url": "https://drive.google.com/uc?id=12H2ArRdUPV7lrIbJsZ7IoHQa4WjHk0Py",
+        "originalUrl": "https://drive.google.com/uc?id=12H2ArRdUPV7lrIbJsZ7IoHQa4WjHk0Py&export=download"
+      }
+    ],
+    "driveLink": "https://drive.google.com/drive/folders/1-MrUc0PHVzBSru3OG-k1Aw-V2SI_Ogv5",
+    "completedAt": "2025-07-22T09:45:34.888Z",
+    "createdAt": "2025-07-22T09:45:35.047Z",
+    "updatedAt": "2025-07-22T09:45:35.047Z"
+  },
+  {
+    "id": "3b79a775-b607-45c7-a943-5d85c868b70c",
+    "name": "Jewel Rana",
+    "profilePicture": {},
+    "birthDate": "2025-06-30T18:00:00.000Z",
+    "clientType": "individual",
+    "companyName": "",
+    "companyAddress": "",
+    "companyWebsite": "",
+    "hasWebsite": false,
+    "websiteUrl": "",
+    "desiredDomain": "",
+    "biography": "I am a passionate professional with over 10 years of experience in my field. My journey began with a deep curiosity about how things work and evolved into a career dedicated to innovation and excellence. I believe in the power of collaboration and continuous learning.\n\nThroughout my career, I've had the opportunity to work with amazing teams on challenging projects that have pushed the boundaries of what's possible. I'm particularly proud of my contributions to sustainability initiatives and community development programs.\n\nWhen I'm not working, you can find me exploring nature trails, experimenting with new recipes, or mentoring young professionals. I'm excited about the future and the endless possibilities it holds for growth and positive impact.",
+    "socialMedia": {
+      "facebook": "www.facebook.com/jewelranashepon",
+      "twitter": "www.facebook.com/jewelranashepon",
+      "instagram": "www.facebook.com/jewelranashepon",
+      "linkedin": "www.facebook.com/jewelranashepon",
+      "youtube": "",
+      "tiktok": "",
+      "pinterest": "",
+      "reddit": "",
+      "snapchat": ""
+    },
+    "selectedArticles": [
+      1,
+      2,
+      3
+    ],
+    "driveImages": [],
+    "location": "Bangladesh ",
+    "completedAt": "2025-07-22T11:35:23.320Z",
+    "teamMembers": [
+      {
+        "id": "1753080420765",
+        "name": "Julfigar Zisan",
+        "email": "zisan@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=JZ",
+        "role": "Asset Creator",
+        "team": "assets",
+        "assignedDate": "2025-07-22",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      },
+      {
+        "id": "1753080790176",
+        "name": "Jewel Rana",
+        "email": "jewel@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=JR",
+        "role": "Social Media Specialist",
+        "team": "social",
+        "assignedDate": "2025-07-22",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      },
+      {
+        "id": "1753081113617",
+        "name": "Jewel Rana",
+        "email": "jewel@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=JR",
+        "role": "Social Media Specialist",
+        "team": "social",
+        "assignedDate": "2025-07-22",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      },
+      {
+        "id": "1753081226024",
+        "name": "Estiak Ahmed",
+        "email": "estiak@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=EA",
+        "role": "Social Media Specialist",
+        "team": "social",
+        "assignedDate": "2025-07-22",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      },
+      {
+        "id": "1753097556736",
+        "name": "Faysal Ahmed",
+        "email": "faysal@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=FA",
+        "role": "Asset Creator",
+        "team": "assets",
+        "assignedDate": "2025-07-22",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      }
+    ],
+    "tasks": {
+      "pending": [
+        {
+          "id": "task-1753186617618",
+          "name": "Task 1",
+          "category": "social",
+          "priority": "medium",
+          "dueDate": "2025-07-25",
+          "assignedTo": {
+            "id": "1753080790176",
+            "name": "Jewel Rana",
+            "avatar": "/placeholder.svg?height=60&width=60&text=JR",
+            "role": "Social Media Specialist"
+          },
+          "status": "pending",
+          "comments": [],
+          "reports": []
+        }
+      ],
+      "inProgress": [],
+      "completed": [],
+      "unassigned": [
+        {
+          "id": "task-1753186617618",
+          "name": "Task 1",
+          "category": "social",
+          "priority": "medium",
+          "dueDate": "2025-07-25",
+          "assignedTo": null,
+          "status": "unassigned",
+          "comments": [],
+          "reports": []
+        }
+      ]
+    },
+    "createdAt": "2025-07-22T11:35:23.575Z",
+    "updatedAt": "2025-07-22T11:35:23.575Z"
+  },
+  {
+    "id": "67698e80-8eda-4cdd-ab3c-30fa9e9a0976",
+    "name": "Zisan",
+    "profilePicture": {},
+    "birthDate": "",
+    "clientType": "individual",
+    "companyName": "",
+    "companyAddress": "",
+    "companyWebsite": "",
+    "hasWebsite": false,
+    "websiteUrl": "",
+    "desiredDomain": "",
+    "biography": "asFgdazga",
+    "socialMedia": {
+      "facebook": "www.facebook.com/jewelranashepon",
+      "twitter": "www.facebook.com/jewelranashepon",
+      "instagram": "",
+      "linkedin": "",
+      "youtube": "",
+      "tiktok": "",
+      "pinterest": "",
+      "reddit": "",
+      "snapchat": ""
+    },
+    "selectedArticles": [
+      7,
+      6,
+      5,
+      4
+    ],
+    "driveImages": [],
+    "completedAt": "2025-07-22T11:37:46.440Z",
+    "teamMembers": [
+      {
+        "id": "1753080420765",
+        "name": "Julfigar Zisan",
+        "email": "zisan@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=JZ",
+        "role": "Asset Creator",
+        "team": "assets",
+        "assignedDate": "2025-07-22",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      },
+      {
+        "id": "1753080790176",
+        "name": "Jewel Rana",
+        "email": "jewel@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=JR",
+        "role": "Social Media Specialist",
+        "team": "social",
+        "assignedDate": "2025-07-22",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      },
+      {
+        "id": "1753081113617",
+        "name": "Jewel Rana",
+        "email": "jewel@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=JR",
+        "role": "Social Media Specialist",
+        "team": "social",
+        "assignedDate": "2025-07-22",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      },
+      {
+        "id": "1753081226024",
+        "name": "Estiak Ahmed",
+        "email": "estiak@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=EA",
+        "role": "Social Media Specialist",
+        "team": "social",
+        "assignedDate": "2025-07-22",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      },
+      {
+        "id": "1753097556736",
+        "name": "Faysal Ahmed",
+        "email": "faysal@gmail.com",
+        "avatar": "/placeholder.svg?height=60&width=60&text=FA",
+        "role": "Asset Creator",
+        "team": "assets",
+        "assignedDate": "2025-07-22",
+        "assignedTasks": 0,
+        "completedTasks": 0,
+        "lateTasks": 0
+      }
+    ],
+    "tasks": {
+      "pending": [],
+      "inProgress": [],
+      "completed": [
+        {
+          "id": "task-1753184340664",
+          "name": "Demo Task 1",
+          "category": "social",
+          "priority": "medium",
+          "dueDate": "2025-07-25",
+          "assignedTo": {
+            "id": "1753080420765",
+            "name": "Julfigar Zisan",
+            "avatar": "/placeholder.svg?height=60&width=60&text=JZ",
+            "role": "Asset Creator"
+          },
+          "status": "completed",
+          "comments": [],
+          "reports": []
+        },
+        {
+          "id": "task-1753184372600",
+          "name": "Task 2",
+          "category": "social",
+          "priority": "medium",
+          "dueDate": "2025-07-24",
+          "assignedTo": {
+            "id": "1753080420765",
+            "name": "Julfigar Zisan",
+            "avatar": "/placeholder.svg?height=60&width=60&text=JZ",
+            "role": "Asset Creator"
+          },
+          "status": "completed",
+          "comments": [],
+          "reports": []
+        }
+      ],
+      "unassigned": [
+        {
+          "id": "task-1753184340664",
+          "name": "Demo Task 1",
+          "category": "social",
+          "priority": "medium",
+          "dueDate": "2025-07-25",
+          "assignedTo": null,
+          "status": "unassigned",
+          "comments": [],
+          "reports": []
+        }
+      ]
+    },
+    "createdAt": "2025-07-22T11:37:46.535Z",
+    "updatedAt": "2025-07-22T11:37:46.535Z"
+  },
+  {
+    "id": "2ee46b4a-583e-4f11-b61c-f231f0753b14",
+    "name": "Md. Zulfiker Hossain Zisan",
+    "profilePicture": {},
+    "birthDate": "2025-07-20T18:00:00.000Z",
+    "clientType": "individual",
+    "companyName": "",
+    "companyAddress": "",
+    "companyWebsite": "",
+    "hasWebsite": false,
+    "websiteUrl": "",
+    "desiredDomain": "https://chatgpt.com/c/687f3af3-ee20-8328-a209-fd433a942cfc",
+    "biography": "I am a passionate professional with over 10 years of experience in my field. My journey began with a deep curiosity about how things work and evolved into a career dedicated to innovation and excellence. I believe in the power of collaboration and continuous learning.\n\nThroughout my career, I've had the opportunity to work with amazing teams on challenging projects that have pushed the boundaries of what's possible. I'm particularly proud of my contributions to sustainability initiatives and community development programs.\n\nWhen I'm not working, you can find me exploring nature trails, experimenting with new recipes, or mentoring young professionals. I'm excited about the future and the endless possibilities it holds for growth and positive impact.",
+    "socialMedia": {
+      "facebook": "https://github.com/",
+      "twitter": "https://github.com/",
+      "instagram": "https://github.com/",
+      "linkedin": "https://github.com/",
+      "youtube": "https://github.com/",
+      "tiktok": "https://github.com/",
+      "pinterest": "https://github.com/",
+      "reddit": "https://github.com/",
+      "snapchat": ""
+    },
+    "selectedArticles": [
+      5,
+      6
+    ],
+    "driveImages": [],
+    "location": "ECB, Dhaka Bangladesh",
+    "completedAt": "2025-07-22T12:38:27.291Z",
+    "teamMembers": [],
+    "tasks": {
+      "pending": [],
+      "inProgress": [],
+      "completed": [],
+      "unassigned": [
+        {
+          "id": "task-1753187999366",
+          "name": "zisan",
+          "category": "social",
+          "priority": "medium",
+          "dueDate": "2025-07-23",
+          "assignedTo": null,
+          "status": "unassigned",
+          "comments": [],
+          "reports": []
+        }
+      ]
+    },
+    "createdAt": "2025-07-22T12:38:27.976Z",
+    "updatedAt": "2025-07-22T12:38:27.976Z"
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "id": "1753080420765",
+    "createdAt": "2025-07-21T06:47:00.765Z",
+    "firstName": "Julfigar",
+    "lastName": "Zisan",
+    "email": "zisan@gmail.com",
+    "phone": "0123456789",
+    "category": "Asset Team",
+    "address": "Nitol Niloy Tower (Level 8), Nikunja C/A, Airport Road, Dhaka-1229",
+    "bio": "Good Boy, zisan.",
+    "status": "active"
+  },
+  {
+    "id": "1753080790176",
+    "createdAt": "2025-07-21T06:53:10.176Z",
+    "firstName": "Jewel",
+    "lastName": "Rana",
+    "email": "jewel@gmail.com",
+    "phone": "01773097310",
+    "category": "Social Team",
+    "address": "26/25",
+    "bio": "gggggggggggggggggggg",
+    "status": "active"
+  },
+  {
+    "id": "1753081226024",
+    "createdAt": "2025-07-21T07:00:26.024Z",
+    "firstName": "Estiak",
+    "lastName": "Ahmed",
+    "email": "estiak@gmail.com",
+    "phone": "0123456789",
+    "category": "Social Team",
+    "address": "Nitol Niloy Tower (Level 8), Nikunja C/A, Airport Road, Dhaka-1229",
+    "bio": "gossbdfffffffffffffffffffffffff",
+    "status": "active"
+  },
+  {
+    "id": "1753097556736",
+    "createdAt": "2025-07-21T11:32:36.736Z",
+    "firstName": "Faysal",
+    "lastName": "Ahmed",
+    "email": "faysal@gmail.com",
+    "phone": "0123456789",
+    "category": "Asset Team",
+    "address": "Nitol Niloy Tower (Level 8), Nikunja C/A, Airport Road, Dhaka-1229",
+    "bio": "Faysal is helper.",
+    "status": "active"
+  },
+  {
+    "id": "1753187565890",
+    "createdAt": "2025-07-22T12:32:45.890Z",
+    "firstName": "Ahmed ",
+    "lastName": "Khan",
+    "email": "zakir123@gmail.com",
+    "phone": "01773097310",
+    "category": "Asset Team",
+    "address": "Nitol Niloy Tower (Level 8), Nikunja C/A, Airport Road, Dhaka-1229",
+    "bio": "dafsd",
+    "status": "active"
+  },
+  {
+    "id": "1753598442282",
+    "createdAt": "2025-07-27T06:40:42.282Z",
+    "firstName": "Estiak Ahmed",
+    "lastName": "Talukder",
+    "email": "estiakahmed898@gmail.com",
+    "phone": "+8801720151612",
+    "category": "Asset Team",
+    "address": "Uttar Badda, GM Bari",
+    "bio": "eerrrrrrrrrrrrrrrest",
+    "status": "active"
+  }
+]

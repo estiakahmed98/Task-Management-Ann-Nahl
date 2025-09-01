@@ -1,0 +1,86 @@
+[
+  {
+    "id": "assignment1",
+    "templateId": "template1",
+    "clientId": "client1",
+    "assignedAt": "2025-03-10T00:00:00.000Z",
+    "status": "active"
+  },
+  {
+    "id": "assignment2",
+    "templateId": "template1",
+    "clientId": "client5",
+    "assignedAt": "2025-03-12T00:00:00.000Z",
+    "status": "active"
+  },
+  {
+    "id": "assignment3",
+    "templateId": "template2",
+    "clientId": "client2",
+    "assignedAt": "2025-02-20T00:00:00.000Z",
+    "status": "active"
+  },
+  {
+    "id": "assignment4",
+    "templateId": "template3",
+    "clientId": "client3",
+    "assignedAt": "2025-01-15T00:00:00.000Z",
+    "status": "completed"
+  },
+  {
+    "id": "assignment-1745216633204",
+    "templateId": "template1",
+    "clientId": "client7",
+    "assignedAt": "2025-04-21T06:23:53.204Z",
+    "status": "active"
+  },
+  {
+    "id": "assignment-1745216948724",
+    "templateId": "template-1745216915688",
+    "clientId": "client2",
+    "assignedAt": "2025-04-21T06:29:08.724Z",
+    "status": "active"
+  },
+  {
+    "id": "assignment-1745216963475",
+    "templateId": "template-1745216915688",
+    "clientId": "client5",
+    "assignedAt": "2025-04-21T06:29:23.475Z",
+    "status": "active"
+  },
+  {
+    "id": "assignment-1745217120011",
+    "templateId": "template-1745217077675",
+    "clientId": "client1",
+    "assignedAt": "2025-04-21T06:32:00.011Z",
+    "status": "active"
+  },
+  {
+    "id": "assignment-1745217823705",
+    "templateId": "template-1745217740922",
+    "clientId": "client1",
+    "assignedAt": "2025-04-21T06:43:43.705Z",
+    "status": "active"
+  },
+  {
+    "id": "assignment-1748874218028",
+    "templateId": "template1",
+    "clientId": "client1",
+    "assignedAt": "2025-06-02T14:23:38.028Z",
+    "status": "active"
+  },
+  {
+    "id": "assignment-1749979726610",
+    "templateId": "template-1749979064328",
+    "clientId": "client1",
+    "assignedAt": "2025-06-15T09:28:46.610Z",
+    "status": "active"
+  },
+  {
+    "id": "assignment-1749980146025",
+    "templateId": "template-1749980119696",
+    "clientId": "client1",
+    "assignedAt": "2025-06-15T09:35:46.025Z",
+    "status": "active"
+  }
+]

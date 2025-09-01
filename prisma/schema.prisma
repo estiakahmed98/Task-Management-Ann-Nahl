@@ -1,0 +1,580 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========== ENUMS ==========
+enum UserStatus {
+  active
+  inactive
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum TaskStatus {
+  pending
+  in_progress
+  completed
+  overdue
+  cancelled
+  reassigned //✅ new
+  qc_approved
+}
+
+enum PerformanceRating {
+  Excellent
+  Good
+  Average
+  Poor        // ✅ new
+  Lazy
+}
+
+enum NotificationType {
+  frequency_missed
+  performance
+  general
+  chat_message   // ✅ নতুন
+  chat_mention   // ✅ নতুন
+}
+
+enum SiteAssetType {
+  social_site
+  web2_site
+  other_asset
+  graphics_design
+  content_studio
+  content_writing
+  backlinks
+  completed_com
+  youtube_video_optimization
+  monitoring
+  review_removal
+  summary_report
+}
+
+enum PeriodType {
+  daily
+  weekly
+  monthly
+}
+
+// ---------- enums ----------
+enum ConversationType {
+  dm
+  group
+  client
+  team
+  assignment
+  task
+  support
+}
+
+enum MessageType {
+  text
+  image
+  file
+  system
+}
+
+// ========== AUTHENTICATION MODELS ==========
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  emailVerified Boolean
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  passwordHash  String?
+
+  roleId String?
+  role   Role?   @relation(fields: [roleId], references: [id])
+
+  // Unified task system
+  firstName String?
+  lastName  String?
+  phone     String?
+  category  String?
+  address   String?
+  biography String?
+  status    UserStatus @default(active)
+
+  sessions                Session[]
+  accounts                Account[]
+  comments                Comment[]
+  reports                 Report[]
+  activityLogs            ActivityLog[]
+  notifications           Notification[]
+  assignedTasks           Task[]               @relation("AssignedTasks")
+  clientTeamMemberships   ClientTeamMember[]
+  templateTeamMemberships TemplateTeamMember[]
+
+  // ✅ Chat back-relations
+  createdConversations    Conversation[]       @relation("UserCreatedConversations")
+  conversationParticipants ConversationParticipant[]
+  sentMessages            ChatMessage[]        @relation("MessageSender")
+  messageReactions        MessageReaction[]
+
+  managedClients Client[] @relation("AccountManagerClients")
+
+  // 🆕 receipts back-relation
+  messageReceipts         MessageReceipt[]
+
+  lastSeenAt    DateTime?
+}
+
+
+model Session {
+  id             String   @id @default(cuid())
+  expiresAt      DateTime
+  token          String   @unique
+  createdAt      DateTime
+  updatedAt      DateTime
+  ipAddress      String?
+  userAgent      String?
+  impersonatedBy String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([impersonatedBy])
+}
+
+model Account {
+  id         String @id @default(cuid())
+  accountId  String
+  providerId String
+  userId     String
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+}
+
+// ========== ROLES & PERMISSIONS ==========
+model Role {
+  id              String           @id
+  name            String           @unique
+  description     String?
+  users           User[]
+  rolePermissions RolePermission[]
+}
+
+model Permission {
+  id              String           @id
+  name            String           @unique
+  description     String?
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+}
+
+// ========== TEAMS ==========
+model Team {
+  id                  String               @id
+  name                String               @unique
+  description         String?
+  clientTeamMembers   ClientTeamMember[]
+  templateTeamMembers TemplateTeamMember[]
+
+  conversations Conversation[] @relation("TeamConversations")
+}
+
+// ========== PACKAGES ==========
+model Package {
+  id          String     @id @default(cuid())
+  name        String?    @unique
+  description String?
+  clients     Client[]
+  templates   Template[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ========== TASK CATEGORIES ==========
+model TaskCategory {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String?
+  tasks       Task[]
+}
+
+// ========== CLIENTS ==========
+model Client {
+  id          String    @id @default(cuid())
+  name        String
+  birthdate   DateTime?
+  company     String?
+  designation String?
+  location    String?
+
+  email String?
+  phone String?
+  password String?
+  recoveryEmail String?
+
+  website  String?
+  website2 String?
+  website3 String?
+
+  biography      String?
+  imageDrivelink String?
+
+  companywebsite String?
+  companyaddress String?
+  avatar         String?
+  progress       Int?      @default(0)
+  status         String?
+  packageId      String?
+  package        Package?  @relation(fields: [packageId], references: [id])
+  startDate      DateTime?
+  dueDate        DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  socialMedias SocialMedia[]
+  assignments  Assignment[]
+  teamMembers  ClientTeamMember[]
+  tasks        Task[]
+
+  conversations Conversation[] @relation("ClientConversations")
+
+  amId           String?
+  accountManager User?   @relation("AccountManagerClients", fields: [amId], references: [id])
+  @@index([amId])
+}
+
+model SocialMedia {
+  id       String @id @default(cuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  platform  String
+  url       String?
+  username  String?
+  email     String?
+  phone     String?
+  password  String?
+  notes     String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+// ========== CLIENT TEAM MEMBERS ==========
+model ClientTeamMember {
+  clientId       String
+  agentId        String
+  role           String?
+  teamId         String?
+  assignedDate   DateTime?
+  assignedTasks  Int?      @default(0)
+  completedTasks Int?      @default(0)
+  lateTasks      Int?      @default(0)
+
+  client Client @relation(fields: [clientId], references: [id])
+  agent  User   @relation(fields: [agentId], references: [id])
+  team   Team?  @relation(fields: [teamId], references: [id])
+
+  @@id([clientId, agentId])
+}
+
+// ========== TEMPLATES ==========
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  packageId   String?
+  package     Package? @relation(fields: [packageId], references: [id])
+  status      String?
+
+  templateTeamMembers TemplateTeamMember[]
+  sitesAssets         TemplateSiteAsset[]
+  assignments         Assignment[]
+}
+
+// ========== TEMPLATE SITES/ASSETS ==========
+model TemplateSiteAsset {
+  id                          Int           @id @default(autoincrement())
+  templateId                  String
+  template                    Template      @relation(fields: [templateId], references: [id])
+  type                        SiteAssetType
+  name                        String
+  url                         String?
+  description                 String?
+  isRequired                  Boolean
+  defaultPostingFrequency     Int?
+  defaultIdealDurationMinutes Int?
+
+  assignmentSettings AssignmentSiteAssetSetting[]
+  tasks              Task[]
+}
+
+// ========== TEMPLATE TEAM MEMBERS ==========
+model TemplateTeamMember {
+  templateId   String
+  agentId      String
+  role         String?
+  teamId       String?
+  assignedDate DateTime?
+
+  template Template @relation(fields: [templateId], references: [id])
+  agent    User     @relation(fields: [agentId], references: [id])
+  team     Team?    @relation(fields: [teamId], references: [id])
+
+  @@id([templateId, agentId])
+}
+
+// ========== ASSIGNMENTS ==========
+model Assignment {
+  id         String    @id
+  templateId String?
+  clientId   String?
+  template   Template? @relation(fields: [templateId], references: [id])
+  client     Client?   @relation(fields: [clientId], references: [id])
+  assignedAt DateTime? @default(now())
+  status     String?
+
+  tasks             Task[]
+  siteAssetSettings AssignmentSiteAssetSetting[]
+
+  conversations Conversation[] @relation("AssignmentConversations")
+}
+
+// ========== ASSIGNMENT SITE/ASSET SETTINGS ==========
+model AssignmentSiteAssetSetting {
+  id                  Int    @id @default(autoincrement())
+  assignmentId        String
+  templateSiteAssetId Int
+
+  assignment           Assignment        @relation(fields: [assignmentId], references: [id])
+  templateSiteAsset    TemplateSiteAsset @relation(fields: [templateSiteAssetId], references: [id])
+  requiredFrequency    Int?
+  period               PeriodType        @default(monthly)
+  idealDurationMinutes Int?
+}
+
+// ========== TASKS ==========
+model Task {
+  id                  String  @id
+  assignmentId        String?
+  clientId            String?
+  templateSiteAssetId Int?
+  categoryId          String?
+  assignedToId        String?
+
+  name                  String
+  priority              TaskPriority       @default(medium)
+  dueDate               DateTime?
+  status                TaskStatus         @default(pending)
+  idealDurationMinutes  Int?
+  actualDurationMinutes Int?
+  performanceRating     PerformanceRating?
+  completionLink        String?
+  email                 String?
+  password              String?
+  username              String?
+  notes                 String?
+  reassignNotes         String?
+  completedAt           DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  assignment        Assignment?        @relation(fields: [assignmentId], references: [id])
+  client            Client?            @relation(fields: [clientId], references: [id])
+  templateSiteAsset TemplateSiteAsset? @relation(fields: [templateSiteAssetId], references: [id])
+  category          TaskCategory?      @relation(fields: [categoryId], references: [id])
+  assignedTo        User?              @relation("AssignedTasks", fields: [assignedToId], references: [id])
+
+  comments      Comment[]
+  reports       Report[]
+  notifications Notification[]
+
+  conversations Conversation[] @relation("TaskConversations")
+}
+
+// ========== COMMENTS ==========
+model Comment {
+  id       String   @id
+  taskId   String?
+  authorId String?
+  text     String
+  date     DateTime @default(now())
+
+  task   Task? @relation(fields: [taskId], references: [id])
+  author User? @relation(fields: [authorId], references: [id])
+}
+
+// ========== REPORTS ==========
+model Report {
+  id       String   @id
+  taskId   String?
+  authorId String?
+  text     String
+  severity String?
+  date     DateTime @default(now())
+
+  task   Task? @relation(fields: [taskId], references: [id])
+  author User? @relation(fields: [authorId], references: [id])
+}
+
+// ========== ACTIVITY LOG ==========
+model ActivityLog {
+  id         String   @id
+  entityType String
+  entityId   String
+  userId     String?
+  action     String
+  timestamp  DateTime @default(now())
+  details    Json?
+
+  user User? @relation(fields: [userId], references: [id])
+}
+
+// ========== NOTIFICATIONS ==========
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    String
+  taskId    String?
+  type      NotificationType
+  message   String
+  createdAt DateTime         @default(now())
+  isRead    Boolean          @default(false)
+
+  user User  @relation(fields: [userId], references: [id])
+  task Task? @relation(fields: [taskId], references: [id])
+}
+
+
+// ---------- models ----------
+model Conversation {
+  id            String             @id @default(cuid())
+  type          ConversationType   @default(dm)
+  title         String?
+  createdById   String?
+  createdBy     User?              @relation("UserCreatedConversations", fields: [createdById], references: [id])
+
+  clientId      String?
+  client        Client?            @relation("ClientConversations", fields: [clientId], references: [id])
+
+  teamId        String?
+  team          Team?              @relation("TeamConversations", fields: [teamId], references: [id])
+
+  assignmentId  String?
+  assignment    Assignment?        @relation("AssignmentConversations", fields: [assignmentId], references: [id])
+
+  taskId        String?
+  task          Task?              @relation("TaskConversations", fields: [taskId], references: [id])
+
+  isArchived    Boolean            @default(false)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  participants  ConversationParticipant[]
+  messages      ChatMessage[]
+
+  @@index([type, clientId])
+  @@index([type, teamId])
+  @@index([type, assignmentId])
+  @@index([type, taskId])
+}
+
+
+model ConversationParticipant {
+  conversationId String
+  userId         String
+  role           String?   // "owner" | "member" | ইত্যাদি
+  lastReadAt     DateTime?
+  isMuted        Boolean   @default(false)
+  isPinned       Boolean   @default(false)
+  joinedAt       DateTime  @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderId       String?
+  type           MessageType  @default(text)
+  content        String?
+  attachments    Json?
+  replyToId      String?
+  mentions       Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  editedAt       DateTime?
+  deletedAt      DateTime?
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User?        @relation("MessageSender", fields: [senderId], references: [id])
+  replyTo        ChatMessage? @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies        ChatMessage[] @relation("MessageReplies")
+  reactions      MessageReaction[]
+
+  receipts       MessageReceipt[]
+
+  @@index([conversationId, createdAt])
+}
+
+model MessageReceipt {
+  messageId   String
+  userId      String
+  deliveredAt DateTime?
+  readAt      DateTime?
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId])
+  @@index([userId, messageId])
+}
+
+
+model MessageReaction {
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId, emoji])
+}

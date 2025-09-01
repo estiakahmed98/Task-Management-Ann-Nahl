@@ -1,0 +1,14 @@
+[
+  {
+    "id": "1678886400000",
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "phone": "123-456-7890",
+    "category": "Social Team",
+    "address": "123 Main St, Anytown, CA 90210",
+    "bio": "Experienced social media strategist.",
+    "status": "active",
+    "createdAt": "2023-03-15T10:00:00.000Z"
+  }
+]

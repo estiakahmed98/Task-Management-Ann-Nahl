@@ -1,0 +1,524 @@
+{
+  "clients": [
+    {
+      "id": "503d3dcb-ae1c-4618-9d5b-edf89ef8fe13",
+      "name": "Estiak Ahmed",
+      "profilePicture": {},
+      "birthDate": "1998-06-11T18:00:00.000Z",
+      "clientType": "individual",
+      "companyName": "",
+      "companyAddress": "",
+      "companyWebsite": "",
+      "hasWebsite": false,
+      "websiteUrl": "",
+      "desiredDomain": "estiak-ahmed-portfolio.vercel.app",
+      "biography": "I am a passionate professional with over 10 years of experience in my field. My journey began with a deep curiosity about how things work and evolved into a career dedicated to innovation and excellence. I believe in the power of collaboration and continuous learning.\n\nThroughout my career, I've had the opportunity to work with amazing teams on challenging projects that have pushed the boundaries of what's possible. I'm particularly proud of my contributions to sustainability initiatives and community development programs.\n\nWhen I'm not working, you can find me exploring nature trails, experimenting with new recipes, or mentoring young professionals. I'm excited about the future and the endless possibilities it holds for growth and positive impact.",
+      "socialMedia": {
+        "facebook": "https://web.facebook.com/estiakahmed.tusher/",
+        "twitter": "https://twitter.com/EstiakA74501023",
+        "instagram": "https://www.instagram.com/estiakahmmed",
+        "linkedin": "https://www.linkedin.com/in/estiak-ahmed/",
+        "youtube": "https://www.youtube.com/channel/UCBMwsY__6LptGr7rOPOq_1g",
+        "tiktok": "",
+        "pinterest": "https://www.pinterest.com/estiakahmed98/",
+        "reddit": "https://www.reddit.com/user/estiak-ahmed",
+        "snapchat": ""
+      },
+      "selectedArticles": [
+        1,
+        3,
+        5,
+        6,
+        9
+      ],
+      "driveImages": [
+        {
+          "id": "1IWdPytFZMjQaxoT3PMxtX-JNT3vRONdI",
+          "name": "IMG_6551.jpg",
+          "url": "https://drive.google.com/uc?id=1IWdPytFZMjQaxoT3PMxtX-JNT3vRONdI",
+          "originalUrl": "https://drive.google.com/uc?id=1IWdPytFZMjQaxoT3PMxtX-JNT3vRONdI&export=download"
+        },
+        {
+          "id": "1yxK_Ss5RkO6Rw5yWD7VQUUViyV-1UMlm",
+          "name": "IMG_6540.jpg",
+          "url": "https://drive.google.com/uc?id=1yxK_Ss5RkO6Rw5yWD7VQUUViyV-1UMlm",
+          "originalUrl": "https://drive.google.com/uc?id=1yxK_Ss5RkO6Rw5yWD7VQUUViyV-1UMlm&export=download"
+        },
+        {
+          "id": "1FvFBB49qPXy9VCCKT3q5XiHYMXV9leql",
+          "name": "IMG_6554.jpg",
+          "url": "https://drive.google.com/uc?id=1FvFBB49qPXy9VCCKT3q5XiHYMXV9leql",
+          "originalUrl": "https://drive.google.com/uc?id=1FvFBB49qPXy9VCCKT3q5XiHYMXV9leql&export=download"
+        },
+        {
+          "id": "12H2ArRdUPV7lrIbJsZ7IoHQa4WjHk0Py",
+          "name": "IMG_6547.jpg",
+          "url": "https://drive.google.com/uc?id=12H2ArRdUPV7lrIbJsZ7IoHQa4WjHk0Py",
+          "originalUrl": "https://drive.google.com/uc?id=12H2ArRdUPV7lrIbJsZ7IoHQa4WjHk0Py&export=download"
+        }
+      ],
+      "driveLink": "https://drive.google.com/drive/folders/1-MrUc0PHVzBSru3OG-k1Aw-V2SI_Ogv5",
+      "completedAt": "2025-07-22T09:41:42.527Z",
+      "createdAt": "2025-07-22T09:41:42.685Z",
+      "updatedAt": "2025-07-22T09:41:42.685Z"
+    },
+    {
+      "id": "ae359fdb-3997-4c27-8bd5-6f7b3804860f",
+      "name": "Juwel Rana",
+      "profilePicture": {},
+      "birthDate": "2009-06-29T17:00:00.000Z",
+      "clientType": "individual",
+      "companyName": "",
+      "companyAddress": "",
+      "companyWebsite": "",
+      "hasWebsite": false,
+      "websiteUrl": "",
+      "desiredDomain": "https://github.com/faysalmohammed2020/bd-weather-clone",
+      "biography": "I am a passionate professional with over 10 years of experience in my field. My journey began with a deep curiosity about how things work and evolved into a career dedicated to innovation and excellence. I believe in the power of collaboration and continuous learning.\n\nThroughout my career, I've had the opportunity to work with amazing teams on challenging projects that have pushed the boundaries of what's possible. I'm particularly proud of my contributions to sustainability initiatives and community development programs.\n\nWhen I'm not working, you can find me exploring nature trails, experimenting with new recipes, or mentoring young professionals. I'm excited about the future and the endless possibilities it holds for growth and positive impact.",
+      "socialMedia": {
+        "facebook": "https://web.facebook.com/estiakahmed.tusher/",
+        "twitter": "https://twitter.com/EstiakA74501023",
+        "instagram": "https://www.instagram.com/estiakahmmed",
+        "linkedin": "https://www.linkedin.com/in/estiak-ahmed/",
+        "youtube": "https://www.youtube.com/channel/UCBMwsY__6LptGr7rOPOq_1g",
+        "tiktok": "",
+        "pinterest": "https://www.pinterest.com/estiakahmed98/",
+        "reddit": "https://www.reddit.com/user/estiak-ahmed",
+        "snapchat": ""
+      },
+      "selectedArticles": [
+        2,
+        4,
+        6,
+        8
+      ],
+      "driveImages": [
+        {
+          "id": "1IWdPytFZMjQaxoT3PMxtX-JNT3vRONdI",
+          "name": "IMG_6551.jpg",
+          "url": "https://drive.google.com/uc?id=1IWdPytFZMjQaxoT3PMxtX-JNT3vRONdI",
+          "originalUrl": "https://drive.google.com/uc?id=1IWdPytFZMjQaxoT3PMxtX-JNT3vRONdI&export=download"
+        },
+        {
+          "id": "1yxK_Ss5RkO6Rw5yWD7VQUUViyV-1UMlm",
+          "name": "IMG_6540.jpg",
+          "url": "https://drive.google.com/uc?id=1yxK_Ss5RkO6Rw5yWD7VQUUViyV-1UMlm",
+          "originalUrl": "https://drive.google.com/uc?id=1yxK_Ss5RkO6Rw5yWD7VQUUViyV-1UMlm&export=download"
+        },
+        {
+          "id": "1FvFBB49qPXy9VCCKT3q5XiHYMXV9leql",
+          "name": "IMG_6554.jpg",
+          "url": "https://drive.google.com/uc?id=1FvFBB49qPXy9VCCKT3q5XiHYMXV9leql",
+          "originalUrl": "https://drive.google.com/uc?id=1FvFBB49qPXy9VCCKT3q5XiHYMXV9leql&export=download"
+        },
+        {
+          "id": "12H2ArRdUPV7lrIbJsZ7IoHQa4WjHk0Py",
+          "name": "IMG_6547.jpg",
+          "url": "https://drive.google.com/uc?id=12H2ArRdUPV7lrIbJsZ7IoHQa4WjHk0Py",
+          "originalUrl": "https://drive.google.com/uc?id=12H2ArRdUPV7lrIbJsZ7IoHQa4WjHk0Py&export=download"
+        }
+      ],
+      "driveLink": "https://drive.google.com/drive/folders/1-MrUc0PHVzBSru3OG-k1Aw-V2SI_Ogv5",
+      "completedAt": "2025-07-22T09:45:34.888Z",
+      "createdAt": "2025-07-22T09:45:35.047Z",
+      "updatedAt": "2025-07-22T09:45:35.047Z"
+    },
+    {
+      "id": "a3e5890a-2364-4ec9-99a0-5b19ba1e9da8",
+      "name": "Ahmed",
+      "profilePicture": {},
+      "birthDate": "2009-04-13T18:00:00.000Z",
+      "clientType": "individual",
+      "companyName": "",
+      "companyAddress": "",
+      "companyWebsite": "",
+      "hasWebsite": false,
+      "websiteUrl": "",
+      "desiredDomain": "estiak.com",
+      "biography": "I am a passionate professional with over 10 years of experience in my field. My journey began with a deep curiosity about how things work and evolved into a career dedicated to innovation and excellence. I believe in the power of collaboration and continuous learning.\n\nThroughout my career, I've had the opportunity to work with amazing teams on challenging projects that have pushed the boundaries of what's possible. I'm particularly proud of my contributions to sustainability initiatives and community development programs.\n\nWhen I'm not working, you can find me exploring nature trails, experimenting with new recipes, or mentoring young professionals. I'm excited about the future and the endless possibilities it holds for growth and positive impact.",
+      "socialMedia": {
+        "facebook": "https://web.facebook.com/estiakahmed.tusher/",
+        "twitter": "https://twitter.com/EstiakA74501023",
+        "instagram": "https://www.instagram.com/estiakahmmed",
+        "linkedin": "https://www.linkedin.com/in/estiak-ahmed/",
+        "youtube": "https://www.youtube.com/channel/UCBMwsY__6LptGr7rOPOq_1g",
+        "tiktok": "",
+        "pinterest": "https://www.pinterest.com/estiakahmed98/",
+        "reddit": "https://www.reddit.com/user/estiak-ahmed",
+        "snapchat": ""
+      },
+      "selectedArticles": [
+        2,
+        4
+      ],
+      "driveImages": [
+        {
+          "id": "1KumJ6NBkFTYWquTqLSlk62Nxeq9C0h2u",
+          "name": "estiak-ahmed-very-detailed-ideas-really-very-powerful.jpg",
+          "url": "https://drive.google.com/uc?id=1KumJ6NBkFTYWquTqLSlk62Nxeq9C0h2u",
+          "originalUrl": "https://drive.google.com/uc?id=1KumJ6NBkFTYWquTqLSlk62Nxeq9C0h2u&export=download"
+        },
+        {
+          "id": "1q3mg9PFLjMQszmzaIETc2RBqSbA_B5Z9",
+          "name": "estiak-ahmed-undergraduate-From-stamford-university-bangladesh..jpg",
+          "url": "https://drive.google.com/uc?id=1q3mg9PFLjMQszmzaIETc2RBqSbA_B5Z9",
+          "originalUrl": "https://drive.google.com/uc?id=1q3mg9PFLjMQszmzaIETc2RBqSbA_B5Z9&export=download"
+        },
+        {
+          "id": "1zmTg4OlL8DB3_gtR_x99rn2t-RvQJiUr",
+          "name": "estiak-ahmed-very-satisfied-while-doing-our-work.jpg",
+          "url": "https://drive.google.com/uc?id=1zmTg4OlL8DB3_gtR_x99rn2t-RvQJiUr",
+          "originalUrl": "https://drive.google.com/uc?id=1zmTg4OlL8DB3_gtR_x99rn2t-RvQJiUr&export=download"
+        },
+        {
+          "id": "1u-DBKNROWN0ahYPZmHPSRekwY_SwXZsk",
+          "name": "estiak-ahmed-with-the-help-of-technology.jpg",
+          "url": "https://drive.google.com/uc?id=1u-DBKNROWN0ahYPZmHPSRekwY_SwXZsk",
+          "originalUrl": "https://drive.google.com/uc?id=1u-DBKNROWN0ahYPZmHPSRekwY_SwXZsk&export=download"
+        },
+        {
+          "id": "1Ar02jRAHk4lYY-xytzuZcP9ImxQ3pd9W",
+          "name": "estiak-ahmed-You-can-trust-us.jpg",
+          "url": "https://drive.google.com/uc?id=1Ar02jRAHk4lYY-xytzuZcP9ImxQ3pd9W",
+          "originalUrl": "https://drive.google.com/uc?id=1Ar02jRAHk4lYY-xytzuZcP9ImxQ3pd9W&export=download"
+        },
+        {
+          "id": "1-WgrUKpmA7KKbdBo8O6Ow9Yz_FbKFOa0",
+          "name": "estiak-ahmed-undergraduate-From-stamford-university.jpg",
+          "url": "https://drive.google.com/uc?id=1-WgrUKpmA7KKbdBo8O6Ow9Yz_FbKFOa0",
+          "originalUrl": "https://drive.google.com/uc?id=1-WgrUKpmA7KKbdBo8O6Ow9Yz_FbKFOa0&export=download"
+        },
+        {
+          "id": "1sXfTrLm1aXEObPfGqYY70ReWvHC1kvNX",
+          "name": "estiak-ahmed-undergraduate-in-CSE From.JPG",
+          "url": "https://drive.google.com/uc?id=1sXfTrLm1aXEObPfGqYY70ReWvHC1kvNX",
+          "originalUrl": "https://drive.google.com/uc?id=1sXfTrLm1aXEObPfGqYY70ReWvHC1kvNX&export=download"
+        },
+        {
+          "id": "1vaNwJOtmAVLQKTFOdfMKDa2XZO2JvJ9h",
+          "name": "estiak-ahmed-very-attentive-to-every-detail.jpg",
+          "url": "https://drive.google.com/uc?id=1vaNwJOtmAVLQKTFOdfMKDa2XZO2JvJ9h",
+          "originalUrl": "https://drive.google.com/uc?id=1vaNwJOtmAVLQKTFOdfMKDa2XZO2JvJ9h&export=download"
+        },
+        {
+          "id": "1LtiB_WMswxG5BYuqXyl9tuiu-QpjMNMC",
+          "name": "estiak-ahmed-team-can-bring-many-new-ways-to-make-life-easier.jpg",
+          "url": "https://drive.google.com/uc?id=1LtiB_WMswxG5BYuqXyl9tuiu-QpjMNMC",
+          "originalUrl": "https://drive.google.com/uc?id=1LtiB_WMswxG5BYuqXyl9tuiu-QpjMNMC&export=download"
+        },
+        {
+          "id": "1QehmJUDn3gm0y51UWKrZFb5XrcFhwhjW",
+          "name": "estiak-ahmed-make-all-your-works-very-easy.jpg",
+          "url": "https://drive.google.com/uc?id=1QehmJUDn3gm0y51UWKrZFb5XrcFhwhjW",
+          "originalUrl": "https://drive.google.com/uc?id=1QehmJUDn3gm0y51UWKrZFb5XrcFhwhjW&export=download"
+        },
+        {
+          "id": "1pI9AaOWzkjlD04rc9uK4FE3UYn6qIA5M",
+          "name": "estiak-ahmed-make-new-ideas.jpg",
+          "url": "https://drive.google.com/uc?id=1pI9AaOWzkjlD04rc9uK4FE3UYn6qIA5M",
+          "originalUrl": "https://drive.google.com/uc?id=1pI9AaOWzkjlD04rc9uK4FE3UYn6qIA5M&export=download"
+        },
+        {
+          "id": "15W9MNSzGrUrJdEamxbO9Nr5EBEl4ey5S",
+          "name": "estiak-ahmed-team-believe-that-curious-people.jpg",
+          "url": "https://drive.google.com/uc?id=15W9MNSzGrUrJdEamxbO9Nr5EBEl4ey5S",
+          "originalUrl": "https://drive.google.com/uc?id=15W9MNSzGrUrJdEamxbO9Nr5EBEl4ey5S&export=download"
+        },
+        {
+          "id": "1Z_s36-fFfiuxZQBHglriu5SdceNst9ub",
+          "name": "estiak-ahmed-strongly-guarding-you-against-any-error.jpg",
+          "url": "https://drive.google.com/uc?id=1Z_s36-fFfiuxZQBHglriu5SdceNst9ub",
+          "originalUrl": "https://drive.google.com/uc?id=1Z_s36-fFfiuxZQBHglriu5SdceNst9ub&export=download"
+        },
+        {
+          "id": "1AOM_-4UBrZvIgGBJLBmIK6-aiJ4qM5dT",
+          "name": "estiak-ahmed-team-can-bring-many-new-ways.jpg",
+          "url": "https://drive.google.com/uc?id=1AOM_-4UBrZvIgGBJLBmIK6-aiJ4qM5dT",
+          "originalUrl": "https://drive.google.com/uc?id=1AOM_-4UBrZvIgGBJLBmIK6-aiJ4qM5dT&export=download"
+        },
+        {
+          "id": "1zq0-E8ckQhzXQe-NT46rKbGwHFQBOddn",
+          "name": "estiak-ahmed-love-playing-cricket.jpg",
+          "url": "https://drive.google.com/uc?id=1zq0-E8ckQhzXQe-NT46rKbGwHFQBOddn",
+          "originalUrl": "https://drive.google.com/uc?id=1zq0-E8ckQhzXQe-NT46rKbGwHFQBOddn&export=download"
+        },
+        {
+          "id": "1RywE4L-6nqh544l8IOa9mMKaWA7cyA3z",
+          "name": "estiak-ahmed-good-at-coding-skills and building new codes.jpg",
+          "url": "https://drive.google.com/uc?id=1RywE4L-6nqh544l8IOa9mMKaWA7cyA3z",
+          "originalUrl": "https://drive.google.com/uc?id=1RywE4L-6nqh544l8IOa9mMKaWA7cyA3z&export=download"
+        },
+        {
+          "id": "1rabUm-ddPejJeHHiUV_ztVKt1lExZbY3",
+          "name": "estiak-ahmed-good-at-building-new-codes.jpg",
+          "url": "https://drive.google.com/uc?id=1rabUm-ddPejJeHHiUV_ztVKt1lExZbY3",
+          "originalUrl": "https://drive.google.com/uc?id=1rabUm-ddPejJeHHiUV_ztVKt1lExZbY3&export=download"
+        },
+        {
+          "id": "1xaQWdxpNtNb-m3e6_9mavYmtVkZgvU87",
+          "name": "estiak-ahmed-love-playing-guiter.jpg",
+          "url": "https://drive.google.com/uc?id=1xaQWdxpNtNb-m3e6_9mavYmtVkZgvU87",
+          "originalUrl": "https://drive.google.com/uc?id=1xaQWdxpNtNb-m3e6_9mavYmtVkZgvU87&export=download"
+        },
+        {
+          "id": "1Te4U0C_vjyt7BNrZ9b4BkuaglTgB9VG5",
+          "name": "estiak-ahmed-good-at-innovating-constructive-software.jpg",
+          "url": "https://drive.google.com/uc?id=1Te4U0C_vjyt7BNrZ9b4BkuaglTgB9VG5",
+          "originalUrl": "https://drive.google.com/uc?id=1Te4U0C_vjyt7BNrZ9b4BkuaglTgB9VG5&export=download"
+        },
+        {
+          "id": "103e_m9ZAe-gfcA5WhhADAl0cALt_KQUC",
+          "name": "estiak-ahmed-love-singing-song.jpg",
+          "url": "https://drive.google.com/uc?id=103e_m9ZAe-gfcA5WhhADAl0cALt_KQUC",
+          "originalUrl": "https://drive.google.com/uc?id=103e_m9ZAe-gfcA5WhhADAl0cALt_KQUC&export=download"
+        },
+        {
+          "id": "1_4MGGcKlyfsyxREMOGtIvc9jjvV16WBq",
+          "name": "estiak-ahmed-love-to-designing-software.jpg",
+          "url": "https://drive.google.com/uc?id=1_4MGGcKlyfsyxREMOGtIvc9jjvV16WBq",
+          "originalUrl": "https://drive.google.com/uc?id=1_4MGGcKlyfsyxREMOGtIvc9jjvV16WBq&export=download"
+        },
+        {
+          "id": "1MTT50JPKncm1APJGRRwaXXpYB9La-wCJ",
+          "name": "estiak-ahmed-can-innovate-many-digital-ways-to-help-you.jpg",
+          "url": "https://drive.google.com/uc?id=1MTT50JPKncm1APJGRRwaXXpYB9La-wCJ",
+          "originalUrl": "https://drive.google.com/uc?id=1MTT50JPKncm1APJGRRwaXXpYB9La-wCJ&export=download"
+        },
+        {
+          "id": "1ewqTi6PZ7N1QiCgfTNt3lg9dxRx96cbp",
+          "name": "estiak-ahmed-creating-new-helpful-software-for-Smartphone.jpg",
+          "url": "https://drive.google.com/uc?id=1ewqTi6PZ7N1QiCgfTNt3lg9dxRx96cbp",
+          "originalUrl": "https://drive.google.com/uc?id=1ewqTi6PZ7N1QiCgfTNt3lg9dxRx96cbp&export=download"
+        },
+        {
+          "id": "1ANMk35-x0AQCpS1dsJwtVWAsLxYd6Od1",
+          "name": "estiak-ahmed-creating-new-idea.jpg",
+          "url": "https://drive.google.com/uc?id=1ANMk35-x0AQCpS1dsJwtVWAsLxYd6Od1",
+          "originalUrl": "https://drive.google.com/uc?id=1ANMk35-x0AQCpS1dsJwtVWAsLxYd6Od1&export=download"
+        },
+        {
+          "id": "1dJWkYA-c3HYF9fCZrnfFvFW4cMgnIN31",
+          "name": "estiak-ahmed-creating-new-helpful-software.jpg",
+          "url": "https://drive.google.com/uc?id=1dJWkYA-c3HYF9fCZrnfFvFW4cMgnIN31",
+          "originalUrl": "https://drive.google.com/uc?id=1dJWkYA-c3HYF9fCZrnfFvFW4cMgnIN31&export=download"
+        },
+        {
+          "id": "17ClYhlMC6UX6Ees5i-TpOlW7pAbZxJG0",
+          "name": "estiak-ahmed-can-innovate-many-digital-ways.jpg",
+          "url": "https://drive.google.com/uc?id=17ClYhlMC6UX6Ees5i-TpOlW7pAbZxJG0",
+          "originalUrl": "https://drive.google.com/uc?id=17ClYhlMC6UX6Ees5i-TpOlW7pAbZxJG0&export=download"
+        },
+        {
+          "id": "1waX9UZYTACQQ3u8OESqi4cfwDLZhDH8h",
+          "name": "estiak-ahmed-creating-new-helpful-software-for-a-computer.jpg",
+          "url": "https://drive.google.com/uc?id=1waX9UZYTACQQ3u8OESqi4cfwDLZhDH8h",
+          "originalUrl": "https://drive.google.com/uc?id=1waX9UZYTACQQ3u8OESqi4cfwDLZhDH8h&export=download"
+        },
+        {
+          "id": "1TWPeHMV7rc93T9MMKLbQ01lkK2iCu22A",
+          "name": "estiak-ahmed-and-important.jpg",
+          "url": "https://drive.google.com/uc?id=1TWPeHMV7rc93T9MMKLbQ01lkK2iCu22A",
+          "originalUrl": "https://drive.google.com/uc?id=1TWPeHMV7rc93T9MMKLbQ01lkK2iCu22A&export=download"
+        },
+        {
+          "id": "1BzCYvZKzBh47tjHdisfknGLRAoDc-4dR",
+          "name": "estiak-ahmed-belives-we-have-strong-foundation-software-related-knowledge.jpg",
+          "url": "https://drive.google.com/uc?id=1BzCYvZKzBh47tjHdisfknGLRAoDc-4dR",
+          "originalUrl": "https://drive.google.com/uc?id=1BzCYvZKzBh47tjHdisfknGLRAoDc-4dR&export=download"
+        },
+        {
+          "id": "1irGq0Qq6bnXnZDOAoXwnE2tnD9ipuOpO",
+          "name": "estiak-ahmed-also-a-good-developer-of-various-technical-ideas.jpg",
+          "url": "https://drive.google.com/uc?id=1irGq0Qq6bnXnZDOAoXwnE2tnD9ipuOpO",
+          "originalUrl": "https://drive.google.com/uc?id=1irGq0Qq6bnXnZDOAoXwnE2tnD9ipuOpO&export=download"
+        },
+        {
+          "id": "1CoTFclkE-d-BP8Lp0b6rPLTE_woT-y06",
+          "name": "estiak-ahmed-belives-we-have-strong-foundation.jpg",
+          "url": "https://drive.google.com/uc?id=1CoTFclkE-d-BP8Lp0b6rPLTE_woT-y06",
+          "originalUrl": "https://drive.google.com/uc?id=1CoTFclkE-d-BP8Lp0b6rPLTE_woT-y06&export=download"
+        },
+        {
+          "id": "1JPjaBJYPFyffEUOiTvAlqDynJ-dAPEYL",
+          "name": "estiak-ahmed-always-work-hard-to-make-your-life-easy.jpg",
+          "url": "https://drive.google.com/uc?id=1JPjaBJYPFyffEUOiTvAlqDynJ-dAPEYL",
+          "originalUrl": "https://drive.google.com/uc?id=1JPjaBJYPFyffEUOiTvAlqDynJ-dAPEYL&export=download"
+        },
+        {
+          "id": "12wk43Kbzij5ZFtRRu5_oJ-aWAL5sdPsx",
+          "name": "estiak-ahmed-always-work-hard.jpg",
+          "url": "https://drive.google.com/uc?id=12wk43Kbzij5ZFtRRu5_oJ-aWAL5sdPsx",
+          "originalUrl": "https://drive.google.com/uc?id=12wk43Kbzij5ZFtRRu5_oJ-aWAL5sdPsx&export=download"
+        },
+        {
+          "id": "1VAnUEQuQWgBu5OsnkkFVKnjMKeEIohIL",
+          "name": "estiak-ahmed-very-attentive-to-each.jpg",
+          "url": "https://drive.google.com/uc?id=1VAnUEQuQWgBu5OsnkkFVKnjMKeEIohIL",
+          "originalUrl": "https://drive.google.com/uc?id=1VAnUEQuQWgBu5OsnkkFVKnjMKeEIohIL&export=download"
+        },
+        {
+          "id": "14cdgeMVhzfkpMIDzqhJ0BtCE-WIXUyiG",
+          "name": "estiak-ahmed-to-help-our-clients.jpg",
+          "url": "https://drive.google.com/uc?id=14cdgeMVhzfkpMIDzqhJ0BtCE-WIXUyiG",
+          "originalUrl": "https://drive.google.com/uc?id=14cdgeMVhzfkpMIDzqhJ0BtCE-WIXUyiG&export=download"
+        },
+        {
+          "id": "17uXqztPT9soJ293ZFarKC5SJWXHljOFX",
+          "name": "estiak-ahmed-solve-many-types-of-problems.jpg",
+          "url": "https://drive.google.com/uc?id=17uXqztPT9soJ293ZFarKC5SJWXHljOFX",
+          "originalUrl": "https://drive.google.com/uc?id=17uXqztPT9soJ293ZFarKC5SJWXHljOFX&export=download"
+        },
+        {
+          "id": "1kkf7ueUFOWwN-_r-dM1YQOtL6F95sXgb",
+          "name": "estiak-ahmed-simply-struggle-to-create-a-beautiful-era-of-digital-ideas-dhaka.jpeg",
+          "url": "https://drive.google.com/uc?id=1kkf7ueUFOWwN-_r-dM1YQOtL6F95sXgb",
+          "originalUrl": "https://drive.google.com/uc?id=1kkf7ueUFOWwN-_r-dM1YQOtL6F95sXgb&export=download"
+        },
+        {
+          "id": "17SOl5PdO2tndxeok1j-toMClnHeQduLJ",
+          "name": "estiak-ahmed-is-a-software-engineer.jpeg",
+          "url": "https://drive.google.com/uc?id=17SOl5PdO2tndxeok1j-toMClnHeQduLJ",
+          "originalUrl": "https://drive.google.com/uc?id=17SOl5PdO2tndxeok1j-toMClnHeQduLJ&export=download"
+        },
+        {
+          "id": "1X7o2Br4Hy6WfFvm8I1vD410vbaKHVUuJ",
+          "name": "estiak-ahmed-dream-is-hard-work.jpeg",
+          "url": "https://drive.google.com/uc?id=1X7o2Br4Hy6WfFvm8I1vD410vbaKHVUuJ",
+          "originalUrl": "https://drive.google.com/uc?id=1X7o2Br4Hy6WfFvm8I1vD410vbaKHVUuJ&export=download"
+        },
+        {
+          "id": "1ESkd-FU7MF22pHhFvd1laa0bXd66nRSD",
+          "name": "estiak-ahmed-dream-is-hard-work-bangladesh.jpeg",
+          "url": "https://drive.google.com/uc?id=1ESkd-FU7MF22pHhFvd1laa0bXd66nRSD",
+          "originalUrl": "https://drive.google.com/uc?id=1ESkd-FU7MF22pHhFvd1laa0bXd66nRSD&export=download"
+        },
+        {
+          "id": "1Kou4eGhRdErB7Z6He0NkroCtAJ-9DrgV",
+          "name": "estiak-ahmed-and-personal-information.jpg",
+          "url": "https://drive.google.com/uc?id=1Kou4eGhRdErB7Z6He0NkroCtAJ-9DrgV",
+          "originalUrl": "https://drive.google.com/uc?id=1Kou4eGhRdErB7Z6He0NkroCtAJ-9DrgV&export=download"
+        },
+        {
+          "id": "13SeOyy00amdk2OPzfy1BaB_f3_5Qaaos",
+          "name": "estiak-ahmed-belives-we-have-better-ways-of-work.jpg",
+          "url": "https://drive.google.com/uc?id=13SeOyy00amdk2OPzfy1BaB_f3_5Qaaos",
+          "originalUrl": "https://drive.google.com/uc?id=13SeOyy00amdk2OPzfy1BaB_f3_5Qaaos&export=download"
+        },
+        {
+          "id": "1B0vaf7tnQPZgpNuIuwQWJILZrIbd0Pr7",
+          "name": "estiak-ahmed-also-a-good-developer.jpg",
+          "url": "https://drive.google.com/uc?id=1B0vaf7tnQPZgpNuIuwQWJILZrIbd0Pr7",
+          "originalUrl": "https://drive.google.com/uc?id=1B0vaf7tnQPZgpNuIuwQWJILZrIbd0Pr7&export=download"
+        },
+        {
+          "id": "1O2fTaTQGZDD1AQNcbTNwA3APUQ0pr0cs",
+          "name": "estiak-ahmed-very-detailed-ideas-really-very-inventors.jpg",
+          "url": "https://drive.google.com/uc?id=1O2fTaTQGZDD1AQNcbTNwA3APUQ0pr0cs",
+          "originalUrl": "https://drive.google.com/uc?id=1O2fTaTQGZDD1AQNcbTNwA3APUQ0pr0cs&export=download"
+        },
+        {
+          "id": "1neY-Z6XCVnM_gtfFoKa91ksCZyqPmIb5",
+          "name": "estiak-ahmed-very-good-in-solving-various.jpg",
+          "url": "https://drive.google.com/uc?id=1neY-Z6XCVnM_gtfFoKa91ksCZyqPmIb5",
+          "originalUrl": "https://drive.google.com/uc?id=1neY-Z6XCVnM_gtfFoKa91ksCZyqPmIb5&export=download"
+        },
+        {
+          "id": "1-37C_84oPJMqR6AjGZ50d6nwZihJTBJ7",
+          "name": "estiak-ahmed-very-detailed-ideas.jpg",
+          "url": "https://drive.google.com/uc?id=1-37C_84oPJMqR6AjGZ50d6nwZihJTBJ7",
+          "originalUrl": "https://drive.google.com/uc?id=1-37C_84oPJMqR6AjGZ50d6nwZihJTBJ7&export=download"
+        },
+        {
+          "id": "1MRorelTm8jIXM5cEln8plZuzjrgThYcx",
+          "name": "estiak-ahmed-very-detailed-ideas-really-something-very-special.jpg",
+          "url": "https://drive.google.com/uc?id=1MRorelTm8jIXM5cEln8plZuzjrgThYcx",
+          "originalUrl": "https://drive.google.com/uc?id=1MRorelTm8jIXM5cEln8plZuzjrgThYcx&export=download"
+        },
+        {
+          "id": "1LQQpk7wobVi5b1DjPCtxBwaRQm9DEz3D",
+          "name": "estiak-ahmed-very-attentive-to-every-detail-while-working.jpg",
+          "url": "https://drive.google.com/uc?id=1LQQpk7wobVi5b1DjPCtxBwaRQm9DEz3D",
+          "originalUrl": "https://drive.google.com/uc?id=1LQQpk7wobVi5b1DjPCtxBwaRQm9DEz3D&export=download"
+        },
+        {
+          "id": "1V6X3OKesTdy7n_V49P1_iMhN8bEcv7KJ",
+          "name": "estiak-ahmed-simply-struggle-to-create-a-beautiful-era-of-digital-ideas.jpg",
+          "url": "https://drive.google.com/uc?id=1V6X3OKesTdy7n_V49P1_iMhN8bEcv7KJ",
+          "originalUrl": "https://drive.google.com/uc?id=1V6X3OKesTdy7n_V49P1_iMhN8bEcv7KJ&export=download"
+        },
+        {
+          "id": "1oBtbBGu6N4pat2bnSt3KbCE_Pi9GaEwx",
+          "name": "estiak-ahmed-simply-struggle.jpg",
+          "url": "https://drive.google.com/uc?id=1oBtbBGu6N4pat2bnSt3KbCE_Pi9GaEwx",
+          "originalUrl": "https://drive.google.com/uc?id=1oBtbBGu6N4pat2bnSt3KbCE_Pi9GaEwx&export=download"
+        },
+        {
+          "id": "1uqVt5muWn_pvTPtBkTMnjoIZycva-L3k",
+          "name": "estiak-ahmed-simply-struggle-dhaka.jpeg",
+          "url": "https://drive.google.com/uc?id=1uqVt5muWn_pvTPtBkTMnjoIZycva-L3k",
+          "originalUrl": "https://drive.google.com/uc?id=1uqVt5muWn_pvTPtBkTMnjoIZycva-L3k&export=download"
+        },
+        {
+          "id": "13lDBsg83DWZQ6GXUwzLpUlPP0c3i_GR7",
+          "name": "estiak-ahmed-says-we-can-bring-true-revolution-in-all-fields-of-work.jpg",
+          "url": "https://drive.google.com/uc?id=13lDBsg83DWZQ6GXUwzLpUlPP0c3i_GR7",
+          "originalUrl": "https://drive.google.com/uc?id=13lDBsg83DWZQ6GXUwzLpUlPP0c3i_GR7&export=download"
+        },
+        {
+          "id": "11tqxk9-933v0eCQVELnARp-RcZaQy3GM",
+          "name": "estiak-ahmed-says-we-can-bring-true-revolution.jpg",
+          "url": "https://drive.google.com/uc?id=11tqxk9-933v0eCQVELnARp-RcZaQy3GM",
+          "originalUrl": "https://drive.google.com/uc?id=11tqxk9-933v0eCQVELnARp-RcZaQy3GM&export=download"
+        },
+        {
+          "id": "18SPRlTll-FCV4LwbXaaSU6gcMa5ARQa1",
+          "name": "estiak-ahmed-says-we-can-bring-true-revolution-in-all-fields.jpg",
+          "url": "https://drive.google.com/uc?id=18SPRlTll-FCV4LwbXaaSU6gcMa5ARQa1",
+          "originalUrl": "https://drive.google.com/uc?id=18SPRlTll-FCV4LwbXaaSU6gcMa5ARQa1&export=download"
+        },
+        {
+          "id": "1ySy3rKiN2pxbJhi8_OTq9ca9ckmHeWAg",
+          "name": "estiak-ahmed-love-leading-people.jpg",
+          "url": "https://drive.google.com/uc?id=1ySy3rKiN2pxbJhi8_OTq9ca9ckmHeWAg",
+          "originalUrl": "https://drive.google.com/uc?id=1ySy3rKiN2pxbJhi8_OTq9ca9ckmHeWAg&export=download"
+        },
+        {
+          "id": "1oRMwROnqOEQ6zicJE5KiOSsZHba5jGex",
+          "name": "estiak-ahmed-love-leading.jpg",
+          "url": "https://drive.google.com/uc?id=1oRMwROnqOEQ6zicJE5KiOSsZHba5jGex",
+          "originalUrl": "https://drive.google.com/uc?id=1oRMwROnqOEQ6zicJE5KiOSsZHba5jGex&export=download"
+        },
+        {
+          "id": "1Cs_j39-4cya0P3WmiHZrixV0TqM5UlQl",
+          "name": "estiak-ahmed-love-coding.jpg",
+          "url": "https://drive.google.com/uc?id=1Cs_j39-4cya0P3WmiHZrixV0TqM5UlQl",
+          "originalUrl": "https://drive.google.com/uc?id=1Cs_j39-4cya0P3WmiHZrixV0TqM5UlQl&export=download"
+        },
+        {
+          "id": "1U5rC8TZgDMAzk4k4nr6S0uuJxHPBcOme",
+          "name": "estiak-ahmed-live-in-bangladesh.jpg",
+          "url": "https://drive.google.com/uc?id=1U5rC8TZgDMAzk4k4nr6S0uuJxHPBcOme",
+          "originalUrl": "https://drive.google.com/uc?id=1U5rC8TZgDMAzk4k4nr6S0uuJxHPBcOme&export=download"
+        },
+        {
+          "id": "1kM_BpoUNlRVema1JScYXhj3rt3dXUjj_",
+          "name": "estiak-ahmed-live-in-dhaka.jpg",
+          "url": "https://drive.google.com/uc?id=1kM_BpoUNlRVema1JScYXhj3rt3dXUjj_",
+          "originalUrl": "https://drive.google.com/uc?id=1kM_BpoUNlRVema1JScYXhj3rt3dXUjj_&export=download"
+        },
+        {
+          "id": "1-RyWTylvG-XQYEmBe84YVSdoGnTU_beH",
+          "name": "estiak-ahmed--know-technology.jpg",
+          "url": "https://drive.google.com/uc?id=1-RyWTylvG-XQYEmBe84YVSdoGnTU_beH",
+          "originalUrl": "https://drive.google.com/uc?id=1-RyWTylvG-XQYEmBe84YVSdoGnTU_beH&export=download"
+        }
+      ],
+      "location": "Dhaka, Bangladesh",
+      "driveLink": "https://drive.google.com/drive/u/0/folders/1o4ttVAmdwLmc1LdFlJphthstp-6fLaMe",
+      "completedAt": "2025-07-22T11:02:31.534Z",
+      "createdAt": "2025-07-22T11:02:31.935Z",
+      "updatedAt": "2025-07-22T11:02:31.935Z"
+    }
+  ],
+  "lastUpdated": "2025-07-22T11:02:31.936Z"
+}
