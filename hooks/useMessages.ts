@@ -4,7 +4,7 @@ import useSWR from "swr";
 const fetcher = (u: string) =>
   fetch(u, { cache: "no-store" }).then((r) => r.json());
 
-export function useMessages(conversationId: string, take = 30) {
+export function useMessages(conversationId?: string | null, take = 30) {
   const key = conversationId
     ? `/api/chat/conversations/${conversationId}/messages?take=${take}`
     : null;

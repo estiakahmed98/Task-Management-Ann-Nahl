@@ -64,7 +64,6 @@ const iconMap: Record<string, React.ReactNode> = {
 
   // Packages / Templates
   Packages: <Package className="h-4 w-4" />,
-  "all Package": <Boxes className="h-4 w-4" />,
   "All Package": <Boxes className="h-4 w-4" />,
   Template: <FileText className="h-4 w-4" />,
 
@@ -217,7 +216,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
         title: "Packages",
         roles: ["admin"],
         children: [
-          { title: "all Package", url: "/admin/packages", roles: ["admin"] },
+          { title: "All Package", url: "/admin/packages", roles: ["admin"] },
           { title: "Template", url: "/admin/templates", roles: ["admin"] },
         ],
       },
