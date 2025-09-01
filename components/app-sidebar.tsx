@@ -183,6 +183,12 @@ export function AppSidebar({ className }: AppSidebarProps) {
         roles: ["admin", "agent", "qc", "am"],
       },
 
+      // Chat
+      { title: "Chat", url: "/admin/chat", roles: ["admin"] },
+      { title: "Chat", url: "/qc/chat", roles: ["qc"] },
+      { title: "Chat", url: "/agent/chat", roles: ["agent"] },
+      { title: "Chat", url: "/am/chat", roles: ["am"] },
+
       // Admin/AM Clients
       {
         title: "Clients",
@@ -270,12 +276,6 @@ export function AppSidebar({ className }: AppSidebarProps) {
       },
       { title: "User Management", url: "/admin/user", roles: ["admin"] },
       { title: "Activity Logs", url: "/admin/activity", roles: ["admin"] },
-
-      // Chat
-      { title: "Chat", url: "/admin/chat", roles: ["admin"] },
-      { title: "Chat", url: "/qc/chat", roles: ["qc"] },
-      { title: "Chat", url: "/agent/chat", roles: ["agent"] },
-      { title: "Chat", url: "/am/chat", roles: ["am"] },
 
       // Notifications
       { title: "Notifications", url: "/admin/notifications", roles: ["admin"] },
