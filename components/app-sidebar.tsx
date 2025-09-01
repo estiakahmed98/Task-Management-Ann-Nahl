@@ -64,7 +64,6 @@ const iconMap: Record<string, React.ReactNode> = {
 
   // Packages / Templates
   Packages: <Package className="h-4 w-4" />,
-  "all Package": <Boxes className="h-4 w-4" />,
   "All Package": <Boxes className="h-4 w-4" />,
   Template: <FileText className="h-4 w-4" />,
 
@@ -155,17 +154,17 @@ export function AppSidebar({ className }: AppSidebarProps) {
   const handleSignOut = async () => {
     try {
       await fetch("/api/auth/sign-out", { method: "POST" });
-    } catch { }
+    } catch {}
     try {
       localStorage.removeItem("chat:open");
-    } catch { }
+    } catch {}
     router.push("/auth/sign-in");
   };
 
   const handleExitImpersonation = async () => {
     try {
       await fetch("/api/impersonate/stop", { method: "POST" });
-    } catch { }
+    } catch {}
     router.refresh();
   };
 
@@ -177,10 +176,10 @@ export function AppSidebar({ className }: AppSidebarProps) {
           role === "admin"
             ? "/admin"
             : role === "agent"
-              ? "/agent"
-              : role === "qc"
-                ? "/qc"
-                : "/am",
+            ? "/agent"
+            : role === "qc"
+            ? "/qc"
+            : "/am",
         roles: ["admin", "agent", "qc", "am"],
       },
 
@@ -211,7 +210,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
         title: "Packages",
         roles: ["admin"],
         children: [
-          { title: "all Package", url: "/admin/packages", roles: ["admin"] },
+          { title: "All Package", url: "/admin/packages", roles: ["admin"] },
           { title: "Template", url: "/admin/templates", roles: ["admin"] },
         ],
       },
@@ -430,7 +429,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
                           "hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100/50",
                           "hover:shadow-sm hover:border-gray-200/50 border border-transparent",
                           isActive &&
-                          "bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-200/50 shadow-sm"
+                            "bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-200/50 shadow-sm"
                         )}
                       >
                         <div className="flex items-center gap-3">
@@ -440,7 +439,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
                               "bg-gradient-to-br from-gray-100 to-gray-200",
                               "group-hover:from-cyan-100 group-hover:to-blue-100",
                               isActive &&
-                              "from-cyan-500 to-blue-500 text-white shadow-md"
+                                "from-cyan-500 to-blue-500 text-white shadow-md"
                             )}
                           >
                             {iconMap[item.title] ?? (
@@ -489,7 +488,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
                                       "flex items-center gap-3 p-2.5 rounded-lg",
                                       "transition-all duration-200 hover:bg-gray-50",
                                       childActive &&
-                                      "bg-cyan-50 text-cyan-700 font-medium"
+                                        "bg-cyan-50 text-cyan-700 font-medium"
                                     )}
                                   >
                                     <div
@@ -526,7 +525,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
                     className={cn(
                       "block p-2.5 rounded-lg transition-all duration-200 hover:bg-gray-50",
                       isActive &&
-                      "bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-200/50 shadow-sm"
+                        "bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-200/50 shadow-sm"
                     )}
                   >
                     <div className="flex items-center gap-3 w-full">
@@ -534,7 +533,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
                         className={cn(
                           "p-2 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200",
                           isActive &&
-                          "from-cyan-500 to-blue-500 text-white shadow-md"
+                            "from-cyan-500 to-blue-500 text-white shadow-md"
                         )}
                       >
                         {iconMap[item.title] ?? <Folder className="h-4 w-4" />}

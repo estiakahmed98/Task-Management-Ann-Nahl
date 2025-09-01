@@ -12,18 +12,18 @@ import ChatWindow from "@/components/chat/ChatWindow";
 import { Search } from "lucide-react";
 
 // helpers (same as before)
-function getOtherUser(c: any, myId?: string) {
+function getOtherUser(c: any, myId?: string | null) {
   if (!c?.participants || !myId) return null;
   return c.participants.find((p: any) => p.user?.id !== myId)?.user || null;
 }
-function getConversationTitle(c: any, myId?: string) {
+function getConversationTitle(c: any, myId?: string | null) {
   if (c?.type === "dm") {
     const other = getOtherUser(c, myId);
     return other?.name || "Direct Message";
   }
   return c?.title || (c?.type ? c.type.toUpperCase() : "Conversation");
 }
-function getConversationSubtitle(c: any, myId?: string) {
+function getConversationSubtitle(c: any, myId?: string | null) {
   if (c?.type === "dm") {
     const other = getOtherUser(c, myId);
     return other?.email || "Direct message";
