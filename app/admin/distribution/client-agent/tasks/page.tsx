@@ -97,6 +97,9 @@ type ClientHeader = {
   package: { name: string | null } | null;
 };
 
+/* Small type for cycle groups with a label (date) */
+type CycleGroup = { cycle: number; items: Task[]; label: string };
+
 /* =========================
    Helpers
    ========================= */
@@ -106,6 +109,50 @@ function formatDate(iso?: string | null) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleDateString();
+}
+
+/** Format either an ISO datetime or a YYYY-MM-DD string as "October 25, 2025" */
+function formatDateLong(input?: string | null) {
+  if (!input) return "—";
+  // Accept both full ISO ("2025-10-25T12:34:56Z") and date-only ("2025-10-25")
+  const ymd = /^\d{4}-\d{2}-\d{2}$/.test(input) ? input : dateOnlyISO(input);
+  if (!ymd) return "—";
+  const [y, m, d] = ymd.split("-").map(Number);
+  const dt = new Date(y, m - 1, d); // local date
+  return dt.toLocaleDateString(undefined, {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/** Return a YYYY-MM-DD date from an ISO string (or null). */
+function dateOnlyISO(iso?: string | null) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`; // YYYY-MM-DD
+}
+
+/** Pick the cycle’s representative date:
+ *  - most frequent dueDate date (YYYY-MM-DD)
+ *  - fallback to createdAt date
+ *  - tie-breaker: earliest date
+ */
+function pickCycleDateISO(items: Task[]): string | null {
+  const counts: Record<string, number> = {};
+  for (const t of items) {
+    const base = dateOnlyISO(t.dueDate) ?? dateOnlyISO(t.createdAt);
+    if (!base) continue;
+    counts[base] = (counts[base] ?? 0) + 1;
+  }
+  const keys = Object.keys(counts);
+  if (!keys.length) return null;
+  keys.sort((a, b) => counts[b] - counts[a] || a.localeCompare(b)); // by freq desc, then earliest
+  return keys[0]; // YYYY-MM-DD
 }
 
 /** Extract trailing cycle number: “… -1” / “…-1” / “… – 1” etc. */
@@ -302,7 +349,7 @@ export default function CreatedTasksPage() {
     return copy;
   }, [tasks, sort]);
 
-  const cycles = useMemo(() => {
+  const cycles = useMemo<CycleGroup[]>(() => {
     const map = new Map<number, Task[]>();
     const misc: Task[] = [];
 
@@ -316,17 +363,26 @@ export default function CreatedTasksPage() {
       }
     }
 
-    const ordered = Array.from(map.entries())
+    const ordered: CycleGroup[] = Array.from(map.entries())
       .sort(([a], [b]) => a - b)
-      .map(([cycle, items]) => ({ cycle, items }));
+      .map(([cycle, items]) => {
+        const dayISO = pickCycleDateISO(items); // YYYY-MM-DD or null
+        const label = dayISO ? formatDateLong(dayISO) : `Cycle ${cycle}`;
+        return { cycle, items, label };
+      });
 
-    if (misc.length) ordered.push({ cycle: 0, items: misc });
+    if (misc.length)
+      ordered.push({
+        cycle: 0,
+        items: misc,
+        label: "Misc",
+      });
+
     return ordered;
   }, [sortedTasks]);
 
-  const allCycleLabels = cycles.map((c) =>
-    c.cycle === 0 ? "Misc" : `Cycle ${c.cycle}`
-  );
+  const allCycleLabels = cycles.map((c) => c.label);
+
   useEffect(() => {
     setExpandedCycles((prev) => {
       if (Object.keys(prev).length) return prev;
@@ -587,10 +643,10 @@ export default function CreatedTasksPage() {
                       ref={cyclesNavRef}
                       className="flex flex-wrap gap-2 mb-6"
                     >
-                      {cycles.map(({ cycle }, idx) => {
+                      {cycles.map((group) => {
+                        const { cycle, label } = group;
                         const key = String(cycle);
                         const active = expandedCycles[key];
-                        const label = cycle === 0 ? "Misc" : `Cycle ${cycle}`;
                         return (
                           <Button
                             key={key}
@@ -622,10 +678,10 @@ export default function CreatedTasksPage() {
 
                     {/* Cycle sections */}
                     <div className="space-y-10">
-                      {cycles.map(({ cycle, items }) => {
+                      {cycles.map(({ cycle, items, label }) => {
                         const open = !!expandedCycles[String(cycle)];
-                        const label =
-                          cycle === 0 ? "Misc (Unnumbered)" : `Cycle ${cycle}`;
+                        const headerLabel =
+                          cycle === 0 ? "Misc (Unnumbered)" : label;
 
                         // mini-stats for the cycle header
                         const byStatus = items.reduce<Record<string, number>>(
@@ -642,9 +698,9 @@ export default function CreatedTasksPage() {
                           .filter((n) => Number.isFinite(n)) as number[];
                         const dueRange =
                           dueMs.length > 0
-                            ? `${formatDate(
+                            ? `${formatDateLong(
                                 new Date(Math.min(...dueMs)).toISOString()
-                              )} – ${formatDate(
+                              )} – ${formatDateLong(
                                 new Date(Math.max(...dueMs)).toISOString()
                               )}`
                             : "—";
@@ -669,7 +725,7 @@ export default function CreatedTasksPage() {
                                   </div>
                                   <div>
                                     <div className="text-xl font-bold leading-5">
-                                      {label}
+                                      {headerLabel}
                                     </div>
                                     <div className="text-slate-600 text-sm">
                                       {items.length} task

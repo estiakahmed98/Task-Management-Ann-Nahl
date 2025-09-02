@@ -62,14 +62,13 @@ const iconMap: Record<string, React.ReactNode> = {
   "All Clients": <Users className="h-4 w-4" />,
   "Add Client": <UserPlus className="h-4 w-4" />,
 
-  // Packages / Templates
+  // Packages / Templatesadmin/qc-review
   Packages: <Package className="h-4 w-4" />,
   "All Package": <Boxes className="h-4 w-4" />,
   Template: <FileText className="h-4 w-4" />,
 
   // Distribution
   Distribution: <Share2 className="h-4 w-4" />,
-  "Task Creation": <ClipboardPlus className="h-4 w-4" />,
   "Clients to Agents": <Share2 className="h-4 w-4" />,
 
   // Tasks
@@ -231,11 +230,6 @@ export function AppSidebar({ className }: AppSidebarProps) {
             url: "/admin/distribution/client-agent",
             roles: ["admin"],
           },
-          {
-            title: "Task Creation",
-            url: "/admin/distribution/create-task",
-            roles: ["admin"],
-          },
         ],
       },
 
@@ -256,6 +250,8 @@ export function AppSidebar({ className }: AppSidebarProps) {
       // Tasks for Agent
       { title: "Tasks", url: "/agent/tasks", roles: ["agent"] },
 
+      { title: "QC Review", url: "/qc/tasks", roles: ["qc"] },
+
       // Agents
       {
         title: "Agents",
@@ -268,7 +264,14 @@ export function AppSidebar({ className }: AppSidebarProps) {
 
       // Standalone admin links
       { title: "Team Management", url: "/admin/teams", roles: ["admin"] },
-      { title: "QC", url: "/admin/qc-review", roles: ["admin"] },
+      {
+        title: "QC",
+        roles: ["admin"],
+        children: [
+          { title: "QC Dashboard", url: "/admin/qc/qc-dashboard", roles: ["admin"] },
+          { title: "QC Review", url: "/admin/qc/qc-review", roles: ["admin"] },
+        ],
+      },
       {
         title: "Role Permissions",
         url: "/admin/role-permissions",

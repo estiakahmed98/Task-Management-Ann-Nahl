@@ -1,4 +1,4 @@
-//app/qc/qc-review/page.tsx
+//app/admin/qc/qc-dashboard/page.tsx
 
 import QCDashboard from "@/components/QCDashboard";
 

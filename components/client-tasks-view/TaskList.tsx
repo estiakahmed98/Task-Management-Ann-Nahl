@@ -1,7 +1,15 @@
+//app/components/client-tasks-view/TaskList.tsx
+
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -108,7 +116,11 @@ export default function TaskList({
   const [copied, setCopied] = useState<{ id: string; type: "url" | "password" } | null>(null);
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
 
-  const handleCopy = async (text: string, id: string, type: "url" | "password") => {
+  const handleCopy = async (
+    text: string,
+    id: string,
+    type: "url" | "password"
+  ) => {
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
@@ -143,7 +155,8 @@ export default function TaskList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredTasks]);
 
-  const getDisplayUrl = (t: Task) => computeUrl(t) ?? lastKnownUrl.get(t.id) ?? null;
+  const getDisplayUrl = (t: Task) =>
+    computeUrl(t) ?? lastKnownUrl.get(t.id) ?? null;
 
   // 🔘 Select-all: locked বাদ
   const unlockedFiltered = useMemo(
@@ -636,10 +649,17 @@ export default function TaskList({
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8 rounded-md"
-                                    onClick={() => handleCopy(displayUrl, task.id, "url")}
+                                    onClick={() =>
+                                      handleCopy(displayUrl, task.id, "url")
+                                    }
                                     aria-label="Copy URL"
                                     title="Copy URL"
                                   >
+                                    {urlCopied ? (
+                                      <Check className="h-4 w-4" />
+                                    ) : (
+                                      <Copy className="h-4 w-4" />
+                                    )}
                                     {urlCopied ? (
                                       <Check className="h-4 w-4" />
                                     ) : (
