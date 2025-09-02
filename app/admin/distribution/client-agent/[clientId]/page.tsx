@@ -806,7 +806,7 @@ export default function TaskDistributionForClient() {
                       <PopoverContent
                         align="start"
                         sideOffset={8}
-                        className="p-0 w-[350px] overflow-hidden rounded-2xl border border-slate-200 shadow-2xl bg-white"
+                        className="p-0 w-[300px] overflow-hidden rounded-2xl border border-slate-200 shadow-2xl bg-white"
                       >
                         <div className="px-3 py-2 bg-gradient-to-r from-indigo-500 via-blue-500 to-cyan-500">
                           <div className="text-[10px] uppercase tracking-wide text-white/80">
