@@ -549,11 +549,6 @@ export default function QCDashboardPro({ tasks = [] }: { tasks: AnyTask[] }) {
                   </CardTitle>
                   <CardDescription>Filtered by date range & query</CardDescription>
                 </div>
-                <Button asChild variant="ghost" size="sm" className="gap-1">
-                  <Link href="#">
-                    Export <ChevronDown className="h-4 w-4" />
-                  </Link>
-                </Button>
               </div>
             </CardHeader>
             <CardContent className="p-0">
