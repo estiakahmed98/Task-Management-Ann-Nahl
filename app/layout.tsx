@@ -33,10 +33,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* ✅ পুরো অ্যাপকে AuthProvider দিয়ে wrap করলাম */}
         <AuthProvider>
-          <ImpersonationBanner /> {/* 🆕 */}
-          <PresencePinger /> {/* 🆕 lastSeen heartbeat */}
+          <ImpersonationBanner />
+          <PresencePinger />
           {children}
           <Toaster position="bottom-right" richColors />
         </AuthProvider>

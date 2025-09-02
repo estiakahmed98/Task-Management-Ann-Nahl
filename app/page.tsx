@@ -6,7 +6,7 @@ import { BackgroundGradient } from "@/components/ui/background-gradient";
 
 export default function LoginPage() {
   return (
-    <BackgroundLines className="min-h-svh flex items-center justify-center px-6 py-10">
+    <BackgroundLines className="min-h-svh flex items-center justify-center">
       <BackgroundGradient containerClassName="w-full max-w-sm rounded-xl">
         <LoginForm />
       </BackgroundGradient>
