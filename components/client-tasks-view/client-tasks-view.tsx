@@ -1,18 +1,25 @@
+//apps/components/client-tasks-view/client-tasks-view.tsx
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import {
-  Card, CardContent, CardHeader, CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Clock, Play, CheckCircle, AlertCircle, XCircle,
-   TrendingUp, RefreshCw, Activity, ShieldCheck,
+  ArrowLeft,
+  Clock,
+  Play,
+  CheckCircle,
+  AlertCircle,
+  XCircle,
+  TrendingUp,
+  RefreshCw,
+  Activity,
+  ShieldCheck,
 } from "lucide-react";
 import { DriveImageGallery } from "@/components/drive-image-gallery"; // <-- keep your path as before; adjust if needed
-
 
 import TaskList from "@/components/client-tasks-view/TaskList";
 import TaskDialogs from "@/components/client-tasks-view/TaskDialogs";
@@ -53,16 +60,33 @@ export interface Task {
   } | null;
   category: { id: string; name: string } | null;
   assignedTo: {
-    id: string; firstName: string; lastName: string; email: string; image: string | null;
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    image: string | null;
   } | null;
   comments: Array<{
-    id: string; text: string; date: string;
-    author: { id: string; firstName: string; lastName: string; image: string | null } | null;
+    id: string;
+    text: string;
+    date: string;
+    author: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      image: string | null;
+    } | null;
   }>;
 }
 export interface TaskStats {
-  total: number; pending: number; inProgress: number; completed: number;
-  overdue: number; cancelled: number; reassigned: number; qc_approved: number;
+  total: number;
+  pending: number;
+  inProgress: number;
+  completed: number;
+  overdue: number;
+  cancelled: number;
+  reassigned: number;
+  qc_approved: number;
 }
 export interface TimerState {
   taskId: string;
@@ -74,13 +98,23 @@ export interface TimerState {
   startedAt?: number;
 }
 interface GlobalTimerLock {
-  isLocked: boolean; taskId: string | null; agentId: string | null; taskName: string | null;
+  isLocked: boolean;
+  taskId: string | null;
+  agentId: string | null;
+  taskName: string | null;
 }
 interface ClientTasksViewProps {
-  clientId: string; clientName: string; agentId: string; onBack: () => void;
+  clientId: string;
+  clientName: string;
+  agentId: string;
+  onBack: () => void;
 }
 interface Agent {
-  id: string; name: string; email: string; image: string | null; role: string;
+  id: string;
+  name: string;
+  email: string;
+  image: string | null;
+  role: string;
 }
 
 /* =========================
@@ -204,11 +238,20 @@ export function ClientTasksView({
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const [timerState, setTimerState] = useState<TimerState | null>(null);
   const [globalTimerLock, setGlobalTimerLock] = useState<GlobalTimerLock>({
-    isLocked: false, taskId: null, agentId: null, taskName: null,
+    isLocked: false,
+    taskId: null,
+    agentId: null,
+    taskName: null,
   });
   const [stats, setStats] = useState<TaskStats>({
-    total: 0, pending: 0, inProgress: 0, completed: 0,
-    overdue: 0, cancelled: 0, reassigned: 0, qc_approved: 0,
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    completed: 0,
+    overdue: 0,
+    cancelled: 0,
+    reassigned: 0,
+    qc_approved: 0,
   });
   const [isCompletionConfirmOpen, setIsCompletionConfirmOpen] = useState(false);
   const [taskToComplete, setTaskToComplete] = useState<Task | null>(null);
@@ -222,7 +265,6 @@ export function ClientTasksView({
   const [clientData, setClientData] = useState<any>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-  
 
   // --- API / handlers (kept same) ---
   const fetchClientTasks = useCallback(async () => {
@@ -230,14 +272,18 @@ export function ClientTasksView({
     setError(null);
     try {
       const agentResponse = await fetch(`/api/tasks/clients/agents/${agentId}`);
-      if (!agentResponse.ok) throw new Error(`HTTP error! status: ${agentResponse.status}`);
+      if (!agentResponse.ok)
+        throw new Error(`HTTP error! status: ${agentResponse.status}`);
       const agentData = await agentResponse.json();
 
-      const currentClient = agentData.find((client: any) => client.id === clientId);
+      const currentClient = agentData.find(
+        (client: any) => client.id === clientId
+      );
       if (currentClient) setClientData(currentClient);
 
       const response = await fetch(`/api/tasks/client/${clientId}`);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok)
+        throw new Error(`HTTP error! status: ${response.status}`);
       const data: Task[] = await response.json();
 
       const agentTasks = data.filter((task) => task.assignedTo?.id === agentId);
@@ -256,7 +302,8 @@ export function ClientTasksView({
         ).length,
         cancelled: agentTasks.filter((t) => t.status === "cancelled").length,
         reassigned: agentTasks.filter((t) => t.status === "reassigned").length,
-        qc_approved: agentTasks.filter((t) => t.status === "qc_approved").length,
+        qc_approved: agentTasks.filter((t) => t.status === "qc_approved")
+          .length,
       });
     } catch (err: any) {
       const errorMessage = err.message || "Failed to fetch client tasks.";
@@ -278,10 +325,14 @@ export function ClientTasksView({
         });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+          throw new Error(
+            errorData.message || `HTTP error! status: ${response.status}`
+          );
         }
         const updatedTask = await response.json();
-        setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...updatedTask } : t)));
+        setTasks((prev) =>
+          prev.map((t) => (t.id === taskId ? { ...t, ...updatedTask } : t))
+        );
         return updatedTask;
       } catch (err: any) {
         console.error("Failed to update task:", err);
@@ -301,14 +352,21 @@ export function ClientTasksView({
             isLocked: timer.isRunning,
             taskId: timer.isRunning ? timer.taskId : null,
             agentId: timer.isRunning ? agentId : null,
-            taskName: timer.isRunning ? tasks.find((t) => t.id === timer.taskId)?.name || null : null,
+            taskName: timer.isRunning
+              ? tasks.find((t) => t.id === timer.taskId)?.name || null
+              : null,
           };
           localStorage.setItem("globalTimerLock", JSON.stringify(lockState));
           setGlobalTimerLock(lockState as GlobalTimerLock);
         } else {
           localStorage.removeItem("taskTimer");
           localStorage.removeItem("globalTimerLock");
-          setGlobalTimerLock({ isLocked: false, taskId: null, agentId: null, taskName: null });
+          setGlobalTimerLock({
+            isLocked: false,
+            taskId: null,
+            agentId: null,
+            taskName: null,
+          });
         }
       } catch (e) {
         console.error("Failed to save timer to storage:", e);
@@ -325,8 +383,13 @@ export function ClientTasksView({
         const timerData = JSON.parse(saved);
         let adjustedRemainingSeconds = timerData.remainingSeconds;
         if (timerData.isRunning) {
-          const elapsedSeconds = Math.floor((Date.now() - (timerData.savedAt || Date.now())) / 1000);
-          adjustedRemainingSeconds = Math.max(0, timerData.remainingSeconds - elapsedSeconds);
+          const elapsedSeconds = Math.floor(
+            (Date.now() - (timerData.savedAt || Date.now())) / 1000
+          );
+          adjustedRemainingSeconds = Math.max(
+            0,
+            timerData.remainingSeconds - elapsedSeconds
+          );
         }
         const timer: TimerState = {
           taskId: timerData.taskId,
@@ -338,13 +401,18 @@ export function ClientTasksView({
           startedAt: timerData.startedAt || Date.now(),
         };
         setTimerState(timer);
-        if (lockSaved) setGlobalTimerLock(JSON.parse(lockSaved) as GlobalTimerLock);
+        if (lockSaved)
+          setGlobalTimerLock(JSON.parse(lockSaved) as GlobalTimerLock);
 
         const task = tasks.find((t) => t.id === timer.taskId);
         toast.info(
           timer.isRunning
-            ? `Timer restored for "${task?.name || "Unknown Task"}". Continuing from where you left off.`
-            : `Paused timer restored for "${task?.name || "Unknown Task"}". Click play to continue.`
+            ? `Timer restored for "${
+                task?.name || "Unknown Task"
+              }". Continuing from where you left off.`
+            : `Paused timer restored for "${
+                task?.name || "Unknown Task"
+              }". Click play to continue.`
         );
         return timer;
       }
@@ -367,7 +435,8 @@ export function ClientTasksView({
         await handleUpdateTask(taskId, { status: "in_progress" });
         const existingTimer = timerState?.taskId === taskId ? timerState : null;
         const totalSeconds = task.idealDurationMinutes * 60;
-        const remainingSeconds = existingTimer?.remainingSeconds ?? totalSeconds;
+        const remainingSeconds =
+          existingTimer?.remainingSeconds ?? totalSeconds;
 
         const newTimer: TimerState = {
           taskId,
@@ -393,11 +462,17 @@ export function ClientTasksView({
   const handlePauseTimer = useCallback(
     (taskId: string) => {
       if (timerState?.taskId === taskId) {
-        const updatedTimer = { ...timerState, isRunning: false, isGloballyLocked: false };
+        const updatedTimer = {
+          ...timerState,
+          isRunning: false,
+          isGloballyLocked: false,
+        };
         setTimerState(updatedTimer);
         saveTimerToStorage(updatedTimer);
         const task = tasks.find((t) => t.id === taskId);
-        toast.info(`Timer paused for "${task?.name}". All tasks are now unlocked.`);
+        toast.info(
+          `Timer paused for "${task?.name}". All tasks are now unlocked.`
+        );
       }
     },
     [timerState, tasks, saveTimerToStorage]
@@ -418,7 +493,9 @@ export function ClientTasksView({
         };
         setTimerState(updatedTimer);
         saveTimerToStorage(null);
-        toast.info(`Timer reset for "${task?.name}". All tasks are now unlocked.`);
+        toast.info(
+          `Timer reset for "${task?.name}". All tasks are now unlocked.`
+        );
       }
     },
     [timerState, tasks, saveTimerToStorage]
@@ -436,11 +513,15 @@ export function ClientTasksView({
     try {
       let actualDurationMinutes = taskToComplete.actualDurationMinutes;
 
-      if (timerState?.taskId === taskToComplete.id && taskToComplete.idealDurationMinutes) {
+      if (
+        timerState?.taskId === taskToComplete.id &&
+        taskToComplete.idealDurationMinutes
+      ) {
         const totalTimeUsedSeconds =
           timerState.totalSeconds - timerState.remainingSeconds;
         actualDurationMinutes = Math.ceil(totalTimeUsedSeconds / 60);
-        if (actualDurationMinutes < 1 && totalTimeUsedSeconds > 0) actualDurationMinutes = 1;
+        if (actualDurationMinutes < 1 && totalTimeUsedSeconds > 0)
+          actualDurationMinutes = 1;
 
         const idealMinutes = taskToComplete.idealDurationMinutes;
         const actualMinutes = actualDurationMinutes;
@@ -448,33 +529,52 @@ export function ClientTasksView({
         if (timerState.remainingSeconds <= 0) {
           const overtimeSeconds = Math.abs(timerState.remainingSeconds);
           const overtimeDisplay = formatTimerDisplay(overtimeSeconds);
-          toast.success(`Task "${taskToComplete.name}" completed with overtime!`, {
-            description: `Ideal: ${formatDuration(idealMinutes)}, Actual: ${formatDuration(actualMinutes)} (+${overtimeDisplay} overtime)`,
-            duration: 5000,
-          });
+          toast.success(
+            `Task "${taskToComplete.name}" completed with overtime!`,
+            {
+              description: `Ideal: ${formatDuration(
+                idealMinutes
+              )}, Actual: ${formatDuration(
+                actualMinutes
+              )} (+${overtimeDisplay} overtime)`,
+              duration: 5000,
+            }
+          );
         } else {
           const savedTime = formatTimerDisplay(timerState.remainingSeconds);
-          toast.success(`Task "${taskToComplete.name}" completed ahead of schedule!`, {
-            description: `Completed in ${formatDuration(actualMinutes)} (${savedTime} saved)`,
-            duration: 5000,
-          });
+          toast.success(
+            `Task "${taskToComplete.name}" completed ahead of schedule!`,
+            {
+              description: `Completed in ${formatDuration(
+                actualMinutes
+              )} (${savedTime} saved)`,
+              duration: 5000,
+            }
+          );
         }
       } else {
         toast.success(`Task "${taskToComplete.name}" marked as completed!`);
       }
 
-      const updates: any = { status: "completed", completedAt: new Date().toISOString() };
-      if (completionLink?.trim()) updates.completionLink = completionLink.trim();
+      const updates: any = {
+        status: "completed",
+        completedAt: new Date().toISOString(),
+      };
+      if (completionLink?.trim())
+        updates.completionLink = completionLink.trim();
       if (username?.trim()) updates.username = username.trim();
       if (email?.trim()) updates.email = email.trim();
       if (password?.trim()) updates.password = password;
-      if (typeof actualDurationMinutes === "number") updates.actualDurationMinutes = actualDurationMinutes;
+      if (typeof actualDurationMinutes === "number")
+        updates.actualDurationMinutes = actualDurationMinutes;
 
       await handleUpdateTask(taskToComplete.id, updates);
 
       setTasks((prev) =>
         prev.map((t) =>
-          t.id === taskToComplete.id ? { ...t, ...updates, actualDurationMinutes } : t
+          t.id === taskToComplete.id
+            ? { ...t, ...updates, actualDurationMinutes }
+            : t
         )
       );
 
@@ -519,7 +619,9 @@ export function ClientTasksView({
       if (action === "completed") {
         const tasksToComplete = selectedTasks
           .map((id) => tasks.find((t) => t.id === id))
-          .filter((t): t is Task => t !== undefined && t.status !== "completed");
+          .filter(
+            (t): t is Task => t !== undefined && t.status !== "completed"
+          );
 
         if (tasksToComplete.length === 1) {
           setTaskToComplete(tasksToComplete[0]);
@@ -549,7 +651,9 @@ export function ClientTasksView({
               if (timerState?.taskId === taskId && task?.idealDurationMinutes) {
                 const totalTimeUsedSeconds =
                   timerState.totalSeconds - timerState.remainingSeconds;
-                const actualDurationMinutes = Math.ceil(totalTimeUsedSeconds / 60);
+                const actualDurationMinutes = Math.ceil(
+                  totalTimeUsedSeconds / 60
+                );
                 if (actualDurationMinutes > 0) {
                   updates.actualDurationMinutes = actualDurationMinutes;
                 }
@@ -557,7 +661,9 @@ export function ClientTasksView({
             }
 
             await handleUpdateTask(taskId, updates);
-            setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t)));
+            setTasks((prev) =>
+              prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t))
+            );
             successCount++;
 
             if (action === "completed" && timerState?.taskId === taskId) {
@@ -571,13 +677,15 @@ export function ClientTasksView({
 
         if (successCount > 0) {
           toast.success(
-            `Successfully updated ${successCount} task${successCount !== 1 ? "s" : ""} to ${
-              action === "completed" ? "completed" : action
-            }`
+            `Successfully updated ${successCount} task${
+              successCount !== 1 ? "s" : ""
+            } to ${action === "completed" ? "completed" : action}`
           );
         }
         if (errorCount > 0) {
-          toast.error(`Failed to update ${errorCount} task${errorCount !== 1 ? "s" : ""}`);
+          toast.error(
+            `Failed to update ${errorCount} task${errorCount !== 1 ? "s" : ""}`
+          );
         }
         setSelectedTasks([]);
         setIsStatusModalOpen(false);
@@ -607,9 +715,13 @@ export function ClientTasksView({
       const matchesSearch =
         task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         task.category?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.templateSiteAsset?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === "all" || task.status === statusFilter;
-      const matchesPriority = priorityFilter === "all" || task.priority === priorityFilter;
+        task.templateSiteAsset?.name
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase());
+      const matchesStatus =
+        statusFilter === "all" || task.status === statusFilter;
+      const matchesPriority =
+        priorityFilter === "all" || task.priority === priorityFilter;
       return matchesSearch && matchesStatus && matchesPriority;
     })
     .sort((a, b) => {
@@ -621,11 +733,15 @@ export function ClientTasksView({
   const overdueCount = tasks.filter(
     (task) =>
       task.status === "overdue" ||
-      (task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "completed")
+      (task.dueDate &&
+        new Date(task.dueDate) < new Date() &&
+        task.status !== "completed")
   ).length;
 
   // effects (kept same)
-  useEffect(() => { fetchClientTasks(); }, [fetchClientTasks]);
+  useEffect(() => {
+    fetchClientTasks();
+  }, [fetchClientTasks]);
 
   useEffect(() => {
     const now = new Date();
@@ -652,7 +768,10 @@ export function ClientTasksView({
         setTimerState((prev) => {
           if (!prev || !prev.isRunning) return prev;
           const newRemainingSeconds = prev.remainingSeconds - 1;
-          const updatedTimer = { ...prev, remainingSeconds: newRemainingSeconds };
+          const updatedTimer = {
+            ...prev,
+            remainingSeconds: newRemainingSeconds,
+          };
 
           if (newRemainingSeconds === 0) {
             const task = tasks.find((t) => t.id === prev.taskId);
@@ -676,7 +795,9 @@ export function ClientTasksView({
         });
       }, 1000);
     }
-    return () => { if (interval) clearInterval(interval); };
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [timerState?.isRunning, saveTimerToStorage, tasks, handleUpdateTask]);
 
   useEffect(() => {
@@ -688,7 +809,9 @@ export function ClientTasksView({
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-lg text-gray-600 dark:text-gray-400">Loading tasks...</p>
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            Loading tasks...
+          </p>
         </div>
       </div>
     );
@@ -702,8 +825,13 @@ export function ClientTasksView({
             <Activity className="h-8 w-8 text-red-600 dark:text-red-400" />
           </div>
           <div className="space-y-2">
-            <p className="text-lg font-medium text-red-600 dark:text-red-400">Error: {error}</p>
-            <Button onClick={fetchClientTasks} className="bg-blue-600 hover:bg-blue-700">
+            <p className="text-lg font-medium text-red-600 dark:text-red-400">
+              Error: {error}
+            </p>
+            <Button
+              onClick={fetchClientTasks}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               <TrendingUp className="w-4 h-4 mr-2" />
               Retry
             </Button>
@@ -715,7 +843,9 @@ export function ClientTasksView({
 
   const onBackToClients = () => {
     if (isAnyTimerRunning) {
-      toast.error("Cannot navigate back while a timer is running. Please pause or complete the task first.");
+      toast.error(
+        "Cannot navigate back while a timer is running. Please pause or complete the task first."
+      );
       return;
     }
     onBack();
@@ -731,7 +861,9 @@ export function ClientTasksView({
               variant="ghost"
               onClick={onBackToClients}
               className={`hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-xl p-3 ${
-                isBackButtonDisabled ? "opacity-50 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent" : ""
+                isBackButtonDisabled
+                  ? "opacity-50 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent"
+                  : ""
               }`}
               disabled={isBackButtonDisabled}
             >
@@ -739,11 +871,20 @@ export function ClientTasksView({
               Back to Clients
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50">{clientName}</h1>
-              <p className="text-gray-600 dark:text-gray-400">Task Management Dashboard</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50">
+                {clientName}
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">
+                Task Management Dashboard
+              </p>
             </div>
           </div>
-          <Button onClick={fetchClientTasks} variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
+          <Button
+            onClick={fetchClientTasks}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2 bg-transparent"
+          >
             <RefreshCw className="h-4 w-4" />
             Refresh
           </Button>
@@ -754,13 +895,17 @@ export function ClientTasksView({
           <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
             <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-blue-100">Total Tasks</CardTitle>
+              <CardTitle className="text-sm font-medium text-blue-100">
+                Total Tasks
+              </CardTitle>
               <div className="p-2 bg-white/20 rounded-lg">
                 <Activity className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent className="relative">
-              <div className="text-3xl font-bold text-white">{tasks.length}</div>
+              <div className="text-3xl font-bold text-white">
+                {tasks.length}
+              </div>
               <p className="text-xs text-blue-100 mt-1">All assigned tasks</p>
             </CardContent>
           </Card>
@@ -768,7 +913,9 @@ export function ClientTasksView({
           <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
             <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-emerald-100">Completed</CardTitle>
+              <CardTitle className="text-sm font-medium text-emerald-100">
+                Completed
+              </CardTitle>
               <div className="p-2 bg-white/20 rounded-lg">
                 <CheckCircle className="h-5 w-5 text-white" />
               </div>
@@ -784,7 +931,9 @@ export function ClientTasksView({
           <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-amber-500 to-amber-600 text-white">
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
             <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-amber-100">In Progress</CardTitle>
+              <CardTitle className="text-sm font-medium text-amber-100">
+                In Progress
+              </CardTitle>
               <div className="p-2 bg-white/20 rounded-lg">
                 <Play className="h-5 w-5 text-white" />
               </div>
@@ -793,27 +942,38 @@ export function ClientTasksView({
               <div className="text-3xl font-bold text-white">
                 {tasks.filter((t) => t.status === "in_progress").length}
               </div>
-              <p className="text-xs text-amber-100 mt-1">Currently working on</p>
+              <p className="text-xs text-amber-100 mt-1">
+                Currently working on
+              </p>
             </CardContent>
           </Card>
 
           <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-red-500 to-red-600 text-white">
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
             <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-red-100">Overdue</CardTitle>
+              <CardTitle className="text-sm font-medium text-red-100">
+                Overdue
+              </CardTitle>
               <div className="p-2 bg-white/20 rounded-lg">
                 <AlertCircle className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent className="relative">
-              <div className="text-3xl font-bold text-white">{overdueCount}</div>
-              <p className="text-xs text-red-100 mt-1">Need immediate attention</p>
+              <div className="text-3xl font-bold text-white">
+                {overdueCount}
+              </div>
+              <p className="text-xs text-red-100 mt-1">
+                Need immediate attention
+              </p>
             </CardContent>
           </Card>
         </div>
 
         {clientData?.imageDrivelink && (
-          <DriveImageGallery driveLink={clientData.imageDrivelink} clientName={clientName} />
+          <DriveImageGallery
+            driveLink={clientData.imageDrivelink}
+            clientName={clientName}
+          />
         )}
 
         {/* Task Management Section */}

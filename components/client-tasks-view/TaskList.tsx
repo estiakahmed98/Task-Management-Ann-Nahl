@@ -1,6 +1,14 @@
+//app/components/client-tasks-view/TaskList.tsx
+
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -267,7 +275,9 @@ export default function TaskList({
                         </div>
                       </td>
 
-                      <td className="py-4 px-4">{getStatusBadge(task.status)}</td>
+                      <td className="py-4 px-4">
+                        {getStatusBadge(task.status)}
+                      </td>
 
                       <td className="py-4 px-4">
                         {getPriorityBadge(task.priority)}
@@ -304,12 +314,10 @@ export default function TaskList({
                               {
                                 Excellent:
                                   "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
-                                Good:
-                                  "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+                                Good: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
                                 Average:
                                   "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-                                Lazy:
-                                  "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+                                Lazy: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
                               }[task.performanceRating]
                             }
                           >
@@ -412,12 +420,10 @@ export default function TaskList({
                                 {
                                   Excellent:
                                     "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
-                                  Good:
-                                    "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+                                  Good: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
                                   Average:
                                     "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-                                  Lazy:
-                                    "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+                                  Lazy: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
                                 }[task.performanceRating!]
                               }
                             >

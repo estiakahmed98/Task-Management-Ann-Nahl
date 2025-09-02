@@ -1,3 +1,5 @@
+//app/components/client-tasks-view/TaskTimer.tsx
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -8,7 +10,7 @@ export default function TaskTimer({
   task,
   timerState,
   onStartTimer,
-  onPauseTimer, 
+  onPauseTimer,
   onRequestComplete,
   formatTimerDisplay,
 }: {
@@ -79,7 +81,9 @@ export default function TaskTimer({
             size="sm"
             onClick={() => onStartTimer(task.id)}
             className="h-8 w-8 p-0 hover:bg-green-100 dark:hover:bg-green-900/30"
-            disabled={task.status === "completed" || task.status === "cancelled"}
+            disabled={
+              task.status === "completed" || task.status === "cancelled"
+            }
             title="Start timer"
           >
             <Play className="h-4 w-4 text-green-600 dark:text-green-400" />
