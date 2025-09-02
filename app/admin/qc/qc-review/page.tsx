@@ -1,6 +1,4 @@
-//app/admin/qc-review/page.tsx
-
-import QCReview from "@/components/QCDashboard";
+import { QCReview } from "@/app/qc/tasks/QCReview";
 
 export default function Page() {
   return (
