@@ -3,7 +3,11 @@
 import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { TrendingUp, Timer, CheckCircle2, CircleAlert, CalendarClock, Gauge, RotateCcw } from "lucide-react";
@@ -179,10 +183,6 @@ export default function QCDashboard({ tasks = [] }: { tasks: AnyTask[] }) {
           </div>
         </div>
       )}
-
-      <div className="text-[11px] text-muted-foreground ml-1">
-        Filtering by <span className="font-medium">updatedAt</span> (reassign-friendly).
-      </div>
     </div>
   );
 
@@ -192,18 +192,17 @@ export default function QCDashboard({ tasks = [] }: { tasks: AnyTask[] }) {
       <div className="flex items-end justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">QC Dashboard</h1>
-          <p className="text-xs text-muted-foreground">Minimal • professional • one-screen overview</p>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        {/* <div className="flex items-center gap-2 w-full sm:w-auto">
           <Input placeholder="Quick filter (client / assignee / task)" value={q} onChange={(e) => setQ(e.target.value)} className="h-9 sm:w-72" />
-        </div>
+        </div> */}
+        <RangeControls />
       </div>
 
       {/* Range Controls */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <RangeControls />
         <div className="hidden sm:block text-xs text-muted-foreground">
-          Window: <span className="font-mono">{start.toLocaleDateString()} → {end.toLocaleDateString()}</span>
+          Date Range: <span className="font-mono">{start.toLocaleDateString()} → {end.toLocaleDateString()}</span>
         </div>
       </div>
 
@@ -211,7 +210,7 @@ export default function QCDashboard({ tasks = [] }: { tasks: AnyTask[] }) {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}><KPI icon={Gauge} label="Total" value={metrics.total} /></motion.div>
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}><KPI icon={CheckCircle2} label="QC Approved" value={metrics.qcApproved} /></motion.div>
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }}><KPI icon={TrendingUp} label="Completed Task" value={metrics.completed} /></motion.div>
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }}><KPI icon={TrendingUp} label="Completed" value={metrics.completed} /></motion.div>
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}><KPI icon={CalendarClock} label="Completed Today" value={metrics.completedToday} /></motion.div>
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }}><KPI icon={RotateCcw} label="Reassign Count" value={metrics.reassignCount} hint={`Today: ${metrics.reassignToday}`} /></motion.div>
       </div>
@@ -222,6 +221,133 @@ export default function QCDashboard({ tasks = [] }: { tasks: AnyTask[] }) {
         <MiniBar title="Overdue by Assignee" data={overdueByAssignee} />
         <MiniBar title="Tasks by Client" data={mixByClient} />
       </div>
+
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="all">All Tasks</TabsTrigger>
+          <TabsTrigger value="qc">QC Approved</TabsTrigger>
+          <TabsTrigger value="overdue">Overdue</TabsTrigger>
+        </TabsList>
+
+        {/* All Tasks (sanitized) */}
+        <TabsContent value="all">
+          <Card className="rounded-2xl shadow-sm">
+            <CardContent className="p-0">
+              <ScrollArea className="max-h-[50vh] overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Task</TableHead>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Assignee</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Due</TableHead>
+                      <TableHead>Completed</TableHead>
+                      <TableHead>Ideal</TableHead>
+                      <TableHead>Actual</TableHead>
+                      <TableHead>Rating</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium">{r.name}</TableCell>
+                        <TableCell>{r.client}</TableCell>
+                        <TableCell>{r.category}</TableCell>
+                        <TableCell>{r.assignee}</TableCell>
+                        <TableCell><Badge variant="outline">{r.status}</Badge></TableCell>
+                        <TableCell>{r.priority}</TableCell>
+                        <TableCell>{fmt(r.dueDate)}</TableCell>
+                        <TableCell>{fmt(r.completedAt)}</TableCell>
+                        <TableCell>{r.ideal ?? "—"}</TableCell>
+                        <TableCell>{r.actual ?? "—"}</TableCell>
+                        <TableCell>{r.rating ?? "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* QC Approved */}
+        <TabsContent value="qc">
+          <Card className="rounded-2xl shadow-sm">
+            <CardContent className="p-0">
+              <ScrollArea className="max-h-[40vh] overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Task</TableHead>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Assignee</TableHead>
+                      <TableHead>Completed</TableHead>
+                      <TableHead>Perf</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.filter((r) => r.status === "qc_approved").map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium">{r.name}</TableCell>
+                        <TableCell>{r.client}</TableCell>
+                        <TableCell>{r.category}</TableCell>
+                        <TableCell>{r.assignee}</TableCell>
+                        <TableCell>{fmt(r.completedAt)}</TableCell>
+                        <TableCell>{r.rating ?? "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Overdue table */}
+        <TabsContent value="overdue">
+          <Card className="rounded-2xl shadow-sm">
+            <CardContent className="p-0">
+              <ScrollArea className="max-h-[40vh] overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Task</TableHead>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Assignee</TableHead>
+                      <TableHead>Due</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {overdueRows.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-mono text-[11px]">{r.id.slice(0, 8)}…</TableCell>
+                        <TableCell className="font-medium">{r.name}</TableCell>
+                        <TableCell>{r.client}</TableCell>
+                        <TableCell>{r.category}</TableCell>
+                        <TableCell>{r.assignee}</TableCell>
+                        <TableCell>{fmt(r.dueDate)}</TableCell>
+                        <TableCell><Badge variant="outline">{r.status}</Badge></TableCell>
+                      </TableRow>
+                    ))}
+                    {overdueRows.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">No overdue tasks 🎉</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
