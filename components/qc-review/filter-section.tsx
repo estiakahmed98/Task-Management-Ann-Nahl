@@ -54,16 +54,16 @@ export function FilterSection({
     <Card className="relative overflow-hidden bg-white dark:bg-slate-900 border-0 shadow-2xl shadow-slate-200/60 dark:shadow-slate-950/60">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-50/50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-800/50 dark:to-slate-900" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.1),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(46, 98, 180, 0.05),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.1),transparent_50%)]" />
       
       <div className="relative">
         {/* Header */}
-        <CardHeader className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 dark:from-slate-800 dark:via-slate-700 dark:to-slate-800 text-white border-b border-slate-200 dark:border-slate-700">
+        <CardHeader className="bg-gradient-to-r from-blue-500 via-purple-500 to-purple-700 dark:from-slate-800 dark:via-slate-700 dark:to-slate-800 text-white border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-5">
               <div className="relative">
                 <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full" />
-                <div className="relative p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
+                <div className="relative p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg">
                   <Filter className="h-6 w-6 text-white" />
                 </div>
               </div>
@@ -100,7 +100,7 @@ export function FilterSection({
           {/* Primary Filters */}
           <div className="space-y-6">
             <div className="flex items-center gap-3">
-              <div className="h-1 w-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full" />
+              <div className="h-1 w-12 bg-gradient-to-r from-blue-500 to-purple-700 rounded-full" />
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 Primary Filters
               </h3>
