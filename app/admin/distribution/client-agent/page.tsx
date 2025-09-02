@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -34,6 +34,13 @@ import {
 import { cn } from "@/lib/utils";
 import { getInitialsFromName, nameToColor } from "@/utils/avatar";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 /** ---------- Types (match /api/tasks/clients) ---------- */
 type TaskStats = {
@@ -70,6 +77,7 @@ export default function ClientUnifiedDashboard() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [packageFilter, setPackageFilter] = useState<string>("all");
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -89,7 +97,24 @@ export default function ClientUnifiedDashboard() {
     fetchClients();
   }, []);
 
+  // Unique package names for the filter dropdown
+  const packageOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const c of clients) {
+      const n = c.package?.name?.trim();
+      if (n) s.add(n);
+    }
+    return Array.from(s).sort((a, b) => a.localeCompare(b));
+  }, [clients]);
+
   const filtered = clients.filter((c) => {
+    // package filter (only package-wise)
+    if (packageFilter !== "all") {
+      const p = c.package?.name?.trim() ?? "";
+      if (p !== packageFilter) return false;
+    }
+
+    // existing search filter
     const t = search.toLowerCase();
     return (
       (c.name ?? "").toLowerCase().includes(t) ||
@@ -248,15 +273,62 @@ export default function ClientUnifiedDashboard() {
           </CardHeader>
 
           <CardContent className="p-8">
-            {/* Search */}
-            <div className="relative mb-8">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-              <Input
-                placeholder="Search clients by name, company, or ID..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-12 h-12 rounded-xl border-slate-300 bg-white shadow-sm text-base"
-              />
+            {/* Search + Package Filter */}
+            <div className="mb-8 grid grid-cols-12 gap-3 items-center">
+              {/* Search (7 cols) */}
+              <div className="relative col-span-12 md:col-span-7">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <Input
+                  placeholder="Search clients by name, company, or ID..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-12 h-12 rounded-xl border-slate-300 bg-white shadow-sm text-base w-full"
+                />
+              </div>
+
+              {/* Package filter (3 cols) */}
+              <div className="relative col-span-12 md:col-span-3">
+                {/* Floating label */}
+                <span className="absolute -top-2 left-3 px-2 text-[11px] font-semibold tracking-wide text-indigo-600 bg-white rounded-full shadow-sm ring-1 ring-indigo-100">
+                  Package
+                </span>
+                {/* Icon */}
+                <Package className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-500 pointer-events-none" />
+
+                <Select value={packageFilter} onValueChange={setPackageFilter}>
+                  <SelectTrigger className="h-12 pl-10 rounded-xl bg-white/90 shadow-sm border-0 ring-1 ring-slate-300 hover:ring-indigo-300 focus:ring-2 focus:ring-indigo-400 transition w-full">
+                    <SelectValue placeholder="Filter by package" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                    <SelectItem value="all">All Packages</SelectItem>
+                    {packageOptions.map((p) => (
+                      <SelectItem key={p} value={p}>
+                        {p}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Clear button (2 cols, beside filter) */}
+              <div className="col-span-12 md:col-span-2">
+                <Button
+                  onClick={() => {
+                    setSearch("");
+                    setPackageFilter("all");
+                  }}
+                  disabled={search.trim() === "" && packageFilter === "all"}
+                  className={cn(
+                    "h-10 w-full rounded-xl font-semibold transition shadow-md",
+                    search.trim() === "" && packageFilter === "all"
+                      ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                      : "bg-gradient-to-r from-cyan-500 via-sky-500 to-teal-500 text-white hover:opacity-90 hover:shadow-lg"
+                  )}
+                  title="Clear search and package filter"
+                >
+                  Clear Filter
+                </Button>
+              </div>
             </div>
 
             {/* Client Grid */}
@@ -274,8 +346,8 @@ export default function ClientUnifiedDashboard() {
                   No clients found
                 </h3>
                 <p className="text-slate-600">
-                  {search
-                    ? "Try adjusting your search terms"
+                  {search || packageFilter !== "all"
+                    ? "Try adjusting your search or package filter"
                     : "No clients available at the moment"}
                 </p>
               </div>
@@ -290,7 +362,6 @@ export default function ClientUnifiedDashboard() {
                     <Card
                       key={client.id}
                       className="group transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-2 border-slate-200 hover:border-indigo-300 bg-gradient-to-br from-white to-slate-50/50 rounded-2xl overflow-hidden"
-                      // কার্ড ক্লিক করলে কিছু হবে না—নিচের দুই বোতামই ব্যবহার করুন
                     >
                       <CardContent className="p-6">
                         {/* Identity */}
@@ -349,7 +420,11 @@ export default function ClientUnifiedDashboard() {
                                     ? "bg-teal-50 text-teal-700 border-teal-200"
                                     : "bg-slate-50 text-slate-600 border-slate-200"
                                 )}
-                                title={client.status === "qc_approved" ? "QC Approved" : "Client status"}
+                                title={
+                                  client.status === "qc_approved"
+                                    ? "QC Approved"
+                                    : "Client status"
+                                }
                               >
                                 {client.status === "qc_approved" ? (
                                   <span className="flex items-center gap-1">
