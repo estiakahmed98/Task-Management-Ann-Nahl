@@ -1,4 +1,4 @@
-//apps/components/client-tasks-view/client-tasks-view.tsx
+// apps/components/client-tasks-view/client-tasks-view.tsx
 
 "use client";
 
@@ -127,7 +127,7 @@ interface Agent {
 }
 
 /* =========================
-   Utils (unchanged)
+   Utils
 ========================= */
 const formatTimerDisplay = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600);
@@ -237,7 +237,6 @@ export function ClientTasksView({
   agentId,
   onBack,
 }: ClientTasksViewProps) {
-  // --- state (kept same) ---
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -276,7 +275,6 @@ export function ClientTasksView({
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
 
-  // --- API / handlers (kept same) ---
   const fetchClientTasks = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -284,7 +282,7 @@ export function ClientTasksView({
       const agentResponse = await fetch(`/api/tasks/clients/agents/${agentId}`);
       if (!agentResponse.ok)
         throw new Error(`HTTP error! status: ${agentResponse.status}`);
-      const agentData = await agentResponse.json();
+      await agentResponse.json(); // (not used directly here)
 
       const response = await fetch(`/api/tasks/client/${clientId}`);
       if (!response.ok)
@@ -294,17 +292,12 @@ export function ClientTasksView({
       const agentTasks = data.filter((task) => task.assignedTo?.id === agentId);
       setTasks(agentTasks);
 
-      const now = new Date();
       setStats({
         total: agentTasks.length,
         pending: agentTasks.filter((t) => t.status === "pending").length,
         inProgress: agentTasks.filter((t) => t.status === "in_progress").length,
         completed: agentTasks.filter((t) => t.status === "completed").length,
-        overdue: agentTasks.filter(
-          (t) =>
-            t.status === "overdue" ||
-            (t.dueDate && new Date(t.dueDate) < now && t.status !== "completed")
-        ).length,
+        overdue: agentTasks.filter((t) => t.status === "overdue").length, // status-based only
         cancelled: agentTasks.filter((t) => t.status === "cancelled").length,
         reassigned: agentTasks.filter((t) => t.status === "reassigned").length,
         qc_approved: agentTasks.filter((t) => t.status === "qc_approved")
@@ -320,7 +313,7 @@ export function ClientTasksView({
     }
   }, [clientId, agentId]);
 
-  // Normalize and fetch full client data for the modal (similar to admin page)
+  // Normalize and fetch full client data for the modal
   const normalizeClientData = useCallback((apiData: any): Client => {
     const uncategorized = {
       id: "uncategorized",
@@ -364,13 +357,13 @@ export function ClientTasksView({
     }
   }, [clientId, normalizeClientData]);
 
-  // Fetch client data when modal opens (and on clientId change)
   useEffect(() => {
     if (isClientModalOpen) {
       fetchClientData();
     }
   }, [isClientModalOpen, fetchClientData]);
 
+  // ✅ PATCH merge-guard: server partial/null রেসপন্সে URL/relations যাতে না হারায়
   const handleUpdateTask = useCallback(
     async (taskId: string, updates: any) => {
       try {
@@ -386,8 +379,25 @@ export function ClientTasksView({
           );
         }
         const updatedTask = await response.json();
+
         setTasks((prev) =>
-          prev.map((t) => (t.id === taskId ? { ...t, ...updatedTask } : t))
+          prev.map((t) => {
+            if (t.id !== taskId) return t;
+
+            const merged: any = { ...t, ...updatedTask };
+
+            if (updatedTask.templateSiteAsset == null)
+              merged.templateSiteAsset = t.templateSiteAsset;
+            if (updatedTask.assignment == null)
+              merged.assignment = t.assignment;
+            if (updatedTask.category == null) merged.category = t.category;
+            if (updatedTask.completionLink == null)
+              merged.completionLink = t.completionLink;
+            if (updatedTask.email == null) merged.email = t.email;
+            if (updatedTask.username == null) merged.username = t.username;
+
+            return merged as Task;
+          })
         );
         return updatedTask;
       } catch (err: any) {
@@ -786,31 +796,20 @@ export function ClientTasksView({
       return 0;
     });
 
-  const overdueCount = tasks.filter(
-    (task) =>
-      task.status === "overdue" ||
-      (task.dueDate &&
-        new Date(task.dueDate) < new Date() &&
-        task.status !== "completed")
-  ).length;
+  // ✅ Overdue count = strictly status-based
+  const overdueCount = tasks.filter((task) => task.status === "overdue").length;
 
-  // effects (kept same)
   useEffect(() => {
     fetchClientTasks();
   }, [fetchClientTasks]);
 
   useEffect(() => {
-    const now = new Date();
     setStats({
       total: tasks.length,
       pending: tasks.filter((t) => t.status === "pending").length,
       inProgress: tasks.filter((t) => t.status === "in_progress").length,
       completed: tasks.filter((t) => t.status === "completed").length,
-      overdue: tasks.filter(
-        (t) =>
-          t.status === "overdue" ||
-          (t.dueDate && new Date(t.dueDate) < now && t.status !== "completed")
-      ).length,
+      overdue: tasks.filter((t) => t.status === "overdue").length,
       cancelled: tasks.filter((t) => t.status === "cancelled").length,
       reassigned: tasks.filter((t) => t.status === "reassigned").length,
       qc_approved: tasks.filter((t) => t.status === "qc_approved").length,
@@ -946,8 +945,8 @@ export function ClientTasksView({
           </Button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Stats Cards — 3 per row; QC Approved after Overdue */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
             <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
@@ -978,7 +977,7 @@ export function ClientTasksView({
             </CardHeader>
             <CardContent className="relative">
               <div className="text-3xl font-bold text-white">
-                {tasks.filter((t) => t.status === "completed").length}
+                {stats.completed}
               </div>
               <p className="text-xs text-emerald-100 mt-1"></p>
             </CardContent>
@@ -996,11 +995,9 @@ export function ClientTasksView({
             </CardHeader>
             <CardContent className="relative">
               <div className="text-3xl font-bold text-white">
-                {tasks.filter((t) => t.status === "in_progress").length}
+                {stats.inProgress}
               </div>
-              <p className="text-xs text-amber-100 mt-1">
-                Currently working on
-              </p>
+              <p className="text-xs text-amber-100 mt-1">Currently working on</p>
             </CardContent>
           </Card>
 
@@ -1015,19 +1012,32 @@ export function ClientTasksView({
               </div>
             </CardHeader>
             <CardContent className="relative">
-              <div className="text-3xl font-bold text-white">
-                {overdueCount}
+              <div className="text-3xl font-bold text-white">{overdueCount}</div>
+              <p className="text-xs text-red-100 mt-1">Need immediate attention</p>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
+            <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-purple-100">
+                QC Approved
+              </CardTitle>
+              <div className="p-2 bg-white/20 rounded-lg">
+                <ShieldCheck className="h-5 w-5 text-white" />
               </div>
-              <p className="text-xs text-red-100 mt-1">
-                Need immediate attention
-              </p>
+            </CardHeader>
+            <CardContent className="relative">
+              <div className="text-3xl font-bold text-white">
+                {stats.qc_approved}
+              </div>
+              <p className="text-xs text-purple-100 mt-1">Approved by QC</p>
             </CardContent>
           </Card>
         </div>
 
         <div className="flex justify-end">
           <Dialog open={isClientModalOpen} onOpenChange={setIsClientModalOpen}>
-            {/* Gradient button trigger */}
             <DialogTrigger asChild>
               <Button
                 className="relative rounded-2xl p-0 bg-transparent hover:bg-transparent"
@@ -1041,7 +1051,6 @@ export function ClientTasksView({
               </Button>
             </DialogTrigger>
 
-            {/* Gradient panel in modal */}
             <DialogContent className="max-w-6xl h-[90vh] overflow-y-auto bg-transparent p-0">
               <div className="bg-card p-6">
                 <DialogHeader className="mb-4">
