@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// ==== Types ====
 type AgentLite = { id: string; name: string | null; email: string };
 type TaskRow = {
   id: string;
@@ -26,8 +27,8 @@ type TaskRow = {
   performanceRating: "Excellent" | "Good" | "Average" | "Lazy" | null;
   idealDurationMinutes: number | null;
   actualDurationMinutes: number | null;
-  updatedAt: string;
-  completedAt: string | null;
+  updatedAt: string;            // <— we’ll use this everywhere
+  completedAt: string | null;   // (not used for date filters anymore)
   assignedTo: AgentLite | null;
 };
 
@@ -38,43 +39,52 @@ const perfScore: Record<NonNullable<TaskRow["performanceRating"]>, number> = {
   Lazy: 30,
 };
 
-// Helper to get start of day in local time
+// ==== Date helpers (LOCAL TIME) ====
 const startOfDay = (date: Date): Date => {
-  const result = new Date(date);
-  result.setHours(0, 0, 0, 0);
-  return result;
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
 };
 
-// Helper to get end of day in local time
 const endOfDay = (date: Date): Date => {
-  const result = new Date(date);
-  result.setHours(23, 59, 59, 999);
-  return result;
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
 };
 
-// Helper to check if a date is today (in local time)
 const isToday = (date: Date): boolean => {
-  const today = new Date();
+  const t = new Date();
   return (
-    date.getDate() === today.getDate() &&
-    date.getMonth() === today.getMonth() &&
-    date.getFullYear() === today.getFullYear()
+    date.getDate() === t.getDate() &&
+    date.getMonth() === t.getMonth() &&
+    date.getFullYear() === t.getFullYear()
   );
 };
 
-// Helper to check if a date is within a range (inclusive)
-const isInRange = (date: Date, start: Date, end: Date): boolean => {
-  return date >= start && date <= end;
-};
+const isInRange = (date: Date, start: Date, end: Date): boolean => date >= start && date <= end;
 
-// Convert date to ISO string for API calls
+// Convert date to ISO string for API calls (UTC). If your API expects LOCAL bounds, pass epoch millis instead.
 const toISODate = (date: Date): string => date.toISOString();
 
+// Safely format a Date for <input type="date"> as LOCAL yyyy-mm-dd
+const toDateInputValue = (date: Date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
+// Parse yyyy-mm-dd **as local time** (avoids UTC shift)
+const fromDateInputValue = (value: string) => {
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
+};
+
 export default function QCDashboard() {
-  // Quick range
+  // Quick range — Today, 7d, 30d, Custom
   const [range, setRange] = useState<"today" | "7d" | "30d" | "custom">("today");
-  
-  // State for date range in local time
+
+  // Selected date range (LOCAL)
   const [startDate, setStartDate] = useState<Date>(startOfDay(new Date()));
   const [endDate, setEndDate] = useState<Date>(endOfDay(new Date()));
 
@@ -85,7 +95,6 @@ export default function QCDashboard() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      // Convert local dates to ISO strings for API
       const url = `/api/tasks?startDate=${encodeURIComponent(toISODate(startDate))}&endDate=${encodeURIComponent(toISODate(endDate))}`;
       const res = await fetch(url, { cache: "no-store" });
       const data: TaskRow[] = res.ok ? await res.json() : [];
@@ -102,7 +111,7 @@ export default function QCDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate]);
 
-  // Adjust quick range
+  // Adjust range selections
   useEffect(() => {
     const now = new Date();
     if (range === "today") {
@@ -110,86 +119,59 @@ export default function QCDashboard() {
       setEndDate(endOfDay(now));
     } else if (range === "7d") {
       const start = new Date(now);
-      start.setDate(now.getDate() - 6);
+      start.setDate(now.getDate() - 6); // inclusive: today + prev 6 days
       setStartDate(startOfDay(start));
       setEndDate(endOfDay(now));
     } else if (range === "30d") {
       const start = new Date(now);
-      start.setDate(now.getDate() - 29);
+      start.setDate(now.getDate() - 29); // inclusive: today + prev 29 days
       setStartDate(startOfDay(start));
       setEndDate(endOfDay(now));
     }
-    // For custom range, we don't change dates automatically
+    // For custom, keep whatever the user has picked.
   }, [range]);
 
-  // Buckets from a single response
+  // Buckets
   const completed = useMemo(() => all.filter((t) => t.status === "completed"), [all]);
-  const approved = useMemo(() => all.filter((t) => t.status === "qc_approved"), [all]);
+  const approved  = useMemo(() => all.filter((t) => t.status === "qc_approved"), [all]);
   const reassigned = useMemo(() => all.filter((t) => t.status === "reassigned"), [all]);
 
-  // KPIs
+  // KPIs — ALL date checks use updatedAt
   const kpis = useMemo(() => {
-    // Get today's date for filtering
-    const today = new Date();
-    
-    // === TODAY snapshot ===
-    const completedToday = completed.filter((t) => 
-      t.completedAt && isToday(new Date(t.completedAt))
-    ).length;
+    const completedToday  = completed.filter((t) => isToday(new Date(t.updatedAt))).length;
+    const approvedToday   = approved.filter((t)  => isToday(new Date(t.updatedAt))).length;
+    const reassignedToday = reassigned.filter((t) => isToday(new Date(t.updatedAt))).length;
 
-    const approvedToday = approved.filter((t) => 
-      t.completedAt && isToday(new Date(t.completedAt))
-    ).length;
-
-    const reassignedToday = reassigned.filter((t) => 
-      isToday(new Date(t.updatedAt))
-    ).length;
-
-    // === RANGE KPIs (within selected range) ===
-    const completedInRange = completed.filter((t) => 
-      t.completedAt && isInRange(new Date(t.completedAt), startDate, endDate)
+    const completedInRange = completed.filter((t) =>
+      isInRange(new Date(t.updatedAt), startDate, endDate)
     );
-
     const totalCompleted = completedInRange.length;
 
     const rated = completedInRange.filter((t) => t.performanceRating);
     const avgPerformance = rated.length
       ? Math.round(
-          rated.reduce(
-            (sum, t) =>
-              sum + (perfScore[t.performanceRating as keyof typeof perfScore] || 0),
-            0
-          ) / rated.length
+          rated.reduce((sum, t) => sum + (perfScore[t.performanceRating as keyof typeof perfScore] || 0), 0) /
+            rated.length
         )
       : 0;
 
-    const withActual = completedInRange.filter(
-      (t) => t.actualDurationMinutes && t.actualDurationMinutes > 0
-    );
+    const withActual = completedInRange.filter((t) => t.actualDurationMinutes && t.actualDurationMinutes > 0);
     const avgDuration = withActual.length
-      ? Math.round(
-          withActual.reduce((s, t) => s + (t.actualDurationMinutes || 0), 0) /
-            withActual.length
-        )
+      ? Math.round(withActual.reduce((s, t) => s + (t.actualDurationMinutes || 0), 0) / withActual.length)
       : 0;
 
     const withEff = completedInRange.filter(
-      (t) =>
-        t.idealDurationMinutes &&
-        t.actualDurationMinutes &&
-        t.actualDurationMinutes > 0
+      (t) => t.idealDurationMinutes && t.actualDurationMinutes && t.actualDurationMinutes > 0
     );
     const avgEfficiency = withEff.length
       ? Math.round(
           withEff.reduce(
-            (s, t) =>
-              s + Math.min(150, (t.idealDurationMinutes! / t.actualDurationMinutes!) * 100),
+            (s, t) => s + Math.min(150, (t.idealDurationMinutes! / t.actualDurationMinutes!) * 100),
             0
           ) / withEff.length
         )
       : 0;
 
-    // Leaderboard (by completed in range)
     const perAgent = new Map<
       string,
       { id: string; label: string; completed: number; avgPerf: number; sumPerf: number; rated: number }
@@ -197,9 +179,7 @@ export default function QCDashboard() {
     for (const t of completedInRange) {
       const id = t.assignedTo?.id || "unknown";
       const label = t.assignedTo?.name || t.assignedTo?.email || "Unassigned";
-      if (!perAgent.has(id)) {
-        perAgent.set(id, { id, label, completed: 0, avgPerf: 0, sumPerf: 0, rated: 0 });
-      }
+      if (!perAgent.has(id)) perAgent.set(id, { id, label, completed: 0, avgPerf: 0, sumPerf: 0, rated: 0 });
       const a = perAgent.get(id)!;
       a.completed += 1;
       if (t.performanceRating) {
@@ -208,16 +188,12 @@ export default function QCDashboard() {
       }
     }
     perAgent.forEach((a) => (a.avgPerf = a.rated ? Math.round(a.sumPerf / a.rated) : 0));
-    const leaderboard = [...perAgent.values()]
-      .sort((a, b) => b.completed - a.completed)
-      .slice(0, 8);
+    const leaderboard = [...perAgent.values()].sort((a, b) => b.completed - a.completed).slice(0, 8);
 
     return {
-      // today
       completedToday,
       approvedToday,
       reassignedToday,
-      // range
       totalCompleted,
       avgPerformance,
       avgDuration,
@@ -246,29 +222,17 @@ export default function QCDashboard() {
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center gap-3">
-            {/* Quick ranges */}
+            {/* Quick ranges — Today, 7d, 30d, Custom */}
             <Tabs value={range} onValueChange={(v) => setRange(v as any)}>
               <TabsList className="grid grid-cols-4">
-                <TabsTrigger value="today" className="text-xs md:text-sm">
-                  Today
-                </TabsTrigger>
-                <TabsTrigger value="7d" className="text-xs md:text-sm">
-                  Last 7d
-                </TabsTrigger>
-                <TabsTrigger value="30d" className="text-xs md:text-sm">
-                  Last 30d
-                </TabsTrigger>
-                <TabsTrigger value="custom" className="text-xs md:text-sm">
-                  Custom
-                </TabsTrigger>
+                <TabsTrigger value="today" className="text-xs md:text-sm">Today</TabsTrigger>
+                <TabsTrigger value="7d" className="text-xs md:text-sm">Last 7d</TabsTrigger>
+                <TabsTrigger value="30d" className="text-xs md:text-sm">Last 30d</TabsTrigger>
+                <TabsTrigger value="custom" className="text-xs md:text-sm">Custom</TabsTrigger>
               </TabsList>
             </Tabs>
 
-            <Button
-              onClick={fetchAll}
-              disabled={loading}
-              className="h-9 md:h-10 bg-slate-900 hover:bg-slate-800 text-white"
-            >
+            <Button onClick={fetchAll} disabled={loading} className="h-9 md:h-10 bg-slate-900 hover:bg-slate-800 text-white">
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
               Refresh
             </Button>
@@ -285,15 +249,15 @@ export default function QCDashboard() {
             <input
               type="date"
               className="h-10 rounded-md border border-slate-300 dark:border-slate-700 bg-background px-3 text-sm"
-              value={startDate.toISOString().split('T')[0]}
-              onChange={(e) => setStartDate(startOfDay(new Date(e.target.value)))}
+              value={toDateInputValue(startDate)}
+              onChange={(e) => setStartDate(startOfDay(fromDateInputValue(e.target.value)))}
             />
             <span className="opacity-60 text-slate-500">to</span>
             <input
               type="date"
               className="h-10 rounded-md border border-slate-300 dark:border-slate-700 bg-background px-3 text-sm"
-              value={endDate.toISOString().split('T')[0]}
-              onChange={(e) => setEndDate(endOfDay(new Date(e.target.value)))}
+              value={toDateInputValue(endDate)}
+              onChange={(e) => setEndDate(endOfDay(fromDateInputValue(e.target.value)))}
             />
             <Button onClick={fetchAll} disabled={loading} variant="outline" className="h-10">
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
@@ -305,59 +269,17 @@ export default function QCDashboard() {
 
       {/* TODAY – execution KPIs (3 tiles) */}
       <section className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <KpiCard
-          title="Completed Today"
-          value={formatNumber(kpis.completedToday)}
-          icon={<CheckCircle2 className="h-5 w-5" />}
-          accent="from-teal-500 to-teal-500"
-          hint='status = "completed" & completedAt is today'
-        />
-        <KpiCard
-          title="QC Approved Today"
-          value={formatNumber(kpis.approvedToday)}
-          icon={<CheckCircle2 className="h-5 w-5" />}
-          accent="from-emerald-500 to-emerald-500"
-          hint='status = "qc_approved" & completedAt is today'
-        />
-        <KpiCard
-          title="Reassigned Today"
-          value={formatNumber(kpis.reassignedToday)}
-          icon={<RotateCcw className="h-5 w-5" />}
-          accent="from-blue-500 to-blue-500"
-          hint='status = "reassigned" & updatedAt is today'
-        />
+        <KpiCard title="Completed Tasks" value={formatNumber(kpis.completedToday)} icon={<CheckCircle2 className="h-5 w-5" />} accent="from-teal-500 to-teal-500" />
+        <KpiCard title="QC Approved Tasks" value={formatNumber(kpis.approvedToday)} icon={<CheckCircle2 className="h-5 w-5" />} accent="from-emerald-500 to-emerald-500" />
+        <KpiCard title="Reassigned Tasks" value={formatNumber(kpis.reassignedToday)} icon={<RotateCcw className="h-5 w-5" />} accent="from-blue-500 to-blue-500" />
       </section>
 
-      {/* RANGE KPIs (driven by Today / 7d / 30d / Custom) */}
+      {/* RANGE KPIs */}
       <section className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-6">
-        <KpiCard
-          title="Completed (Range)"
-          value={formatNumber(kpis.totalCompleted)}
-          icon={<CheckCircle2 className="h-5 w-5" />}
-          accent="from-slate-800 to-slate-600"
-          hint='Count of status = "completed"'
-        />
-        <KpiCard
-          title="Avg Performance"
-          value={kpis.avgPerformance ? `${kpis.avgPerformance}/100` : "—"}
-          icon={<TrendingUp className="h-5 w-5" />}
-          accent="from-indigo-500 to-violet-500"
-          hint="Average of rated completed tasks"
-        />
-        <KpiCard
-          title="Avg Duration"
-          value={kpis.avgDuration ? `${kpis.avgDuration}m` : "—"}
-          icon={<Clock className="h-5 w-5" />}
-          accent="from-blue-500 to-sky-500"
-          hint="Average actual duration"
-        />
-        <KpiCard
-          title="Avg Efficiency"
-          value={kpis.avgEfficiency ? `${kpis.avgEfficiency}%` : "—"}
-          icon={<Gauge className="h-5 w-5" />}
-          accent="from-emerald-600 to-green-600"
-          hint="Ideal ÷ Actual (cap 150%)"
-        />
+        <KpiCard title="Completed (Range)" value={formatNumber(kpis.totalCompleted)} icon={<CheckCircle2 className="h-5 w-5" />} accent="from-slate-800 to-slate-600" />
+        <KpiCard title="Avg Performance" value={kpis.avgPerformance ? `${kpis.avgPerformance}/100` : "—"} icon={<TrendingUp className="h-5 w-5" />} accent="from-indigo-500 to-violet-500" />
+        <KpiCard title="Avg Duration" value={kpis.avgDuration ? `${kpis.avgDuration}m` : "—"} icon={<Clock className="h-5 w-5" />} accent="from-blue-500 to-sky-500" />
+        <KpiCard title="Avg Efficiency" value={kpis.avgEfficiency ? `${kpis.avgEfficiency}%` : "—"} icon={<Gauge className="h-5 w-5" />} accent="from-emerald-600 to-green-600" />
       </section>
 
       {/* Agent Leaderboard */}
@@ -370,9 +292,7 @@ export default function QCDashboard() {
               </div>
               <div>
                 <CardTitle className="text-lg md:text-xl font-bold">Agent Leaderboard</CardTitle>
-                <p className="text-xs md:text-sm text-slate-200/80">
-                  Top by completed tasks (selected range)
-                </p>
+                <p className="text-xs md:text-sm text-slate-200/80">Top by completed tasks (selected range)</p>
               </div>
             </div>
           </CardHeader>
@@ -382,22 +302,15 @@ export default function QCDashboard() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {kpis.leaderboard.map((a) => (
-                  <div
-                    key={a.id}
-                    className="p-4 rounded-xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow"
-                  >
+                  <div key={a.id} className="p-4 rounded-xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <div className="h-9 w-9 rounded-full bg-gradient-to-br from-slate-800 to-slate-600 text-white flex items-center justify-center font-semibold">
                           {(a.label || "?").charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-semibold text-slate-900 dark:text-slate-100">
-                            {a.label}
-                          </div>
-                          <div className="text-xs text-slate-500">
-                            Completed: {formatNumber(a.completed)}
-                          </div>
+                          <div className="font-semibold text-slate-900 dark:text-slate-100">{a.label}</div>
+                          <div className="text-xs text-slate-500">Completed: {formatNumber(a.completed)}</div>
                         </div>
                       </div>
                       <div
@@ -425,19 +338,7 @@ export default function QCDashboard() {
   );
 }
 
-function KpiCard({
-  title,
-  value,
-  icon,
-  accent,
-  hint,
-}: {
-  title: string;
-  value: string | number;
-  icon: React.ReactNode;
-  accent: string;
-  hint?: string;
-}) {
+function KpiCard({ title, value, icon, accent, hint }: { title: string; value: string | number; icon: React.ReactNode; accent: string; hint?: string }) {
   return (
     <Card className="overflow-hidden border-slate-200 dark:border-slate-800">
       <div className={cn("h-1 w-full bg-gradient-to-r", accent)} />
@@ -453,5 +354,4 @@ function KpiCard({
   );
 }
 
-const formatNumber = (n: number) =>
-  new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n);
+const formatNumber = (n: number) => new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n);
