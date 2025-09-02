@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/dialog"
 import { Client } from "@/types/client"
 import { toast } from "sonner"
+import { useUserSession } from "@/lib/hooks/use-user-session"
 
 type ClientWithSocial = Client & {
   // new optional fields (present in your Prisma model & API)
@@ -74,6 +75,7 @@ type ClientWithSocial = Client & {
 
 interface ProfileProps {
   clientData: ClientWithSocial
+  currentUserRole?: string
 }
 
 type FormValues = {
@@ -111,8 +113,7 @@ type FormValues = {
 
 type AMUser = { id: string; name: string | null; email: string | null }
 
-export function Profile({ clientData }: ProfileProps) {
-  const router = useRouter()
+export function Profile({ clientData, currentUserRole }: ProfileProps) {
 
   // --- password reveal (display mode) for social rows
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({})
@@ -289,6 +290,12 @@ export function Profile({ clientData }: ProfileProps) {
   const [ams, setAms] = useState<AMUser[]>([])
   const [amsLoading, setAmsLoading] = useState(false)
   const [amsError, setAmsError] = useState<string | null>(null)
+  const router = useRouter()
+  const { user } = useUserSession()
+  const isAgent = (
+    (currentUserRole ?? (user as any)?.role?.name ?? (user as any)?.role ?? "")
+      .toLowerCase() === "agent"
+  )
 
   const fetchPackages = async () => {
     try {
@@ -296,7 +303,6 @@ export function Profile({ clientData }: ProfileProps) {
       const res = await fetch("/api/packages", { cache: "no-store" })
       if (!res.ok) throw new Error(`Failed to load packages: ${res.status}`)
       const data = await res.json().catch(() => [])
-      // Accept either {packages:[...]} or array directly
       const list = Array.isArray(data) ? data : Array.isArray(data?.packages) ? data.packages : []
       const options: PackageOption[] = list
         .map((p: any) => ({ id: String(p.id ?? ""), name: String(p.name ?? "Unnamed") }))
@@ -330,14 +336,14 @@ export function Profile({ clientData }: ProfileProps) {
     }
   }
 
-  // Load packages & AMs when dialog opens
+  // Load packages & AMs only if needed and dialog is open
   useEffect(() => {
-    if (open) {
+    if (open && !isAgent) {
       fetchPackages()
       fetchAMs()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
+  }, [open, isAgent])
 
   const toDateInput = (v?: string | null) => {
     if (!v) return ""
@@ -426,12 +432,10 @@ export function Profile({ clientData }: ProfileProps) {
       company: clientData.company ?? "",
       designation: clientData.designation ?? "",
       location: clientData.location ?? "",
-
       email: clientData.email ?? "",
       phone: clientData.phone ?? "",
       password: clientData.password ?? "",
       recoveryEmail: clientData.recoveryEmail ?? "",
-
       website: clientData.website ?? "",
       website2: clientData.website2 ?? "",
       website3: clientData.website3 ?? "",
@@ -445,10 +449,10 @@ export function Profile({ clientData }: ProfileProps) {
       packageId: (clientData.packageId as string) ?? "",
       startDate: toDateInput(clientData.startDate as any),
       dueDate: toDateInput(clientData.dueDate as any),
-
       amId: clientData.amId ?? null,
     },
   })
+
 
   const onOpenEdit = () => {
     reset({
@@ -457,12 +461,10 @@ export function Profile({ clientData }: ProfileProps) {
       company: clientData.company ?? "",
       designation: clientData.designation ?? "",
       location: clientData.location ?? "",
-
       email: clientData.email ?? "",
       phone: clientData.phone ?? "",
       password: clientData.password ?? "",
       recoveryEmail: clientData.recoveryEmail ?? "",
-
       website: clientData.website ?? "",
       website2: clientData.website2 ?? "",
       website3: clientData.website3 ?? "",
@@ -476,7 +478,6 @@ export function Profile({ clientData }: ProfileProps) {
       packageId: (clientData.packageId as string) ?? "",
       startDate: toDateInput(clientData.startDate as any),
       dueDate: toDateInput(clientData.dueDate as any),
-
       amId: clientData.amId ?? null,
     })
     setOpen(true)
@@ -485,17 +486,38 @@ export function Profile({ clientData }: ProfileProps) {
   const onSubmit = async (values: FormValues) => {
     try {
       setIsSaving(true)
-      const payload: FormValues = {
-        ...values,
-        progress:
-          values.progress === undefined || values.progress === null
-            ? undefined
-            : Number(values.progress),
-        birthdate: values.birthdate || undefined,
-        startDate: values.startDate || undefined,
-        dueDate: values.dueDate || undefined,
-        amId: values.amId && values.amId.trim() !== "" ? values.amId : null,
+
+      let payload: Partial<FormValues>
+
+      if (isAgent) {
+        const allowed: (keyof FormValues)[] = [
+          "email",
+          "phone",
+          "password",
+          "recoveryEmail",
+          "imageDrivelink",
+        ]
+        payload = allowed.reduce((acc, key) => {
+          const val = (values as any)[key]
+          if (val !== undefined) (acc as any)[key] = val
+          return acc
+        }, {} as Partial<FormValues>)
+      } else {
+        // Non-agents: explicitly omit sensitive fields
+        const { email, phone, password, recoveryEmail, imageDrivelink, ...rest } = values
+        payload = {
+          ...rest,
+          progress:
+            values.progress === undefined || values.progress === null
+              ? undefined
+              : Number(values.progress),
+          birthdate: values.birthdate || undefined,
+          startDate: values.startDate || undefined,
+          dueDate: values.dueDate || undefined,
+          amId: values.amId && values.amId.trim() !== "" ? values.amId : null,
+        }
       }
+
       const res = await fetch(`/api/clients/${clientData.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -515,6 +537,7 @@ export function Profile({ clientData }: ProfileProps) {
       setIsSaving(false)
     }
   }
+
 
   const hasSocial = !!clientData.socialMedias?.length
 
@@ -1114,184 +1137,213 @@ export function Profile({ clientData }: ProfileProps) {
           </DialogHeader>
 
           <form id="edit-client-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Basic */}
-            <section>
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Basic</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name" className="pb-2">Full Name</Label>
-                  <Input id="name" className="border-2 border-gray-400" {...register("name", { required: true })} />
-                </div>
-                <div>
-                  <Label htmlFor="status" className="pb-2">Status</Label>
-                  <select
-                    id="status"
-                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-                    {...register("status")}
-                  >
-                    <option value="active">active</option>
-                    <option value="in_progress">in_progress</option>
-                    <option value="pending">pending</option>
-                    <option value="paused">paused</option>
-                    <option value="inactive">inactive</option>
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="birthdate" className="pb-2">Birth Date</Label>
-                  <Input id="birthdate" className="border-2 border-gray-400" type="date" {...register("birthdate")} />
-                </div>
-                <div>
-                  <Label htmlFor="location" className="pb-2">Location</Label>
-                  <Input id="location" className="border-2 border-gray-400" {...register("location")} />
-                </div>
-              </div>
-            </section>
+            {isAgent ? (
+              <>
+                {/* AGENT-ONLY: Contact & Credentials */}
+                <section>
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
+                    Contact & Credentials
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="email" className="pb-2">Email</Label>
+                      <Input id="email" type="email" className="border-2 border-gray-400" {...register("email")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone" className="pb-2">Phone</Label>
+                      <Input id="phone" className="border-2 border-gray-400" {...register("phone")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="password" className="pb-2">Password</Label>
+                      <Input id="password" type="text" className="border-2 border-gray-400" {...register("password")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="recoveryEmail" className="pb-2">Recovery Email</Label>
+                      <Input id="recoveryEmail" type="email" className="border-2 border-gray-400" {...register("recoveryEmail")} />
+                    </div>
+                  </div>
+                </section>
 
-            {/* Contact & Credentials */}
-            <section>
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Contact & Credentials</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="email" className="pb-2">Email</Label>
-                  <Input id="email" type="email" className="border-2 border-gray-400" {...register("email")} />
-                </div>
-                <div>
-                  <Label htmlFor="phone" className="pb-2">Phone</Label>
-                  <Input id="phone" className="border-2 border-gray-400" {...register("phone")} />
-                </div>
-                <div>
-                  <Label htmlFor="password" className="pb-2">Password</Label>
-                  <Input id="password" type="text" className="border-2 border-gray-400" {...register("password")} />
-                </div>
-                <div>
-                  <Label htmlFor="recoveryEmail" className="pb-2">Recovery Email</Label>
-                  <Input id="recoveryEmail" type="email" className="border-2 border-gray-400" {...register("recoveryEmail")} />
-                </div>
-              </div>
-            </section>
+                {/* AGENT-ONLY: Media (Image Drive Link only) */}
+                <section>
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
+                    Media
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <Label htmlFor="imageDrivelink" className="pb-2">Image Drive Link</Label>
+                      <Input id="imageDrivelink" className="border-2 border-gray-400" {...register("imageDrivelink")} />
+                    </div>
+                  </div>
+                </section>
+              </>
+            ) : (
+              <>
+                {/* FULL FORM for non-agents — your existing sections */}
+                {/* Basic */}
+                <section>
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Basic</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="name" className="pb-2">Full Name</Label>
+                      <Input id="name" className="border-2 border-gray-400" {...register("name", { required: true })} />
+                    </div>
+                    <div>
+                      <Label htmlFor="status" className="pb-2">Status</Label>
+                      <select
+                        id="status"
+                        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                        {...register("status")}
+                      >
+                        <option value="active">active</option>
+                        <option value="in_progress">in_progress</option>
+                        <option value="pending">pending</option>
+                        <option value="paused">paused</option>
+                        <option value="inactive">inactive</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label htmlFor="birthdate" className="pb-2">Birth Date</Label>
+                      <Input id="birthdate" className="border-2 border-gray-400" type="date" {...register("birthdate")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="location" className="pb-2">Location</Label>
+                      <Input id="location" className="border-2 border-gray-400" {...register("location")} />
+                    </div>
+                  </div>
+                </section>
 
-            {/* Professional */}
-            <section>
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Professional</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="company" className="pb-2">Company</Label>
-                  <Input id="company" className="border-2 border-gray-400" {...register("company")} />
-                </div>
-                <div>
-                  <Label htmlFor="designation" className="pb-2">Designation</Label>
-                  <Input id="designation" className="border-2 border-gray-400" {...register("designation")} />
-                </div>
-                <div className="md:col-span-2">
-                  <Label htmlFor="companyaddress" className="pb-2">Company Address</Label>
-                  <Input id="companyaddress" className="border-2 border-gray-400" {...register("companyaddress")} />
-                </div>
-              </div>
-            </section>
+                {/** Contact & Credentials hidden for non-agents (agent-only in separate block) */}
 
-            {/* Account Manager */}
-            <section>
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Account Manager</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-1">
-                  <Label htmlFor="amId" className="pb-2">Assign AM</Label>
-                  <select
-                    id="amId"
-                    className="w-full h-9 rounded-md border border-gray-400 bg-background px-3 text-sm"
-                    disabled={amsLoading}
-                    {...register("amId")}
-                  >
-                    <option value="">{amsLoading ? "Loading AMs..." : "— None —"}</option>
-                    {ams.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name}
-                      </option>
-                    ))}
-                  </select>
-                  {amsError && <p className="text-sm text-red-600 mt-1">{amsError}</p>}
-                </div>
-              </div>
-            </section>
+                {/* Professional */}
+                <section>
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Professional</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="company" className="pb-2">Company</Label>
+                      <Input id="company" className="border-2 border-gray-400" {...register("company")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="designation" className="pb-2">Designation</Label>
+                      <Input id="designation" className="border-2 border-gray-400" {...register("designation")} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="companyaddress" className="pb-2">Company Address</Label>
+                      <Input id="companyaddress" className="border-2 border-gray-400" {...register("companyaddress")} />
+                    </div>
+                  </div>
+                </section>
 
-            {/* Websites */}
-            <section>
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Websites</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="website" className="pb-2">Website</Label>
-                  <Input id="website" className="border-2 border-gray-400" {...register("website")} />
-                </div>
-                <div>
-                  <Label htmlFor="website2" className="pb-2">Website 2</Label>
-                  <Input id="website2" className="border-2 border-gray-400" {...register("website2")} />
-                </div>
-                <div>
-                  <Label htmlFor="website3" className="pb-2">Website 3</Label>
-                  <Input id="website3" className="border-2 border-gray-400" {...register("website3")} />
-                </div>
-                <div>
-                  <Label htmlFor="companywebsite" className="pb-2">Company Website</Label>
-                  <Input id="companywebsite" className="border-2 border-gray-400" {...register("companywebsite")} />
-                </div>
-              </div>
-            </section>
+                {/* Account Manager */}
+                <section>
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Account Manager</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-1">
+                      <Label htmlFor="amId" className="pb-2">Assign AM</Label>
+                      <select
+                        id="amId"
+                        className="w-full h-9 rounded-md border border-gray-400 bg-background px-3 text-sm"
+                        disabled={amsLoading}
+                        {...register("amId")}
+                      >
+                        <option value="">{amsLoading ? "Loading AMs..." : "— None —"}</option>
+                        {ams.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.name}
+                          </option>
+                        ))}
+                      </select>
+                      {amsError && <p className="text-sm text-red-600 mt-1">{amsError}</p>}
+                    </div>
+                  </div>
+                </section>
 
-            {/* Media / Bio */}
-            <section>
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Media & Bio</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="avatar" className="pb-2">Avatar URL</Label>
-                  <Input id="avatar" className="border-2 border-gray-400" {...register("avatar")} />
-                </div>
-                <div>
-                  <Label htmlFor="imageDrivelink" className="pb-2">Image Drive Link</Label>
-                  <Input id="imageDrivelink" className="border-2 border-gray-400" {...register("imageDrivelink")} />
-                </div>
-                <div className="md:col-span-2">
-                  <Label htmlFor="biography" className="pb-2">Biography</Label>
-                  <Textarea id="biography" rows={4} className="border-2 border-gray-400" {...register("biography")} />
-                </div>
-              </div>
-            </section>
+                {/* Websites */}
+                <section>
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Websites</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="website" className="pb-2">Website</Label>
+                      <Input id="website" className="border-2 border-gray-400" {...register("website")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="website2" className="pb-2">Website 2</Label>
+                      <Input id="website2" className="border-2 border-gray-400" {...register("website2")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="website3" className="pb-2">Website 3</Label>
+                      <Input id="website3" className="border-2 border-gray-400" {...register("website3")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="companywebsite" className="pb-2">Company Website</Label>
+                      <Input id="companywebsite" className="border-2 border-gray-400" {...register("companywebsite")} />
+                    </div>
+                  </div>
+                </section>
 
-            {/* Package & Dates */}
-            <section>
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Package & Dates</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="packageId" className="pb-2">Package</Label>
-                  <select
-                    id="packageId"
-                    className="w-full h-9 rounded-md border border-gray-400 bg-background px-3 text-sm"
-                    disabled={packagesLoading}
-                    {...register("packageId")}
-                  >
-                    <option value="">{packagesLoading ? "Loading packages..." : "Select a package"}</option>
-                    {packages.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="startDate" className="pb-2">Start Date</Label>
-                  <Input id="startDate" type="date" className="border-2 border-gray-400" {...register("startDate")} />
-                </div>
-                <div>
-                  <Label htmlFor="dueDate" className="pb-2">Due Date</Label>
-                  <Input id="dueDate" type="date" className="border-2 border-gray-400" {...register("dueDate")} />
-                </div>
-              </div>
-            </section>
+                {/* Media / Bio (no Image Drive Link for non-agents) */}
+                <section>
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Media & Bio</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="avatar" className="pb-2">Avatar URL</Label>
+                      <Input id="avatar" className="border-2 border-gray-400" {...register("avatar")} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="biography" className="pb-2">Biography</Label>
+                      <Textarea id="biography" rows={4} className="border-2 border-gray-400" {...register("biography")} />
+                    </div>
+                  </div>
+                </section>
+
+                {/* Package & Dates */}
+                <section>
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Package & Dates</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="packageId" className="pb-2">Package</Label>
+                      <select
+                        id="packageId"
+                        className="w-full h-9 rounded-md border border-gray-400 bg-background px-3 text-sm"
+                        disabled={packagesLoading}
+                        {...register("packageId")}
+                      >
+                        <option value="">{packagesLoading ? "Loading packages..." : "Select a package"}</option>
+                        {packages.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <Label htmlFor="startDate" className="pb-2">Start Date</Label>
+                      <Input id="startDate" type="date" className="border-2 border-gray-400" {...register("startDate")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="dueDate" className="pb-2">Due Date</Label>
+                      <Input id="dueDate" type="date" className="border-2 border-gray-400" {...register("dueDate")} />
+                    </div>
+                  </div>
+                </section>
+              </>
+            )}
           </form>
 
           <DialogFooter>
-            <Button variant="ghost" className="bg-green-600 hover:bg-green-700 hover:text-white text-white" onClick={() => setOpen(false)}>
+            <Button
+              variant="ghost"
+              className="bg-green-600 hover:bg-green-700 hover:text-white text-white"
+              onClick={() => setOpen(false)}
+            >
               Cancel
             </Button>
-            <Button form="edit-client-form" type="submit" className="bg-blue-600 hover:bg-blue-700 hover:text-white text-white" disabled={isSaving}>
+            <Button
+              form="edit-client-form"
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700 hover:text-white text-white"
+              disabled={isSaving}
+            >
               {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>

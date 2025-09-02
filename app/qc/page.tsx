@@ -1,11 +1,11 @@
 //app/qc/qc-review/page.tsx
 
-import QCReview from "@/components/QCReviewPage";
+import QCDashboard from "@/components/QCDashboard";
 
 export default function Page() {
   return (
     <div>
-      <QCReview />
+      <QCDashboard />
     </div>
   );
 }

@@ -69,7 +69,6 @@ const iconMap: Record<string, React.ReactNode> = {
 
   // Distribution
   Distribution: <Share2 className="h-4 w-4" />,
-  "Task Creation": <ClipboardPlus className="h-4 w-4" />,
   "Clients to Agents": <Share2 className="h-4 w-4" />,
 
   // Tasks
@@ -231,11 +230,6 @@ export function AppSidebar({ className }: AppSidebarProps) {
             url: "/admin/distribution/client-agent",
             roles: ["admin"],
           },
-          {
-            title: "Task Creation",
-            url: "/admin/distribution/create-task",
-            roles: ["admin"],
-          },
         ],
       },
 
@@ -254,7 +248,9 @@ export function AppSidebar({ className }: AppSidebarProps) {
       },
 
       // Tasks for Agent
-      { title: "Tasks", url: "/agent/task", roles: ["agent"] },
+      { title: "Tasks", url: "/agent/tasks", roles: ["agent"] },
+
+      { title: "QC Review", url: "/qc/tasks", roles: ["qc"] },
 
       // Agents
       {

@@ -10,7 +10,9 @@
     "seed:js": "node prisma/seed.js",
     "seed:ts": "tsx prisma/seed.ts",
     "seed:all": "npm run seed:js && npm run seed:ts",
-    "seed": "npx prisma db seed"
+    "seed": "npx prisma db seed",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma migrate deploy && next build"
   },
   "prisma": {
     "seed": "npm run seed:all"
@@ -47,7 +49,7 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^12.15.0",
     "lucide-react": "^0.482.0",
-    "motion": "^12.23.6",
+    "motion": "^12.23.12",
     "next": "15.2.2",
     "next-themes": "^0.4.6",
     "pusher": "^5.2.0",

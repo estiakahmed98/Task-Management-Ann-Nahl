@@ -19,10 +19,19 @@ import {
   Activity,
   ShieldCheck,
 } from "lucide-react";
-import { DriveImageGallery } from "@/components/drive-image-gallery"; // <-- keep your path as before; adjust if needed
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ClientDashboard } from "@/components/clients/clientsID/client-dashboard";
+import { Client } from "@/types/client";
 
 import TaskList from "@/components/client-tasks-view/TaskList";
 import TaskDialogs from "@/components/client-tasks-view/TaskDialogs";
+import { BackgroundGradient } from "../ui/background-gradient";
 
 /* =========================
    Types exported for children
@@ -262,9 +271,10 @@ export function ClientTasksView({
   const [isUpdating, setIsUpdating] = useState(false);
   const [isBulkCompletionOpen, setIsBulkCompletionOpen] = useState(false);
   const [bulkCompletionLink, setBulkCompletionLink] = useState("");
-  const [clientData, setClientData] = useState<any>(null);
+  const [clientData, setClientData] = useState<Client | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
 
   // --- API / handlers (kept same) ---
   const fetchClientTasks = useCallback(async () => {
@@ -275,11 +285,6 @@ export function ClientTasksView({
       if (!agentResponse.ok)
         throw new Error(`HTTP error! status: ${agentResponse.status}`);
       const agentData = await agentResponse.json();
-
-      const currentClient = agentData.find(
-        (client: any) => client.id === clientId
-      );
-      if (currentClient) setClientData(currentClient);
 
       const response = await fetch(`/api/tasks/client/${clientId}`);
       if (!response.ok)
@@ -314,6 +319,57 @@ export function ClientTasksView({
       setLoading(false);
     }
   }, [clientId, agentId]);
+
+  // Normalize and fetch full client data for the modal (similar to admin page)
+  const normalizeClientData = useCallback((apiData: any): Client => {
+    const uncategorized = {
+      id: "uncategorized",
+      name: "Uncategorized",
+      description: "",
+    } as any;
+    return {
+      ...apiData,
+      companywebsite:
+        apiData?.companywebsite && typeof apiData.companywebsite === "string"
+          ? apiData.companywebsite
+          : "",
+      tasks: (apiData?.tasks ?? []).map((t: any) => ({
+        ...t,
+        categoryId: t?.category?.id ?? t?.categoryId ?? "uncategorized",
+        category: t?.category ?? uncategorized,
+        name: String(t?.name ?? ""),
+        priority: String(t?.priority ?? "medium"),
+        status: String(t?.status ?? "pending"),
+        templateSiteAsset: {
+          ...t?.templateSiteAsset,
+          type: String(t?.templateSiteAsset?.type ?? ""),
+          name: String(t?.templateSiteAsset?.name ?? ""),
+          url: String(t?.templateSiteAsset?.url ?? ""),
+        },
+      })),
+    } as Client;
+  }, []);
+
+  const fetchClientData = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/clients/${clientId}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) return;
+      const raw = await res.json();
+      const normalized = normalizeClientData(raw);
+      setClientData(normalized);
+    } catch (e) {
+      console.error("Failed to fetch client data:", e);
+    }
+  }, [clientId, normalizeClientData]);
+
+  // Fetch client data when modal opens (and on clientId change)
+  useEffect(() => {
+    if (isClientModalOpen) {
+      fetchClientData();
+    }
+  }, [isClientModalOpen, fetchClientData]);
 
   const handleUpdateTask = useCallback(
     async (taskId: string, updates: any) => {
@@ -853,7 +909,7 @@ export function ClientTasksView({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20 p-4 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="mx-auto space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -969,12 +1025,40 @@ export function ClientTasksView({
           </Card>
         </div>
 
-        {clientData?.imageDrivelink && (
-          <DriveImageGallery
-            driveLink={clientData.imageDrivelink}
-            clientName={clientName}
-          />
-        )}
+        <div className="flex justify-end">
+          <Dialog open={isClientModalOpen} onOpenChange={setIsClientModalOpen}>
+            {/* Gradient button trigger */}
+            <DialogTrigger asChild>
+              <Button
+                className="relative rounded-2xl p-0 bg-transparent hover:bg-transparent"
+                aria-label="Open Client's Information"
+              >
+                <BackgroundGradient className="rounded-2xl">
+                  <div className="rounded-2xl px-5 py-2.5 text-white">
+                    Open Client&apos;s Information
+                  </div>
+                </BackgroundGradient>
+              </Button>
+            </DialogTrigger>
+
+            {/* Gradient panel in modal */}
+            <DialogContent className="max-w-6xl h-[90vh] overflow-y-auto bg-transparent p-0">
+              <div className="bg-card p-6">
+                <DialogHeader className="mb-4">
+                  <DialogTitle>{clientName}</DialogTitle>
+                </DialogHeader>
+
+                {clientData ? (
+                  <ClientDashboard clientData={clientData} />
+                ) : (
+                  <div className="py-8 text-center text-sm text-muted-foreground">
+                    Loading client info...
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
 
         {/* Task Management Section */}
         <TaskList
