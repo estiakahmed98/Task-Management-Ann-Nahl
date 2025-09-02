@@ -766,7 +766,7 @@ export function ClientTasksView({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20 p-4 lg:p-8">
-      <div className="mx-auto space-y-8">
+      <div className=" space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
