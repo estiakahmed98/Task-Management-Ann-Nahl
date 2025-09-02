@@ -77,9 +77,10 @@ export default function TaskDialogs({
   tasks: Task[];
   formatTimerDisplay: (seconds: number) => string;
 }) {
-  // ✅ Check if the current task is a Social Activity
-  const isSocialActivity =
-    (taskToComplete?.category?.name ?? "").toLowerCase() === "social activity";
+  // ✅ Categories where only completion link should be shown (no credentials)
+  const ASSETLESS_SET = new Set(["social activity", "blog posting", "graphics design"]);
+  const categoryName = (taskToComplete?.category?.name ?? "").toLowerCase();
+  const showCredentialFields = !!taskToComplete && !ASSETLESS_SET.has(categoryName);
 
   return (
     <>
@@ -145,8 +146,8 @@ export default function TaskDialogs({
               Complete Task
             </DialogTitle>
             <DialogDescription className="text-gray-600 dark:text-gray-400">
-              Mark this task as completed and {isSocialActivity ? "" : "optionally "}
-              provide a completion link{isSocialActivity ? "." : " and credentials if needed."}
+              Mark this task as completed and provide a completion link
+              {showCredentialFields ? " and credentials if needed." : "."}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
@@ -190,8 +191,8 @@ export default function TaskDialogs({
               />
             </div>
 
-            {/* Show credentials ONLY when NOT Social Activity */}
-            {!isSocialActivity && (
+            {/* Show credentials ONLY for categories outside Social/Blog/Graphics */}
+            {showCredentialFields && (
               <div className="space-y-2">
                 <label
                   htmlFor="email"
@@ -264,7 +265,7 @@ export default function TaskDialogs({
         </DialogContent>
       </Dialog>
 
-      {/* Bulk Task Completion Dialog (already only asks for a link) */}
+      {/* Bulk Task Completion Dialog (unchanged: asks only for a link) */}
       <Dialog
         open={isBulkCompletionOpen}
         onOpenChange={setIsBulkCompletionOpen}
