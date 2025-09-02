@@ -26,6 +26,7 @@ export async function PUT(
     }
 
     // টাস্ক লোড (previous rating audit করার জন্য)
+    // Get the task with its category information
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       select: {
@@ -33,6 +34,12 @@ export async function PUT(
         assignedToId: true,
         clientId: true,
         performanceRating: true, // audit only
+        category: {
+          select: {
+            name: true
+          }
+        }, // Get category name
+        completionLink: true, // We need this to preserve it for certain categories
       },
     });
     if (!task) {
@@ -43,19 +50,28 @@ export async function PUT(
     const toId = toAgentId ?? fromAgentId; // current agent default
 
     await prisma.$transaction(async (tx) => {
+      // Prepare the update data
+      const updateData: any = {
+        assignedToId: toId,
+        status: "reassigned",
+        reassignNotes: reassignNotes ?? "",
+        // resets:
+        actualDurationMinutes: null,
+        completedAt: null,
+        performanceRating: PerformanceRating.Poor, // ✅ সবসময় Poor
+        updatedAt: new Date(),
+      };
+
+      // Only reset completionLink for non-social and non-blog tasks
+      const preserveLinkCategories = ["Social Activity", "Blog Posting"];
+      const categoryName = task?.category?.name;
+      if (!categoryName || !preserveLinkCategories.includes(categoryName)) {
+        updateData.completionLink = null;
+      }
+
       await tx.task.update({
         where: { id: taskId },
-        data: {
-          assignedToId: toId,
-          status: "reassigned",
-          reassignNotes: reassignNotes ?? "",
-          // resets:
-          actualDurationMinutes: null,
-          completionLink: null,
-          completedAt: null,
-          performanceRating: PerformanceRating.Poor, // ✅ সবসময় Poor
-          updatedAt: new Date(),
-        },
+        data: updateData,
       });
 
       await tx.activityLog.create({

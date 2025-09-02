@@ -927,7 +927,7 @@ export function ProfessionalDashboard() {
                       </div>
                     );
                   })}
-                </div>
+                 </div>
               </CardContent>
             </Card>
 
