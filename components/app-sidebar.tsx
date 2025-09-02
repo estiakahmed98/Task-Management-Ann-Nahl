@@ -252,6 +252,12 @@ export function AppSidebar({ className }: AppSidebarProps) {
 
       { title: "QC Review", url: "/qc/tasks", roles: ["qc"] },
 
+      // Client
+      { title: "Dashboard", url: "/client", roles: ["client"] },
+      { title: "Onboarding", url: "/client/onboarding", roles: ["client"] },
+      { title: "Chat", url: "/client/chat", roles: ["client"] },
+      { title: "Notifications", url: "/client/notifications", roles: ["client"] },
+
       // Agents
       {
         title: "Agents",
