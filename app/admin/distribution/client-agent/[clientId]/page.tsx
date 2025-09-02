@@ -819,7 +819,7 @@ export default function TaskDistributionForClient() {
                           </div>
                         </div>
 
-                        <div className="p-2">
+                        <div className="p-2 flex justify-center">
                           <Calendar
                             mode="single"
                             selected={categoryDueDate}
