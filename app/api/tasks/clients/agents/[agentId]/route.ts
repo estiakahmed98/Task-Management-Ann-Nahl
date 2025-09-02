@@ -47,10 +47,10 @@ const EMPTY_PRIORITY: PriorityCounts = {
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { agentId: string } }
+  { params }: { params: Promise<{ agentId: string }> }
 ) {
   try {
-    const { agentId } = params;
+    const { agentId } = await params;
     if (!agentId) {
       return NextResponse.json({ error: "agentId is required" }, { status: 400 });
     }
