@@ -1,4 +1,4 @@
-//app/api/tasks/[id]/approve/route.ts
+// app/api/tasks/[id]/approve/route.ts
 
 import { type NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
@@ -74,6 +74,25 @@ export async function PUT(
         },
       },
     });
+
+    // 🔔 NEW: Send notification to assigned agent on QC approval
+    if (updatedTask.assignedTo?.id) {
+      const agentId = updatedTask.assignedTo.id;
+
+      await prisma.notification.create({
+        data: {
+          userId: agentId,
+          taskId: updatedTask.id,
+          type: "performance", // fits the event
+          message: `${updatedTask.assignedTo.name ?? "Your"} task "${
+            updatedTask.name
+          }" has been QC approved. Performance: ${
+            updatedTask.performanceRating ?? performanceRating
+          }.`,
+          createdAt: new Date(),
+        },
+      });
+    }
 
     return NextResponse.json(updatedTask);
   } catch (error) {

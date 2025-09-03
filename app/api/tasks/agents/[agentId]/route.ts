@@ -174,13 +174,13 @@ export async function PATCH(
       },
     });
 
-    // Notify admins
-    const admins = await prisma.user.findMany({
-      where: { role: { name: "admin" } },
+    // ✅ Notify admins + qc users
+    const adminsAndQc = await prisma.user.findMany({
+      where: { role: { name: { in: ["admin", "qc"] } } }, // ✅ এখন admin + qc দুইজনই
       select: { id: true },
     });
 
-    if (admins.length > 0) {
+    if (adminsAndQc.length > 0) {
       const humanStatus: Record<string, string> = {
         pending: "Pending",
         in_progress: "In Progress",
@@ -221,8 +221,8 @@ export async function PATCH(
         typeof performanceRating !== "undefined" ? "performance" : "general";
 
       await prisma.notification.createMany({
-        data: admins.map((a) => ({
-          userId: a.id,
+        data: adminsAndQc.map((u) => ({
+          userId: u.id,
           taskId: updatedTask.id,
           type: notifType,
           message,
