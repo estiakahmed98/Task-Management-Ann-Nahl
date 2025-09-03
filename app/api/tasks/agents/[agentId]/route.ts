@@ -1,5 +1,3 @@
-// app/api/tasks/agents/[agentId]/route.ts
-
 import { type NextRequest, NextResponse } from "next/server";
 import { PrismaClient, NotificationType } from "@prisma/client";
 
@@ -14,72 +12,6 @@ function calculatePerformanceRating(
   if (actual <= ideal * 0.84) return "Good"; // ২৫/৩০
   if (actual <= ideal) return "Average"; // ৩০/৩০
   return "Lazy"; // >৩০
-}
-
-// ---------------- GET ----------------
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ agentId: string }> }
-) {
-  try {
-    const { agentId } = await params;
-
-    const tasks = await prisma.task.findMany({
-      where: { assignedToId: agentId },
-      include: {
-        assignment: {
-          include: {
-            client: { select: { id: true, name: true, avatar: true } },
-            template: { select: { id: true, name: true } },
-          },
-        },
-        templateSiteAsset: {
-          select: { id: true, name: true, type: true, url: true },
-        },
-        category: { select: { id: true, name: true } },
-        assignedTo: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            image: true,
-          },
-        },
-        comments: {
-          include: {
-            author: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                image: true,
-              },
-            },
-          },
-          orderBy: { date: "desc" },
-        },
-      },
-      orderBy: [{ status: "asc" }, { priority: "desc" }, { dueDate: "asc" }],
-    });
-
-    const stats = {
-      total: tasks.length,
-      pending: tasks.filter((t) => t.status === "pending").length,
-      inProgress: tasks.filter((t) => t.status === "in_progress").length,
-      completed: tasks.filter((t) => t.status === "completed").length,
-      overdue: tasks.filter((t) => t.status === "overdue").length,
-      cancelled: tasks.filter((t) => t.status === "cancelled").length,
-    };
-
-    return NextResponse.json({ tasks, stats });
-  } catch (error: any) {
-    console.error("Error fetching agent tasks:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch agent tasks", message: error.message },
-      { status: 500 }
-    );
-  }
 }
 
 // ---------------- PATCH ----------------
@@ -174,13 +106,24 @@ export async function PATCH(
       },
     });
 
-    // ✅ Notify admins + qc users
-    const adminsAndQc = await prisma.user.findMany({
-      where: { role: { name: { in: ["admin", "qc"] } } }, // ✅ এখন admin + qc দুইজনই
+    // ✅ Notify Admins (সব status এ)
+    const admins = await prisma.user.findMany({
+      where: { role: { name: "admin" } },
       select: { id: true },
     });
 
-    if (adminsAndQc.length > 0) {
+    // ✅ Notify QC (শুধু completed এ)
+    const qcUsers =
+      status === "completed"
+        ? await prisma.user.findMany({
+            where: { role: { name: "qc" } },
+            select: { id: true },
+          })
+        : [];
+
+    // যদি কারো notify করার থাকে
+    const notifyUsers = [...admins, ...qcUsers];
+    if (notifyUsers.length > 0) {
       const humanStatus: Record<string, string> = {
         pending: "Pending",
         in_progress: "In Progress",
@@ -221,7 +164,7 @@ export async function PATCH(
         typeof performanceRating !== "undefined" ? "performance" : "general";
 
       await prisma.notification.createMany({
-        data: adminsAndQc.map((u) => ({
+        data: notifyUsers.map((u) => ({
           userId: u.id,
           taskId: updatedTask.id,
           type: notifType,
