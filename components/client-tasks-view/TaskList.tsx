@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { useMemo, useState, useEffect } from "react";
 import {
   Card,
@@ -31,7 +32,40 @@ import {
 
 import TaskTimer from "./TaskTimer";
 import ReassignNoteModal from "./ReassignNoteModal";
-import type { Task, TimerState } from "../client-tasks-view/client-tasks-view";
+import type { TimerState } from "../client-tasks-view/client-tasks-view";
+
+// Extend Task type to include 'email' property if missing
+type Task = {
+  id: string;
+  name: string;
+  status: string;
+  priority: string;
+  category?: { name?: string };
+  templateSiteAsset?: { name?: string; url?: string };
+  performanceRating?: string | number;
+  reassignNotes?: string;
+  completionLink?: string;
+  username?: string;
+  password?: string;
+  email?: string;
+  // Add all required properties for TaskTimer:
+  dueDate?: string | Date;
+  idealDurationMinutes?: number;
+  actualDurationMinutes?: number;
+  completedAt?: string | Date;
+  startedAt?: string | Date;
+  pausedAt?: string | Date;
+  timerState?: any;
+  assetUrl?: string;
+  url?: string;
+  // Add missing properties for TaskTimer compatibility
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+  assignment?: any;
+  assignedTo?: any;
+  comments?: any;
+};
+import { PerformanceBadge } from "./PerformanceBadge";
 
 export default function TaskList({
   clientName,
@@ -76,8 +110,8 @@ export default function TaskList({
   setViewMode: (v: "grid" | "list") => void;
   setTaskToComplete: (t: Task | null) => void;
   setIsCompletionConfirmOpen: (b: boolean) => void;
-  getStatusBadge: (status: string) => JSX.Element;
-  getPriorityBadge: (priority: string) => JSX.Element;
+  getStatusBadge: (status: string) => React.ReactElement;
+  getPriorityBadge: (priority: string) => React.ReactElement;
   formatTimerDisplay: (seconds: number) => string;
 }) {
   // 🔒 completed / qc_approved = read-only
@@ -216,13 +250,8 @@ export default function TaskList({
                 {/* Left: Basic Info */}
                 <div className="flex items-start gap-4 min-w-0">
                   <div className="flex-1 min-w-0">
-                    {task.performanceRating && (
-                      <div className="mb-3">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 text-amber-800 dark:text-amber-200 border-2 border-amber-200 dark:border-amber-700">
-                          Performance: {task.performanceRating}
-                        </span>
-                      </div>
-                    )}
+                    <PerformanceBadge rating={task.performanceRating as any} />
+
                     <div className="flex items-center gap-3 mb-3">
                       <h3 className="font-bold text-gray-900 dark:text-gray-50 text-lg truncate">
                         {task.name}
@@ -416,6 +445,7 @@ export default function TaskList({
         const urlCopied = copied?.id === task.id && copied?.type === "url";
         const locked = isLocked(task);
         const isThisTaskDisabled = locked || isTaskDisabled(task.id);
+        const performanceRating = task.performanceRating;
 
         return (
           <div
@@ -431,7 +461,7 @@ export default function TaskList({
                 {/* Title + Active badge */}
                 <div className="flex items-start gap-4 w-full">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-4">
+                    <div className="flex items-center justify-between gap-3 mb-4">
                       <h3 className="font-bold text-gray-900 dark:text-gray-50 text-xl truncate">
                         {task.name}
                       </h3>
@@ -443,6 +473,8 @@ export default function TaskList({
                           </span>
                         </div>
                       )}
+
+                      <PerformanceBadge rating={performanceRating as any} />
                     </div>
 
                     {/* Status / Priority / Category */}
