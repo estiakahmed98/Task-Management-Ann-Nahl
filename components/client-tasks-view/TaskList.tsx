@@ -212,10 +212,17 @@ export default function TaskList({
             }`}
           >
             <div className="p-6 w-full">
-              <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center w-full">
+              <div className="flex flex-col lg:flex-row gap-10 items-start lg:items-center w-full">
                 {/* Left: Basic Info */}
-                <div className="flex items-start gap-4 min-w-0 flex-1">
+                <div className="flex items-start gap-4 min-w-0">
                   <div className="flex-1 min-w-0">
+                    {task.performanceRating && (
+                      <div className="mb-3">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 text-amber-800 dark:text-amber-200 border-2 border-amber-200 dark:border-amber-700">
+                          Performance: {task.performanceRating}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-3 mb-3">
                       <h3 className="font-bold text-gray-900 dark:text-gray-50 text-lg truncate">
                         {task.name}
@@ -233,19 +240,6 @@ export default function TaskList({
                     <div className="flex flex-wrap items-center gap-2 mb-4">
                       <div className="flex items-center gap-1">
                         {getStatusBadge(task.status)}
-                        {task.status === "reassigned" && task.reassignNote && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 rounded-full hover:bg-violet-100 dark:hover:bg-violet-800/50 transition-colors"
-                            onClick={() =>
-                              showReassignNote(task.reassignNote || "")
-                            }
-                            title="View reassign note"
-                          >
-                            <Info className="h-3 w-3 text-violet-600" />
-                          </Button>
-                        )}
                       </div>
                       {getPriorityBadge(task.priority)}
                       <Badge
@@ -255,6 +249,24 @@ export default function TaskList({
                         {task.category?.name || "N/A"}
                       </Badge>
                     </div>
+                    {task.status === "reassigned" && (
+                      <div className="flex items-center gap-2 mb-4 text-xs font-medium text-gray-600 dark:text-gray-400">
+                        <p>Reassign Note:</p>
+                        {task.reassignNotes && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded-full hover:bg-violet-100 dark:hover:bg-violet-800/50 transition-colors"
+                            onClick={() =>
+                              showReassignNote(task.reassignNotes || "")
+                            }
+                            title="View reassign note"
+                          >
+                            <Eye className="h-3 w-3 text-violet-600" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
 
                     {!hideAssetSection && task.templateSiteAsset?.name && (
                       <div className="mb-4 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-xl border-2 border-indigo-200 dark:border-indigo-700">
@@ -373,7 +385,7 @@ export default function TaskList({
                 </div>
 
                 {/* Right: Timer (Complete button triggers onRequestComplete; gate keeps by timer running) */}
-                <div className="w-full lg:w-auto lg:min-w-[280px]">
+                <div className="w-full lg:w-auto lg:min-w-[120px]">
                   <TaskTimer
                     task={task}
                     timerState={timerState}
@@ -408,12 +420,12 @@ export default function TaskList({
         return (
           <div
             key={task.id}
-            className={`group relative bg-gradient-to-br from-white via-violet-50/30 to-purple-50/30 dark:from-gray-800 dark:via-violet-900/10 dark:to-purple-900/10 rounded-3xl border-2 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 ${"border-gray-200 dark:border-gray-700 hover:border-violet-300 dark:hover:border-violet-600 shadow-xl"} ${
+            className={`group relative bg-gradient-to-br from-white via-violet-50/30 to-purple-50/30 dark:from-gray-800 dark:via-violet-900/10 dark:to-purple-900/10 rounded-3xl border-2 transition-all duration-500 hover:shadow-2xl hover:-translate-y-0.5 ${"border-gray-200 dark:border-gray-700 hover:border-violet-300 dark:hover:border-violet-600 shadow-xl"} ${
               isThisTaskDisabled ? "opacity-70" : ""
             }`}
           >
             {/* Card content wrapper */}
-            <div className="p-8 h-full flex flex-col">
+            <div className="p-6 h-full flex flex-col">
               {/* ===== Top/Main content ===== */}
               <div className="flex-1 flex flex-col space-y-6">
                 {/* Title + Active badge */}
@@ -437,17 +449,17 @@ export default function TaskList({
                     <div className="flex flex-wrap items-center gap-3">
                       <div className="flex items-center gap-1">
                         {getStatusBadge(task.status)}
-                        {task.status === "reassigned" && task.reassignNote && (
+                        {task.status === "reassigned" && task.reassignNotes && (
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 rounded-full hover:bg-violet-100 dark:hover:bg-violet-800/50 transition-colors"
                             onClick={() =>
-                              showReassignNote(task.reassignNote || "")
+                              showReassignNote(task.reassignNotes || "")
                             }
                             title="View reassign note"
                           >
-                            <Info className="h-4 w-4 text-violet-600" />
+                            <Eye className="h-4 w-4 text-violet-600" />
                           </Button>
                         )}
                       </div>
@@ -578,7 +590,7 @@ export default function TaskList({
               </div>
 
               {/* ===== Bottom Action Section (separate) ===== */}
-              <div className="mt-6 -mx-8 -mb-8 px-8 py-5 bg-gradient-to-r from-violet-50/70 to-purple-50/70 dark:from-violet-900/20 dark:to-purple-900/20 border-t-2 border-violet-200/70 dark:border-violet-700/70 backdrop-blur-sm">
+              <div className="mt-6 -mx-6 -mb-8 px-8 py-5 bg-gradient-to-r from-violet-50/70 to-purple-50/70 dark:from-violet-900/20 dark:to-purple-900/20 border-t-2 border-violet-200/70 dark:border-violet-700/70 backdrop-blur-sm">
                 <div className="mt-3">
                   <TaskTimer
                     task={task}
