@@ -34,36 +34,19 @@ import TaskTimer from "./TaskTimer";
 import ReassignNoteModal from "./ReassignNoteModal";
 import type { TimerState } from "../client-tasks-view/client-tasks-view";
 
-// Extend Task type to include 'email' property if missing
-type Task = {
-  id: string;
-  name: string;
-  status: string;
-  priority: string;
-  category?: { name?: string };
-  templateSiteAsset?: { name?: string; url?: string };
-  performanceRating?: string | number;
+// Import the base Task type and extend it with additional properties
+import type { Task as BaseTask } from "./client-tasks-view";
+
+type Task = BaseTask & {
+  // Additional properties specific to TaskList
   reassignNotes?: string;
-  completionLink?: string;
   username?: string;
   password?: string;
   email?: string;
-  // Add all required properties for TaskTimer:
-  dueDate?: string | Date;
-  idealDurationMinutes?: number;
-  actualDurationMinutes?: number;
-  completedAt?: string | Date;
-  startedAt?: string | Date;
-  pausedAt?: string | Date;
+  // Add any other additional properties needed by TaskList
   timerState?: any;
   assetUrl?: string;
   url?: string;
-  // Add missing properties for TaskTimer compatibility
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
-  assignment?: any;
-  assignedTo?: any;
-  comments?: any;
 };
 import { PerformanceBadge } from "./PerformanceBadge";
 
@@ -71,6 +54,8 @@ export default function TaskList({
   clientName,
   tasks,
   filteredTasks,
+  selectedTasks = [],
+  setSelectedTasks,
   overdueCount,
   searchTerm,
   setSearchTerm,
@@ -85,8 +70,12 @@ export default function TaskList({
   isTaskDisabled,
   viewMode,
   setViewMode,
+  onOpenStatusModal,
+  taskToComplete,
   setTaskToComplete,
+  isCompletionConfirmOpen,
   setIsCompletionConfirmOpen,
+  onTaskComplete,
   getStatusBadge,
   getPriorityBadge,
   formatTimerDisplay,
@@ -94,6 +83,8 @@ export default function TaskList({
   clientName: string;
   tasks: Task[];
   filteredTasks: Task[];
+  selectedTasks?: string[]; // Array of task IDs
+  setSelectedTasks: React.Dispatch<React.SetStateAction<string[]>>; // Matches useState setter type
   overdueCount: number;
   searchTerm: string;
   setSearchTerm: (v: string) => void;
@@ -108,8 +99,12 @@ export default function TaskList({
   isTaskDisabled: (taskId: string) => boolean;
   viewMode: "grid" | "list";
   setViewMode: (v: "grid" | "list") => void;
+  onOpenStatusModal: () => void;
+  taskToComplete: Task | null;
   setTaskToComplete: (t: Task | null) => void;
+  isCompletionConfirmOpen: boolean;
   setIsCompletionConfirmOpen: (b: boolean) => void;
+  onTaskComplete: (task: Task) => void;
   getStatusBadge: (status: string) => React.ReactElement;
   getPriorityBadge: (priority: string) => React.ReactElement;
   formatTimerDisplay: (seconds: number) => string;
