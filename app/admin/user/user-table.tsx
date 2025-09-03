@@ -58,7 +58,8 @@ import {
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
-import { useUserSession } from "@/lib/hooks/use-user-session"; // useUserSession হুক ইম্পোর্ট করা হলো
+import { useUserSession } from "@/lib/hooks/use-user-session";
+// removed combobox components
 
 import ImpersonateButton from "@/components/users/ImpersonateButton";
 
@@ -158,10 +159,10 @@ export default function UsersPage() {
     roleId: "",
     phone: "",
     address: "",
+    biography: "",
     category: "",
     clientId: "",
     teamId: "",
-    biography: "",
     status: "active",
   });
 
@@ -326,6 +327,25 @@ export default function UsersPage() {
     const role = roles.find((r) => r.id === formData.roleId);
     return role?.name?.toLowerCase() === "client";
   }, [formData.roleId, roles]);
+
+  // Clients available for selection: exclude clients already assigned to a user
+  const assignedClientIds = useMemo(() => {
+    return new Set((users || []).map((u) => u.clientId).filter(Boolean) as string[]);
+  }, [users]);
+
+  const availableClients = useMemo(() => {
+    return (clients || []).filter((c) => {
+      if (editUser && editUser.clientId === c.id) return true; // allow current selection when editing
+      return !assignedClientIds.has(c.id);
+    });
+  }, [clients, assignedClientIds, editUser]);
+
+  // When role becomes Client, ensure clients list is loaded
+  useEffect(() => {
+    if (isClientRole && clients.length === 0 && !loadingClients) {
+      fetchClients();
+    }
+  }, [isClientRole, clients.length, loadingClients, fetchClients]);
 
   const getPasswordRequirement = (roleId: string): number => {
     const role = roles.find((r) => r.id === roleId);
@@ -730,10 +750,10 @@ export default function UsersPage() {
                         <SelectValue placeholder={loadingClients ? "Loading clients..." : "Select Client"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {clients.length === 0 ? (
-                          <SelectItem disabled value="no-clients">No clients found</SelectItem>
+                        {availableClients.length === 0 ? (
+                          <SelectItem disabled value="no-clients">No clients available</SelectItem>
                         ) : (
-                          clients.map((c) => (
+                          availableClients.map((c) => (
                             <SelectItem key={c.id} value={c.id}>
                               {c.name}
                             </SelectItem>
@@ -832,35 +852,37 @@ export default function UsersPage() {
                 </div>
                 {/* Team and Status */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="team">Team (optional)</Label>
-                    <Select
-                      value={formData.teamId || "none"}
-                      onValueChange={(value) => {
-                        setFormData({
-                          ...formData,
-                          teamId: value === "none" ? "" : value,
-                          // also set category to team name for compatibility
-                          category:
-                            value === "none"
-                              ? ""
-                              : teams.find((t) => t.id === value)?.name || "",
-                        });
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={loadingTeams ? "Loading teams..." : "Select team"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No team</SelectItem>
-                        {teams.map((t) => (
-                          <SelectItem key={t.id} value={t.id}>
-                            {t.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {!isClientRole && (
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="team">Team (optional)</Label>
+                      <Select
+                        value={formData.teamId || "none"}
+                        onValueChange={(value) => {
+                          setFormData({
+                            ...formData,
+                            teamId: value === "none" ? "" : value,
+                            // also set category to team name for compatibility
+                            category:
+                              value === "none"
+                                ? ""
+                                : teams.find((t) => t.id === value)?.name || "",
+                          });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={loadingTeams ? "Loading teams..." : "Select team"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No team</SelectItem>
+                          {teams.map((t) => (
+                            <SelectItem key={t.id} value={t.id}>
+                              {t.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="status">Status</Label>
                     <Select
