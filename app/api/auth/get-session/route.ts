@@ -39,6 +39,7 @@ export async function GET() {
         image: user.image ?? null,
         role: user.role?.name ?? null,
         roleId: user.roleId,
+        clientId: user.clientId ?? null,
       },
     });
   } catch (e) {

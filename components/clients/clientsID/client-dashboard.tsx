@@ -28,14 +28,6 @@ export function ClientDashboard({ clientData }: ClientDashboardProps) {
       .toUpperCase()
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
-  }
-
   const getDaysRemaining = () => {
     if (!clientData.dueDate) return 0
     const dueDate = new Date(clientData.dueDate)
