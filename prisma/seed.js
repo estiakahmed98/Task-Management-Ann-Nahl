@@ -1,7 +1,7 @@
 // prisma/seed.js
 
 const { PrismaClient } = require("@prisma/client");
-const bcrypt = require("bcryptjs"); // bcryptjs নিলে নেটিভ বিল্ড ঝামেলা এড়াও
+const bcrypt = require("bcryptjs"); // use bcryptjs to avoid native build issues
 
 const prisma = new PrismaClient();
 
@@ -10,6 +10,7 @@ async function seedRoles() {
     { id: "role-admin", name: "admin", description: "Administrator role" },
     { id: "role-agent", name: "agent", description: "Agent role" },
     { id: "role-manager", name: "manager", description: "Manager role" },
+    { id: "role-qc", name: "qc", description: "Quality Control role" }, // ✅ new
   ];
 
   for (const role of roles) {
@@ -23,7 +24,6 @@ async function seedRoles() {
 }
 
 async function seedTeams() {
-  // 👇 Screenshot অনুযায়ী টিম লিস্ট:
   const teams = [
     { id: "asset-team", name: "Asset Team", description: "Asset Team" },
     {
@@ -114,20 +114,27 @@ async function seedUsers() {
       password: "manager123",
       roleName: "manager",
     },
+    // ✅ new QC user
+    {
+      id: "user-qc",
+      name: "QC User",
+      email: "qc@example.com",
+      password: "qc123",
+      roleName: "qc",
+    },
   ];
 
   for (const user of users) {
     const hashedPassword = await bcrypt.hash(user.password, 10);
 
     await prisma.$transaction(async (tx) => {
-      // role
+      // 1) find role
       const role = await tx.role.findUnique({ where: { name: user.roleName } });
       if (!role) throw new Error(`Role ${user.roleName} not found`);
 
-      const firstName = user.name.split(" ")[0] || user.name;
-      const lastName = user.name.split(" ")[1] || "";
+      const [firstName, lastName = ""] = user.name.split(" ");
 
-      // user
+      // 2) upsert user
       const createdUser = await tx.user.upsert({
         where: { email: user.email },
         update: {
@@ -138,6 +145,7 @@ async function seedUsers() {
           firstName,
           lastName,
           emailVerified: true,
+          updatedAt: new Date(),
         },
         create: {
           id: user.id,
@@ -149,10 +157,12 @@ async function seedUsers() {
           status: "active",
           firstName,
           lastName,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       });
 
-      // account (credentials)
+      // 3) upsert credentials account
       const existingAccount = await tx.account.findFirst({
         where: { userId: createdUser.id, providerId: "credentials" },
       });
@@ -190,9 +200,8 @@ async function seedUsers() {
 
 async function main() {
   await seedRoles();
-  await seedTeams(); // 👈 নতুন অংশ
+  await seedTeams();
   await seedUsers();
-
   console.log("✅ Seeding completed");
 }
 

@@ -296,6 +296,10 @@ export function Profile({ clientData, currentUserRole }: ProfileProps) {
     (currentUserRole ?? (user as any)?.role?.name ?? (user as any)?.role ?? "")
       .toLowerCase() === "agent"
   )
+  const isClient = (
+    (currentUserRole ?? (user as any)?.role?.name ?? (user as any)?.role ?? "")
+      .toLowerCase() === "client"
+  )
 
   const fetchPackages = async () => {
     try {
@@ -549,14 +553,17 @@ export function Profile({ clientData, currentUserRole }: ProfileProps) {
     <>
       {/* Top toolbar */}
       <div className="flex items-center justify-end mb-4">
-        <Button
-          variant="outline"
-          onClick={onOpenEdit}
-          className="gap-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 dark:from-blue-500 dark:to-purple-500 dark:hover:from-blue-600 dark:hover:to-purple-600 text-white hover:text-white"
-        >
-          <PencilLine className="h-4 w-4" />
-          Edit Profile
-        </Button>
+        {!isClient && (
+          <Button
+            variant="outline"
+            onClick={onOpenEdit}
+            title={isClient ? "Clients cannot edit the profile" : "Edit client profile"}
+            className="gap-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 dark:from-blue-500 dark:to-purple-500 dark:hover:from-blue-600 dark:hover:to-purple-600 text-white hover:text-white disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <PencilLine className="h-4 w-4" />
+            Edit Profile
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -812,15 +819,17 @@ export function Profile({ clientData, currentUserRole }: ProfileProps) {
                 <Badge variant="secondary">{clientData.socialMedias?.length ?? 0}</Badge>
               </CardTitle>
 
-              <Button
-                variant="default"
-                className="gap-2 bg-gradient-to-r from-pink-600 to-pink-800 hover:from-pink-700 hover:to-pink-900 dark:from-pink-600 dark:to-pink-900"
-                onClick={() => setAddingRow(true)}
-                title="Add Social"
-              >
-                <Plus className="h-4 w-4" />
-                Add Social
-              </Button>
+              {!isClient && (
+                <Button
+                  variant="default"
+                  className="gap-2 bg-gradient-to-r from-pink-600 to-pink-800 hover:from-pink-700 hover:to-pink-900 dark:from-pink-600 dark:to-pink-900"
+                  onClick={() => setAddingRow(true)}
+                  title="Add Social"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Social
+                </Button>
+              )}
             </div>
           </CardHeader>
 
@@ -841,7 +850,9 @@ export function Profile({ clientData, currentUserRole }: ProfileProps) {
                       <th className="px-4 py-3 font-semibold">PHONE</th>
                       <th className="px-4 py-3 font-semibold">PASSWORD</th>
                       <th className="px-4 py-3 font-semibold">NOTES</th>
-                      <th className="px-4 py-3 font-semibold text-right">ACTIONS</th>
+                      {!isClient && (
+                        <th className="px-4 py-3 font-semibold text-right">ACTIONS</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -898,36 +909,38 @@ export function Profile({ clientData, currentUserRole }: ProfileProps) {
                             placeholder="Notes"
                           />
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setAddingRow(false)
-                                setAddDraft({ platform: "", url: "", username: "", email: "", phone: "", password: "", notes: "" })
-                              }}
-                              className="h-8 px-2"
-                              title="Cancel"
-                              disabled={addSaving}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={createRow}
-                              className="h-8 px-2"
-                              title="Save"
-                              disabled={addSaving}
-                            >
-                              {addSaving ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Check className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </td>
+                        {!isClient && (
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setAddingRow(false)
+                                  setAddDraft({ platform: "", url: "", username: "", email: "", phone: "", password: "", notes: "" })
+                                }}
+                                className="h-8 px-2"
+                                title="Cancel"
+                                disabled={addSaving}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={createRow}
+                                className="h-8 px-2"
+                                title="Save"
+                                disabled={addSaving}
+                              >
+                                {addSaving ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Check className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     )}
 
@@ -1077,47 +1090,49 @@ export function Profile({ clientData, currentUserRole }: ProfileProps) {
                               </td>
 
                               {/* ACTIONS */}
-                              <td className="px-4 py-3">
-                                <div className="flex items-center justify-end gap-2">
-                                  {!isEditing ? (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => startEditRow(id, sm)}
-                                      className="h-8 px-2"
-                                      title="Edit row"
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </Button>
-                                  ) : (
-                                    <>
+                              {!isClient && (
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center justify-end gap-2">
+                                    {!isEditing ? (
                                       <Button
-                                        variant="ghost"
+                                        variant="outline"
                                         size="sm"
-                                        onClick={() => cancelEditRow(id)}
+                                        onClick={() => startEditRow(id, sm)}
                                         className="h-8 px-2"
-                                        title="Cancel"
-                                        disabled={rowSaving[id]}
+                                        title="Edit row"
                                       >
-                                        <X className="h-4 w-4" />
+                                        <Pencil className="h-4 w-4" />
                                       </Button>
-                                      <Button
-                                        size="sm"
-                                        onClick={() => saveRow(id)}
-                                        className="h-8 px-2"
-                                        title="Save"
-                                        disabled={rowSaving[id]}
-                                      >
-                                        {rowSaving[id] ? (
-                                          <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                          <Check className="h-4 w-4" />
-                                        )}
-                                      </Button>
-                                    </>
-                                  )}
-                                </div>
-                              </td>
+                                    ) : (
+                                      <>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => cancelEditRow(id)}
+                                          className="h-8 px-2"
+                                          title="Cancel"
+                                          disabled={rowSaving[id]}
+                                        >
+                                          <X className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => saveRow(id)}
+                                          className="h-8 px-2"
+                                          title="Save"
+                                          disabled={rowSaving[id]}
+                                        >
+                                          {rowSaving[id] ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                          ) : (
+                                            <Check className="h-4 w-4" />
+                                          )}
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              )}
                             </tr>
                           )
                         })}

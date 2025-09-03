@@ -1,3 +1,5 @@
+// components/QCDashboard.tsx
+
 "use client";
 
 import React, { useMemo, useState } from "react";
@@ -12,12 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -267,15 +264,25 @@ export default function QCDashboardPro({ tasks = [] }: { tasks: AnyTask[] }) {
   const metrics = useMemo(() => {
     const total = rangedTasks.length;
     const pending = rangedTasks.filter((t) => t.status === "pending").length;
-    const qcApproved = rangedTasks.filter((t) => t.status === "qc_approved").length;
-    const completed = rangedTasks.filter((t) => t.status === "completed").length;
+    const qcApproved = rangedTasks.filter(
+      (t) => t.status === "qc_approved"
+    ).length;
+    const completed = rangedTasks.filter(
+      (t) => t.status === "completed"
+    ).length;
     const overdue = rangedTasks.filter((t) => isOverdue(t)).length;
     const completedToday = rangedTasks.filter(
-      (t) => t.completedAt && new Date(t.completedAt).toDateString() === now.toDateString()
+      (t) =>
+        t.completedAt &&
+        new Date(t.completedAt).toDateString() === now.toDateString()
     ).length;
-    const reassignCount = rangedTasks.filter((t) => String(t.status) === "reassigned").length;
+    const reassignCount = rangedTasks.filter(
+      (t) => String(t.status) === "reassigned"
+    ).length;
     const reassignToday = tasks.filter(
-      (t) => String(t.status) === "reassigned" && new Date(t.updatedAt).toDateString() === now.toDateString()
+      (t) =>
+        String(t.status) === "reassigned" &&
+        new Date(t.updatedAt).toDateString() === now.toDateString()
     ).length;
 
     return {
@@ -382,7 +389,10 @@ export default function QCDashboardPro({ tasks = [] }: { tasks: AnyTask[] }) {
 
       {/* KPI Row (design language) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <MetricCard
             title="Total"
             value={numberFmt(metrics.total)}
@@ -391,7 +401,11 @@ export default function QCDashboardPro({ tasks = [] }: { tasks: AnyTask[] }) {
             gradient="from-indigo-500 to-purple-500"
           />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.06 }}
+        >
           <MetricCard
             title="QC Approved"
             value={numberFmt(metrics.qcApproved)}
@@ -400,7 +414,11 @@ export default function QCDashboardPro({ tasks = [] }: { tasks: AnyTask[] }) {
             gradient="from-emerald-500 to-green-500"
           />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.09 }}
+        >
           <MetricCard
             title="Completed Task"
             value={numberFmt(metrics.completed)}
@@ -409,7 +427,11 @@ export default function QCDashboardPro({ tasks = [] }: { tasks: AnyTask[] }) {
             gradient="from-blue-500 to-cyan-500"
           />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.24 }}
+        >
           <MetricCard
             title="Reassign Task"
             value={numberFmt(metrics.reassignCount)}
@@ -514,22 +536,22 @@ export default function QCDashboardPro({ tasks = [] }: { tasks: AnyTask[] }) {
       {/* Tables */}
       <Tabs defaultValue="all" className="w-full space-y-4">
         <TabsList className="grid w-full grid-cols-3 bg-gradient-to-r from-white/90 via-slate-50/80 to-white/90 backdrop-blur-md border border-slate-200/60 rounded-2xl p-2 shadow-lg">
-          <TabsTrigger 
-            value="all" 
+          <TabsTrigger
+            value="all"
             className="rounded-xl font-medium transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-slate-100/60 hover:shadow-md"
           >
             <BarChart3 className="h-4 w-4 mr-2" />
             All Tasks
           </TabsTrigger>
-          <TabsTrigger 
-            value="qc" 
+          <TabsTrigger
+            value="qc"
             className="rounded-xl font-medium transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-green-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-slate-100/60 hover:shadow-md"
           >
             <CheckCircle2 className="h-4 w-4 mr-2" />
             QC Approved
           </TabsTrigger>
-          <TabsTrigger 
-            value="overdue" 
+          <TabsTrigger
+            value="overdue"
             className="rounded-xl font-medium transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-rose-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-slate-100/60 hover:shadow-md"
           >
             <Timer className="h-4 w-4 mr-2" />
@@ -547,7 +569,9 @@ export default function QCDashboardPro({ tasks = [] }: { tasks: AnyTask[] }) {
                     <BarChart3 className="h-5 w-5 text-slate-700" />
                     All Tasks
                   </CardTitle>
-                  <CardDescription>Filtered by date range & query</CardDescription>
+                  <CardDescription>
+                    Filtered by date range & query
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -591,7 +615,10 @@ export default function QCDashboardPro({ tasks = [] }: { tasks: AnyTask[] }) {
                     ))}
                     {rows.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={11} className="text-center text-sm text-muted-foreground py-8">
+                        <TableCell
+                          colSpan={11}
+                          className="text-center text-sm text-muted-foreground py-8"
+                        >
                           No tasks in this range.
                         </TableCell>
                       </TableRow>
@@ -611,7 +638,9 @@ export default function QCDashboardPro({ tasks = [] }: { tasks: AnyTask[] }) {
                 <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                 QC Approved
               </CardTitle>
-              <CardDescription>Only tasks with status qc_approved</CardDescription>
+              <CardDescription>
+                Only tasks with status qc_approved
+              </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <ScrollArea className="max-h-[40vh] overflow-y-auto">
@@ -631,7 +660,9 @@ export default function QCDashboardPro({ tasks = [] }: { tasks: AnyTask[] }) {
                       .filter((r) => r.status === "qc_approved")
                       .map((r) => (
                         <TableRow key={r.id} className="hover:bg-slate-100/60">
-                          <TableCell className="font-medium">{r.name}</TableCell>
+                          <TableCell className="font-medium">
+                            {r.name}
+                          </TableCell>
                           <TableCell>{r.client}</TableCell>
                           <TableCell>{r.category}</TableCell>
                           <TableCell>{r.assignee}</TableCell>
@@ -639,9 +670,13 @@ export default function QCDashboardPro({ tasks = [] }: { tasks: AnyTask[] }) {
                           <TableCell>{r.rating ?? "—"}</TableCell>
                         </TableRow>
                       ))}
-                    {rows.filter((r) => r.status === "qc_approved").length === 0 && (
+                    {rows.filter((r) => r.status === "qc_approved").length ===
+                      0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
+                        <TableCell
+                          colSpan={6}
+                          className="text-center text-sm text-muted-foreground py-8"
+                        >
                           Nothing approved in this range.
                         </TableCell>
                       </TableRow>
@@ -697,7 +732,10 @@ export default function QCDashboardPro({ tasks = [] }: { tasks: AnyTask[] }) {
                     ))}
                     {overdueRows.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">
+                        <TableCell
+                          colSpan={7}
+                          className="text-center text-sm text-muted-foreground py-8"
+                        >
                           No overdue tasks 🎉
                         </TableCell>
                       </TableRow>
