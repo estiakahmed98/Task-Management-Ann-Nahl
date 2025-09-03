@@ -48,7 +48,6 @@ export interface Task {
     | "cancelled"
     | "reassigned"
     | "qc_approved";
-  reassignNotes?: string;
   dueDate: string | null;
   idealDurationMinutes: number | null;
   actualDurationMinutes: number | null;
