@@ -55,6 +55,8 @@ import {
   User,
   Phone,
   MapPin,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
@@ -150,6 +152,7 @@ export default function UsersPage() {
   const [newRole, setNewRole] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserInterface | null>(null);
   const [openViewDialog, setOpenViewDialog] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Form data
   const [formData, setFormData] = useState<FormData>({
@@ -347,6 +350,58 @@ export default function UsersPage() {
     }
   }, [isClientRole, clients.length, loadingClients, fetchClients]);
 
+  // Helpers
+  const generatePassword = useCallback((length: number) => {
+    const lowers = "abcdefghijklmnopqrstuvwxyz";
+    const uppers = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const digits = "0123456789";
+    const all = lowers + uppers + digits;
+    // ensure at least one of each
+    let pwd =
+      lowers[Math.floor(Math.random() * lowers.length)] +
+      uppers[Math.floor(Math.random() * uppers.length)] +
+      digits[Math.floor(Math.random() * digits.length)];
+    for (let i = pwd.length; i < length; i++) {
+      pwd += all[Math.floor(Math.random() * all.length)];
+    }
+    return pwd;
+  }, []);
+
+  const firstNWords = useCallback((text: string, n: number) => {
+    const words = text.trim().split(/\s+/).slice(0, n);
+    if (words.length === 0) return "";
+    let preview = words.join(" ");
+    preview = preview.trim();
+    if (!/[.!?]$/.test(preview)) preview += ".";
+    return preview;
+  }, []);
+
+  const handleClientSelect = useCallback(async (clientId: string) => {
+    // Set selected client id immediately
+    setFormData((prev) => ({ ...prev, clientId }));
+    try {
+      const res = await fetch(`/api/clients/${clientId}`);
+      const json = await res.json();
+      const client: any = res.ok ? (json?.data ?? json) : null;
+      if (!client) return;
+      const email = client.email || "";
+      const phone = client.phone || "";
+      const address = client.location || client.address || client.companyaddress || "";
+      const biography = client.biography ? firstNWords(client.biography, 100) : "";
+      setFormData((prev) => ({
+        ...prev,
+        clientId,
+        email: email || prev.email,
+        phone: phone || prev.phone,
+        address: address || prev.address,
+        biography: biography || prev.biography,
+      }));
+    } catch (e) {
+      console.error("Failed to fetch client details", e);
+      // keep clientId set; leave other fields unchanged
+    }
+  }, [firstNWords, formData.roleId]);
+
   const getPasswordRequirement = (roleId: string): number => {
     const role = roles.find((r) => r.id === roleId);
     if (!role) return 8;
@@ -409,7 +464,7 @@ export default function UsersPage() {
   const handleCreateUser = async () => {
     try {
       // Validate required fields
-      if (!formData.email || !formData.password || !formData.roleId) {
+      if (!formData.email || !formData.roleId) {
         toast.error("Please fill all required fields");
         return;
       }
@@ -418,15 +473,17 @@ export default function UsersPage() {
         toast.error("Please select a client for the Client role");
         return;
       }
-      // Validate password length based on role
-      const requiredLength = getPasswordRequirement(formData.roleId);
-      if (formData.password.length < requiredLength) {
-        const roleName =
-          roles.find((r) => r.id === formData.roleId)?.name || "this role";
-        toast.error(
-          `Password must be at least ${requiredLength} characters for ${roleName} role`
-        );
-        return;
+      // Validate password length based on role IF provided
+      if (formData.password && formData.password.trim() !== "") {
+        const requiredLength = getPasswordRequirement(formData.roleId);
+        if (formData.password.length < requiredLength) {
+          const roleName =
+            roles.find((r) => r.id === formData.roleId)?.name || "this role";
+          toast.error(
+            `Password must be at least ${requiredLength} characters for ${roleName} role`
+          );
+          return;
+        }
       }
 
       // actorId যোগ করা হলো
@@ -435,12 +492,16 @@ export default function UsersPage() {
           ? teams.find((t) => t.id === formData.teamId)?.name || ""
           : "";
 
-      const dataToSend = {
-        ...formData,
+      const { password, ...rest } = formData;
+      const dataToSend: any = {
+        ...rest,
         // keep sending category as team name for compatibility
-        category: selectedTeamName || formData.category || "",
+        category: selectedTeamName || rest.category || "",
         actorId: currentUser?.id,
       };
+      if (password && password.trim() !== "") {
+        dataToSend.password = password.trim();
+      }
 
       const response = await fetch("/api/users", {
         method: "POST",
@@ -658,7 +719,7 @@ export default function UsersPage() {
   }, [users, searchTerm, statusFilter, categoryFilter, roleFilter]);
 
   return (
-    <div className="container mx-auto p-8 space-y-6 ">
+    <div className="p-6 space-y-6 ">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -742,9 +803,8 @@ export default function UsersPage() {
                     <Label htmlFor="client">Client</Label>
                     <Select
                       value={formData.clientId ?? undefined}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, clientId: value })
-                      }
+                      onValueChange={handleClientSelect}
+                      disabled={loadingClients || availableClients.length === 0}
                     >
                       <SelectTrigger id="client" className="w-full">
                         <SelectValue placeholder={loadingClients ? "Loading clients..." : "Select Client"} />
@@ -761,6 +821,9 @@ export default function UsersPage() {
                         )}
                       </SelectContent>
                     </Select>
+                    {availableClients.length === 0 && !loadingClients && (
+                      <span className="text-xs text-muted-foreground">All clients are already assigned or none exist.</span>
+                    )}
                   </div>
                 )}
 
@@ -785,8 +848,7 @@ export default function UsersPage() {
                       htmlFor="password"
                       className="flex items-center gap-1"
                     >
-                      {editUser ? "New Password" : "Password"}
-                      {!editUser && <span className="text-red-500">*</span>}
+                      {editUser ? "New Password" : "Password (optional)"}
                       {formData.roleId && (
                         <span className="text-xs text-blue-600 block">
                           {`Min ${getPasswordRequirement(
@@ -795,23 +857,37 @@ export default function UsersPage() {
                         </span>
                       )}
                     </Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder={
-                        formData.roleId
-                          ? `Min ${getPasswordRequirement(
-                              formData.roleId
-                            )} characters`
-                          : "Select a role first"
-                      }
-                      value={formData.password}
-                      onChange={(e) =>
-                        setFormData({ ...formData, password: e.target.value })
-                      }
-                      required={!editUser}
-                      disabled={!formData.roleId}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder={
+                          formData.roleId
+                            ? `Min ${getPasswordRequirement(
+                                formData.roleId
+                              )} characters`
+                            : "Select a role first"
+                        }
+                        value={formData.password}
+                        onChange={(e) =>
+                          setFormData({ ...formData, password: e.target.value })
+                        }
+                        required={false}
+                        disabled={!formData.roleId}
+                      />
+                      <button
+                        type="button"
+                        className="absolute inset-y-0 right-2 flex items-center text-muted-foreground"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
                 {/* Phone and Address */}
