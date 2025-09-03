@@ -907,9 +907,9 @@ export function ClientTasksView({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20 p-4 lg:p-8">
-      <div className=" space-y-8">
-        {/* Header */}
+    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20 p-4 lg:p-8">
+      {/* Header */}
+      <div className="space-y-8 w-full max-w-[100vw] overflow-x-hidden">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Button
@@ -946,7 +946,7 @@ export function ClientTasksView({
         </div>
 
         {/* Stats Cards — 3 per row; QC Approved after Overdue */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
           <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
             <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
@@ -997,7 +997,9 @@ export function ClientTasksView({
               <div className="text-3xl font-bold text-white">
                 {stats.inProgress}
               </div>
-              <p className="text-xs text-amber-100 mt-1">Currently working on</p>
+              <p className="text-xs text-amber-100 mt-1">
+                Currently working on
+              </p>
             </CardContent>
           </Card>
 
@@ -1012,8 +1014,12 @@ export function ClientTasksView({
               </div>
             </CardHeader>
             <CardContent className="relative">
-              <div className="text-3xl font-bold text-white">{overdueCount}</div>
-              <p className="text-xs text-red-100 mt-1">Need immediate attention</p>
+              <div className="text-3xl font-bold text-white">
+                {overdueCount}
+              </div>
+              <p className="text-xs text-red-100 mt-1">
+                Need immediate attention
+              </p>
             </CardContent>
           </Card>
 
@@ -1039,10 +1045,7 @@ export function ClientTasksView({
         <div className="flex justify-end">
           <Dialog open={isClientModalOpen} onOpenChange={setIsClientModalOpen}>
             <DialogTrigger asChild>
-              <Button
-                className="relative rounded-2xl p-0 bg-transparent hover:bg-transparent"
-                aria-label="Open Client's Information"
-              >
+              <Button className="relative rounded-2xl p-0 bg-transparent hover:bg-transparent overflow-hidden isolate">
                 <BackgroundGradient className="rounded-2xl">
                   <div className="rounded-2xl px-5 py-2.5 text-white">
                     Open Client&apos;s Information
@@ -1051,7 +1054,7 @@ export function ClientTasksView({
               </Button>
             </DialogTrigger>
 
-            <DialogContent className="max-w-6xl h-[90vh] overflow-y-auto bg-transparent p-0">
+            <DialogContent className="w-[95vw] max-w-6xl h-[90vh] overflow-y-auto overflow-x-hidden bg-transparent p-0">
               <div className="bg-card p-6">
                 <DialogHeader className="mb-4">
                   <DialogTitle>{clientName}</DialogTitle>
@@ -1070,33 +1073,38 @@ export function ClientTasksView({
         </div>
 
         {/* Task Management Section */}
-        <TaskList
-          clientName={clientName}
-          tasks={tasks}
-          filteredTasks={filteredTasks}
-          overdueCount={overdueCount}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          priorityFilter={priorityFilter}
-          setPriorityFilter={setPriorityFilter}
-          selectedTasks={selectedTasks}
-          setSelectedTasks={setSelectedTasks}
-          timerState={timerState}
-          handleStartTimer={handleStartTimer}
-          handlePauseTimer={handlePauseTimer}
-          handleResetTimer={handleResetTimer}
-          isTaskDisabled={isTaskDisabled}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          onOpenStatusModal={() => setIsStatusModalOpen(true)}
-          setTaskToComplete={setTaskToComplete}
-          setIsCompletionConfirmOpen={setIsCompletionConfirmOpen}
-          getStatusBadge={getStatusBadge}
-          getPriorityBadge={getPriorityBadge}
-          formatTimerDisplay={formatTimerDisplay}
-        />
+        <div className="max-w-full overflow-x-hidden">
+          <TaskList
+            clientName={clientName}
+            tasks={tasks}
+            filteredTasks={filteredTasks}
+            overdueCount={overdueCount}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            priorityFilter={priorityFilter}
+            setPriorityFilter={setPriorityFilter}
+            selectedTasks={selectedTasks}
+            setSelectedTasks={setSelectedTasks}
+            timerState={timerState}
+            handleStartTimer={handleStartTimer}
+            handlePauseTimer={handlePauseTimer}
+            handleResetTimer={handleResetTimer}
+            isTaskDisabled={isTaskDisabled}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            onOpenStatusModal={() => setIsStatusModalOpen(true)}
+            taskToComplete={taskToComplete}
+            setTaskToComplete={setTaskToComplete}
+            isCompletionConfirmOpen={isCompletionConfirmOpen}
+            setIsCompletionConfirmOpen={setIsCompletionConfirmOpen}
+            getStatusBadge={getStatusBadge}
+            onTaskComplete={handleTaskCompletion}
+            getPriorityBadge={getPriorityBadge}
+            formatTimerDisplay={formatTimerDisplay}
+          />
+        </div>
 
         {/* Dialogs */}
         <TaskDialogs
