@@ -1,4 +1,4 @@
-// app/api/notifications/unread-count/route.ts
+// app/api/notifications/mark-read/route.ts
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
