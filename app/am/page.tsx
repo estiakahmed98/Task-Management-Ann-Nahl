@@ -1,4 +1,4 @@
-// app/am/page.tsx
+//app/qc/qc-review/page.tsx
 
 import { AMDashboard } from "@/components/account_manager/amDashboard";
 
