@@ -94,11 +94,11 @@ export default function ClientsPage() {
 
   // Navigate to details
   const handleViewClientDetails = (client: Client) => {
-    router.push(`/am/clients/${client.id}`)
+    router.push(`/client/clients/${client.id}`)
   }
 
   const handleAddNewClient = () => {
-    router.push("/am/clients/onboarding")
+    router.push("/client/clients/onboarding")
   }
 
   // Build account manager options from data we have

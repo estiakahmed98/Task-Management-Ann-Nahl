@@ -48,9 +48,10 @@ export async function POST(request: NextRequest) {
       phone,
       address,
       category,
+      clientId,
       status,
       biography,
-      actorId, // কে action করল
+      actorId,
     } = body
 
     if (!email || !password || !roleId) {
@@ -64,6 +65,14 @@ export async function POST(request: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 10)
 
+    // Optional: enforce clientId for client role
+    if (roleId) {
+      const role = await prisma.role.findUnique({ where: { id: roleId } })
+      if (role && role.name.toLowerCase() === "client" && !clientId) {
+        return NextResponse.json({ error: "clientId is required for users with Client role" }, { status: 400 })
+      }
+    }
+
     const newUser = await prisma.user.create({
       data: {
         name: name || null,
@@ -74,6 +83,7 @@ export async function POST(request: NextRequest) {
         address: address || null,
         biography: biography || null,
         category: category || null,
+        clientId: clientId || null,
         status: status || "active",
         emailVerified: false,
         accounts: {
@@ -93,7 +103,7 @@ export async function POST(request: NextRequest) {
     await logActivity({
       entityType: "User",
       entityId: newUser.id,
-      userId: actorId || null, // ✅ actorId এখানে যাবে
+      userId: actorId || null,
       action: "create",
       details: { email, roleId, name },
     })
@@ -120,9 +130,19 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
+    // Whitelist updatable fields to avoid passing unsupported props (e.g. teamId)
+    const allowed: any = {}
+    if (typeof rest.name !== "undefined") allowed.name = rest.name || null
+    if (typeof rest.email !== "undefined") allowed.email = rest.email
+    if (typeof rest.roleId !== "undefined") allowed.roleId = rest.roleId
+    if (typeof rest.phone !== "undefined") allowed.phone = rest.phone || null
+    if (typeof rest.address !== "undefined") allowed.address = rest.address || null
+    if (typeof rest.category !== "undefined") allowed.category = rest.category || null
+    if (typeof rest.clientId !== "undefined") allowed.clientId = rest.clientId || null
+    if (typeof rest.status !== "undefined") allowed.status = rest.status || "active"
+
     const updateData: any = {
-      ...rest,
-      status: rest.status || "active",
+      ...allowed,
       biography: biography || null,
     }
 
@@ -175,12 +195,15 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
-    const userId = searchParams.get("id")
-    const actorId = searchParams.get("actorId") // যে ডিলিট করল
+    const userIdParam = searchParams.get("id")
+    const actorIdParam = searchParams.get("actorId") // যে ডিলিট করল
 
-    if (!userId) {
+    if (!userIdParam) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 })
     }
+
+    const userId: string = userIdParam
+    const actorId: string | undefined = actorIdParam ?? undefined
 
     const userToDelete = await prisma.user.findUnique({
       where: { id: userId },
@@ -195,7 +218,7 @@ export async function DELETE(request: NextRequest) {
     await logActivity({
       entityType: "User",
       entityId: userToDelete.id,
-      userId: actorId || null,
+      userId: actorId,
       action: "delete",
       details: { email: userToDelete.email, name: userToDelete.name },
     })

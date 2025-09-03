@@ -82,6 +82,7 @@ interface UserInterface {
   roleId?: string | null;
   role?: { id: string; name: string } | null;
   passwordHash?: string;
+  clientId?: string | null;
 }
 
 interface UserStats {
@@ -110,7 +111,9 @@ interface FormData {
   roleId: string;
   phone?: string;
   address?: string;
-  category?: string;
+  category?: string; // kept for backward compatibility (will store team name)
+  clientId?: string; // for client role
+  teamId?: string; // selected team id (optional)
   biography?: string;
   status: UserStatus;
 }
@@ -156,9 +159,17 @@ export default function UsersPage() {
     phone: "",
     address: "",
     category: "",
+    clientId: "",
+    teamId: "",
     biography: "",
     status: "active",
   });
+
+  // Clients & Teams
+  const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
+  const [teams, setTeams] = useState<Array<{ id: string; name: string }>>([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+  const [loadingTeams, setLoadingTeams] = useState(false);
 
   // Fetch users with pagination
   const fetchUsers = useCallback(async () => {
@@ -250,6 +261,46 @@ export default function UsersPage() {
     }
   }, []);
 
+  const fetchClients = useCallback(async () => {
+    try {
+      setLoadingClients(true);
+      const res = await fetch("/api/clients");
+      const json = await res.json();
+      if (res.ok && Array.isArray(json)) {
+        setClients(json as Array<{ id: string; name: string }>);
+      } else if (res.ok && json?.data && Array.isArray(json.data)) {
+        setClients(json.data as Array<{ id: string; name: string }>);
+      } else {
+        setClients([]);
+      }
+    } catch (e) {
+      console.error("Failed to fetch clients", e);
+      setClients([]);
+    } finally {
+      setLoadingClients(false);
+    }
+  }, []);
+
+  const fetchTeams = useCallback(async () => {
+    try {
+      setLoadingTeams(true);
+      const res = await fetch("/api/teams");
+      const json = await res.json();
+      if (res.ok && Array.isArray(json)) {
+        setTeams(json as Array<{ id: string; name: string }>);
+      } else if (res.ok && json?.data && Array.isArray(json.data)) {
+        setTeams(json.data as Array<{ id: string; name: string }>);
+      } else {
+        setTeams([]);
+      }
+    } catch (e) {
+      console.error("Failed to fetch teams", e);
+      setTeams([]);
+    } finally {
+      setLoadingTeams(false);
+    }
+  }, []);
+
   // Initial data fetch
   useEffect(() => {
     fetchUsers();
@@ -258,6 +309,7 @@ export default function UsersPage() {
   useEffect(() => {
     fetchStats();
     fetchRoles();
+    fetchTeams();
   }, [fetchStats, fetchRoles]);
 
   // Get unique categories from users
@@ -268,6 +320,12 @@ export default function UsersPage() {
     );
     return uniqueCategories;
   }, [users]);
+
+  const isClientRole = useMemo(() => {
+    if (!formData.roleId) return false;
+    const role = roles.find((r) => r.id === formData.roleId);
+    return role?.name?.toLowerCase() === "client";
+  }, [formData.roleId, roles]);
 
   const getPasswordRequirement = (roleId: string): number => {
     const role = roles.find((r) => r.id === roleId);
@@ -294,6 +352,8 @@ export default function UsersPage() {
       address: "",
       biography: "",
       category: "",
+      clientId: "",
+      teamId: "",
       status: "active",
     });
     setEditUser(null);
@@ -315,9 +375,15 @@ export default function UsersPage() {
       address: user.address || "",
       biography: user.biography || "",
       category: user.category || "",
+      clientId: user.clientId || "",
+      teamId: "",
       status: user.status || "active",
     });
     setOpenDialog(true);
+    fetchTeams();
+    if ((user.role?.name || "").toLowerCase() === "client") {
+      fetchClients();
+    }
   };
 
   const handleCreateUser = async () => {
@@ -325,6 +391,11 @@ export default function UsersPage() {
       // Validate required fields
       if (!formData.email || !formData.password || !formData.roleId) {
         toast.error("Please fill all required fields");
+        return;
+      }
+      // Require client selection if role is client
+      if (isClientRole && !formData.clientId) {
+        toast.error("Please select a client for the Client role");
         return;
       }
       // Validate password length based on role
@@ -339,8 +410,15 @@ export default function UsersPage() {
       }
 
       // actorId যোগ করা হলো
+      const selectedTeamName =
+        formData.teamId
+          ? teams.find((t) => t.id === formData.teamId)?.name || ""
+          : "";
+
       const dataToSend = {
         ...formData,
+        // keep sending category as team name for compatibility
+        category: selectedTeamName || formData.category || "",
         actorId: currentUser?.id,
       };
 
@@ -412,6 +490,11 @@ export default function UsersPage() {
       }
       setOpenRoleUpdateDialog(false);
 
+      const selectedTeamName =
+        formData.teamId
+          ? teams.find((t) => t.id === formData.teamId)?.name || ""
+          : "";
+
       const updateData: any = {
         id: editUser.id,
         name: formData.name,
@@ -420,7 +503,9 @@ export default function UsersPage() {
         phone: formData.phone,
         address: formData.address,
         biography: formData.biography,
-        category: formData.category,
+        category: selectedTeamName || formData.category,
+        clientId: formData.clientId || null,
+        teamId: formData.teamId || null,
         status: formData.status,
         actorId: currentUser?.id,
       };
@@ -612,6 +697,11 @@ export default function UsersPage() {
                       toast.info(
                         `Password must be at least ${requiredLength} characters for ${roleName} role`
                       );
+                      // load clients if role becomes client
+                      const selected = roles.find((r) => r.id === value)?.name?.toLowerCase();
+                      if (selected === "client") {
+                        fetchClients();
+                      }
                     }}
                   >
                     <SelectTrigger id="role" className="w-full">
@@ -626,6 +716,34 @@ export default function UsersPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Client (visible when role is Client) */}
+                {isClientRole && (
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="client">Client</Label>
+                    <Select
+                      value={formData.clientId ?? undefined}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, clientId: value })
+                      }
+                    >
+                      <SelectTrigger id="client" className="w-full">
+                        <SelectValue placeholder={loadingClients ? "Loading clients..." : "Select Client"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients.length === 0 ? (
+                          <SelectItem disabled value="no-clients">No clients found</SelectItem>
+                        ) : (
+                          clients.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 {/* Email and Password */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
@@ -712,30 +830,34 @@ export default function UsersPage() {
                     className="h-[20vh]"
                   />
                 </div>
-                {/* Category and Status */}
+                {/* Team and Status */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="category">Category</Label>
+                    <Label htmlFor="team">Team (optional)</Label>
                     <Select
-                      value={formData.category || "none"}
-                      onValueChange={(value) =>
+                      value={formData.teamId || "none"}
+                      onValueChange={(value) => {
                         setFormData({
                           ...formData,
-                          category: value === "none" ? "" : value,
-                        })
-                      }
+                          teamId: value === "none" ? "" : value,
+                          // also set category to team name for compatibility
+                          category:
+                            value === "none"
+                              ? ""
+                              : teams.find((t) => t.id === value)?.name || "",
+                        });
+                      }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue placeholder={loadingTeams ? "Loading teams..." : "Select team"} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">No category</SelectItem>
-                        <SelectItem value="Admin">Admin</SelectItem>
-                        <SelectItem value="Manager">Manager</SelectItem>
-                        <SelectItem value="QC">QC</SelectItem>
-                        <SelectItem value="Asset Team">Asset Team</SelectItem>
-                        <SelectItem value="Social Team">Social Team</SelectItem>
-                        <SelectItem value="Buzz Moving">Buzz Moving</SelectItem>
+                        <SelectItem value="none">No team</SelectItem>
+                        {teams.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -885,10 +1007,10 @@ export default function UsersPage() {
               </Select>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Category" />
+                  <SelectValue placeholder="Team" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="all">All Teams</SelectItem>
                   {categories && categories.length > 0 ? (
                     categories.map((category) => (
                       <SelectItem key={category} value={category}>
@@ -897,7 +1019,7 @@ export default function UsersPage() {
                     ))
                   ) : (
                     <SelectItem disabled value="none">
-                      No Categories
+                      No Teams
                     </SelectItem>
                   )}
                 </SelectContent>
@@ -1194,35 +1316,16 @@ export default function UsersPage() {
                           <span className="text-sm">
                             {selectedUser.address}
                           </span>
-                        </div>
-                      )}
                     </div>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Role & Category
-                    </Label>
-                    <div className="mt-2 flex gap-2 items-center">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary">
-                          {selectedUser.role?.name || "No role assigned"}
-                        </Badge>
-                      </div>
-                      {selectedUser.category && (
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">
-                            {selectedUser.category}
-                          </Badge>
-                        </div>
-                      )}
+                  )}
+                  {(selectedUser.role?.name !== 'Client' && selectedUser.category) && (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">
+                        {selectedUser.category}
+                      </Badge>
                     </div>
-                  </div>
+                  )}
                 </div>
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Account
-                    </Label>
                     <div className="mt-1 space-y-2">
                       <div className="flex items-center gap-2">
                         <CalendarDays className="h-4 w-4 text-muted-foreground" />
