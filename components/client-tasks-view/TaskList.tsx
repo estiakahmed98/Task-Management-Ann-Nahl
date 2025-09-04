@@ -252,7 +252,7 @@ export default function TaskList({
               <div className="flex flex-col lg:flex-row gap-10 items-start lg:items-center w-full">
                 {/* Left: Basic Info */}
                 <div className="flex items-start gap-4 min-w-0">
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 space-y-4">
                     <PerformanceBadge rating={task.performanceRating as any} />
 
                     <div className="flex items-center gap-3 mb-3">
