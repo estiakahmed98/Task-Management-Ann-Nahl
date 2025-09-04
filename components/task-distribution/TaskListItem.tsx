@@ -449,8 +449,8 @@ export const TaskListItem = memo(function TaskListItem({
           <div className="relative">
             <textarea
               id={`note-${task.id}`}
-              rows={3}
-              placeholder="✏️ Add your notes here..."
+              rows={2}
+              placeholder="Add your notes here..."
               className="w-full text-sm p-3 rounded-lg border border-slate-300 bg-white shadow-sm 
                focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 
                resize-none transition-all duration-200 group-hover:border-slate-400 

@@ -109,20 +109,8 @@ export function TaskTabs({
   // SINGLE-TAB MODE (non–Asset Creation)
   // -----------------------------
   if (singleTabTasks) {
-    const title = singleTabTitle ?? "Tasks";
-
     return (
       <div className="w-full">
-        {/* Header bar (no pills), matching your aesthetics */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="text-base md:text-lg font-semibold text-slate-800">
-            {title}
-          </div>
-          <Badge className="rounded-full bg-cyan-100 text-cyan-900 ring-1 ring-inset ring-cyan-300/50">
-            {singleTabTasks.length}
-          </Badge>
-        </div>
-
         <div className="mt-6">
           <TabContent
             // siteType here is just a tag; card design comes from TabContent
