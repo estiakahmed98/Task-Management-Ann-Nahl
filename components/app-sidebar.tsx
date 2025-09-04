@@ -249,6 +249,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
 
       // Tasks for Agent
       { title: "Tasks", url: "/agent/tasks", roles: ["agent"] },
+      { title: "Tasks History", url: "/agent/taskHistory", roles: ["agent"] },
 
       { title: "QC Review", url: "/qc/tasks", roles: ["qc"] },
 
