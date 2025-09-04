@@ -351,7 +351,7 @@ export function ProfessionalDashboard() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full md:w-auto">
-          <div className="flex gap-2">
+          {/* <div className="flex gap-2">
             <Button
               asChild
               variant="outline"
@@ -373,7 +373,7 @@ export function ProfessionalDashboard() {
                 Report
               </Link>
             </Button>
-          </div>
+          </div> */}
           <Select defaultValue={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger className="w-full sm:w-[180px] border-slate-300 bg-white/80 backdrop-blur">
               <SelectValue placeholder="Select time range" />

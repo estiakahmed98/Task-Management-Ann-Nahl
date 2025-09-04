@@ -90,6 +90,66 @@ export function ClientCard({ clientId, onViewDetails }: ClientCardProps) {
   const taskCounts = getTaskStatusCounts(client.tasks)
   const totalTasks = client.tasks?.length || 0
   const derivedProgress = totalTasks ? Math.round((taskCounts.completed / totalTasks) * 100) : 0
+  // This Month Progress (mirrors logic from clientsID/client-dashboard.tsx)
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1) // exclusive
+
+  const parseDate = (v?: string | Date | null) => {
+    if (!v) return null
+    const d = new Date(v)
+    return isNaN(d.getTime()) ? null : d
+  }
+
+  // Prefer createdAt; fallback to startDate; then dueDate
+  const getBestDate = (task: any): Date | null => {
+    return parseDate(task?.createdAt) || parseDate((task as any)?.startDate) || parseDate(task?.dueDate)
+  }
+
+  const inThisMonth = (task: any) => {
+    const d = getBestDate(task)
+    if (!d) return false
+    return d >= monthStart && d < monthEnd
+  }
+
+  const tasksThisMonth = (client.tasks ?? []).filter(inThisMonth)
+  const totalThisMonth = tasksThisMonth.length
+
+  const rawStatus = (raw?: string | null) =>
+    (raw ?? "").toString().trim().toLowerCase().replace(/[\-\s]+/g, "_")
+
+  let completedThisMonth = 0
+  let approvedThisMonth = 0
+
+  for (const t of tasksThisMonth) {
+    const sRaw = rawStatus((t as any)?.status)
+    const sNorm = normalizeStatus((t as any)?.status)
+    const completedAt = parseDate((t as any)?.completedAt)
+    const dueDate = parseDate((t as any)?.dueDate)
+
+    const isCompleted =
+      (completedAt ? completedAt >= monthStart && completedAt < monthEnd : false) ||
+      sNorm === "completed"
+
+    const isApproved = sRaw === "qc_approved" || sRaw === "approved"
+
+    const isPending =
+      sNorm === "pending" ||
+      (!isCompleted && !isApproved && (!!dueDate ? dueDate >= monthStart && dueDate < monthEnd : true))
+
+    if (isCompleted) completedThisMonth++
+    if (isApproved) approvedThisMonth++
+    // isPending is computed for parity with dashboard logic but not displayed
+    void isPending
+  }
+
+  const derivedProgressThisMonth = totalThisMonth
+    ? Math.round(((completedThisMonth + approvedThisMonth) / totalThisMonth) * 100)
+    : 0
+
+  // Clamp progress values for display
+  const displayOverall = Math.min(100, Math.max(0, derivedProgress))
+  const displayThisMonth = Math.min(100, Math.max(0, derivedProgressThisMonth))
 
   // Dynamic route segment based on user role (e.g., am, admin, qc)
   const roleRaw = (session as any)?.user?.role?.name ?? (session as any)?.user?.role
@@ -157,14 +217,37 @@ export function ClientCard({ clientId, onViewDetails }: ClientCardProps) {
         <div className="pl-2"><span className="font-medium text-gray-800">Account Manager:</span> <span className="font-bold text-gray-800">{client.accountManager?.name}</span></div>
         {/* Progress */}
         <div className="p-2">
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-600 font-medium">Overall Progress</span>
-            <span className="font-bold text-gray-800">{derivedProgress}%</span>
+          <div className="flex items-center justify-between text-sm mb-2 gap-2">
+            <span className="text-gray-700 dark:text-slate-200 font-medium whitespace-nowrap">
+              Overall Progress
+            </span>
+            <span className="font-bold text-gray-900 dark:text-white whitespace-nowrap">
+              {displayOverall}%
+            </span>
           </div>
+
+          {/* Overall progress bar */}
+          <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden mb-2">
+            <div
+              className="h-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all"
+              style={{ width: `${displayOverall}%` }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between text-sm mb-2 gap-2">
+            <span className="text-gray-700 dark:text-slate-200 font-medium whitespace-nowrap">
+              This Month Progress
+            </span>
+            <span className="font-bold text-gray-900 dark:text-white whitespace-nowrap">
+              {displayThisMonth}%
+            </span>
+          </div>
+
+          {/* This month progress bar (optional — keep if you want a second bar) */}
           <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
             <div
               className="h-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all"
-              style={{ width: `${Math.min(100, Math.max(0, derivedProgress))}%` }}
+              style={{ width: `${displayThisMonth}%` }}
             />
           </div>
         </div>

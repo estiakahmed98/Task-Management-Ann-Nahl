@@ -1,4 +1,4 @@
-// app/am/layout.tsx
+//app/qc/layout.tsx
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";

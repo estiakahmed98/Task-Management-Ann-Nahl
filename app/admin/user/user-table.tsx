@@ -55,11 +55,12 @@ import {
   User,
   Phone,
   MapPin,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
-import { useUserSession } from "@/lib/hooks/use-user-session";
-// removed combobox components
+import { useUserSession } from "@/lib/hooks/use-user-session"; // useUserSession হুক ইম্পোর্ট করা হলো
 
 import ImpersonateButton from "@/components/users/ImpersonateButton";
 
@@ -150,6 +151,7 @@ export default function UsersPage() {
   const [newRole, setNewRole] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserInterface | null>(null);
   const [openViewDialog, setOpenViewDialog] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Form data
   const [formData, setFormData] = useState<FormData>({
@@ -159,15 +161,25 @@ export default function UsersPage() {
     roleId: "",
     phone: "",
     address: "",
-    biography: "",
     category: "",
     clientId: "",
     teamId: "",
+    biography: "",
     status: "active",
   });
 
   // Clients & Teams
-  const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
+  // Store richer client info so we can auto-fill user fields upon selection
+  const [clients, setClients] = useState<
+    Array<{
+      id: string;
+      name: string;
+      email?: string | null;
+      phone?: string | null;
+      address?: string | null;
+      biography?: string | null;
+    }>
+  >([]);
   const [teams, setTeams] = useState<Array<{ id: string; name: string }>>([]);
   const [loadingClients, setLoadingClients] = useState(false);
   const [loadingTeams, setLoadingTeams] = useState(false);
@@ -267,10 +279,19 @@ export default function UsersPage() {
       setLoadingClients(true);
       const res = await fetch("/api/clients");
       const json = await res.json();
-      if (res.ok && Array.isArray(json)) {
-        setClients(json as Array<{ id: string; name: string }>);
-      } else if (res.ok && json?.data && Array.isArray(json.data)) {
-        setClients(json.data as Array<{ id: string; name: string }>);
+      // Normalize response and map only needed fields for auto-fill
+      const list = Array.isArray(json) ? json : Array.isArray(json?.data) ? json.data : [];
+      if (res.ok && Array.isArray(list)) {
+        const mapped = list.map((c: any) => ({
+          id: String(c.id),
+          name: c.name ?? "",
+          email: c.email ?? null,
+          phone: c.phone ?? null,
+          // prefer explicit address if present, else location/companyaddress fallbacks
+          address: c.address ?? c.companyaddress ?? c.location ?? null,
+          biography: c.biography ?? null,
+        }));
+        setClients(mapped);
       } else {
         setClients([]);
       }
@@ -328,24 +349,13 @@ export default function UsersPage() {
     return role?.name?.toLowerCase() === "client";
   }, [formData.roleId, roles]);
 
-  // Clients available for selection: exclude clients already assigned to a user
-  const assignedClientIds = useMemo(() => {
-    return new Set((users || []).map((u) => u.clientId).filter(Boolean) as string[]);
-  }, [users]);
-
+  // Clients already assigned to some user should be hidden from the list
   const availableClients = useMemo(() => {
-    return (clients || []).filter((c) => {
-      if (editUser && editUser.clientId === c.id) return true; // allow current selection when editing
-      return !assignedClientIds.has(c.id);
-    });
-  }, [clients, assignedClientIds, editUser]);
-
-  // When role becomes Client, ensure clients list is loaded
-  useEffect(() => {
-    if (isClientRole && clients.length === 0 && !loadingClients) {
-      fetchClients();
-    }
-  }, [isClientRole, clients.length, loadingClients, fetchClients]);
+    const used = new Set((users || []).map((u) => u.clientId).filter(Boolean) as string[]);
+    // Keep current selection visible (for edit flow)
+    const currentId = formData.clientId || "";
+    return clients.filter((c) => !used.has(c.id) || c.id === currentId);
+  }, [clients, users, formData.clientId]);
 
   const getPasswordRequirement = (roleId: string): number => {
     const role = roles.find((r) => r.id === roleId);
@@ -742,16 +752,26 @@ export default function UsersPage() {
                     <Label htmlFor="client">Client</Label>
                     <Select
                       value={formData.clientId ?? undefined}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, clientId: value })
-                      }
+                      onValueChange={(value) => {
+                        // Set clientId and auto-fill other fields from selected client (no password)
+                        const selected = clients.find((c) => c.id === value);
+                        setFormData((prev) => ({
+                          ...prev,
+                          clientId: value,
+                          name: selected?.name ?? prev.name,
+                          email: selected?.email ?? prev.email,
+                          phone: selected?.phone ?? prev.phone,
+                          address: selected?.address ?? prev.address,
+                          biography: selected?.biography ?? prev.biography,
+                        }));
+                      }}
                     >
                       <SelectTrigger id="client" className="w-full">
                         <SelectValue placeholder={loadingClients ? "Loading clients..." : "Select Client"} />
                       </SelectTrigger>
                       <SelectContent>
                         {availableClients.length === 0 ? (
-                          <SelectItem disabled value="no-clients">No clients available</SelectItem>
+                          <SelectItem disabled value="no-clients">No clients found</SelectItem>
                         ) : (
                           availableClients.map((c) => (
                             <SelectItem key={c.id} value={c.id}>
@@ -795,23 +815,39 @@ export default function UsersPage() {
                         </span>
                       )}
                     </Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder={
-                        formData.roleId
-                          ? `Min ${getPasswordRequirement(
-                              formData.roleId
-                            )} characters`
-                          : "Select a role first"
-                      }
-                      value={formData.password}
-                      onChange={(e) =>
-                        setFormData({ ...formData, password: e.target.value })
-                      }
-                      required={!editUser}
-                      disabled={!formData.roleId}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder={
+                          formData.roleId
+                            ? `Min ${getPasswordRequirement(
+                                formData.roleId
+                              )} characters`
+                            : "Select a role first"
+                        }
+                        value={formData.password}
+                        onChange={(e) =>
+                          setFormData({ ...formData, password: e.target.value })
+                        }
+                        required={!editUser}
+                        disabled={!formData.roleId}
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((s) => !s)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-700"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        title={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
                 {/* Phone and Address */}
@@ -854,7 +890,7 @@ export default function UsersPage() {
                 <div className="grid grid-cols-2 gap-4">
                   {!isClientRole && (
                     <div className="flex flex-col gap-2">
-                      <Label htmlFor="team">Team (optional)</Label>
+                      <Label htmlFor="team">Team</Label>
                       <Select
                         value={formData.teamId || "none"}
                         onValueChange={(value) => {

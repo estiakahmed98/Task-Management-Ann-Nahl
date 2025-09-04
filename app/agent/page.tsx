@@ -1,3 +1,16 @@
+// import { AgentDashboard } from "@/components/agent-dashboard";
+
+// export default function OverviewPage() {
+//   const agentId = "12345"
+
+//   return (
+//     <div className="p-6">
+//       <AgentDashboard agentId={agentId} />
+//     </div>)
+// }
+
+
+
 // app/agent/page.tsx
 
 "use client";
@@ -30,6 +43,7 @@ export default function AgentDashboardPage() {
   }
 
   if (!user) return null;
+
 
   if (!user.id) {
     return (
