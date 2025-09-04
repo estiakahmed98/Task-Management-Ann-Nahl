@@ -15,6 +15,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 // AM dropdown removed; selection now comes from session
 import {
   PieChart,
@@ -68,6 +69,7 @@ function safeParse<T = unknown>(raw: any): T {
 
 export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
   const [selectedAmId, setSelectedAmId] = useState<string>(defaultAmId);
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
   const { user, loading: sessionLoading } = useUserSession();
 
   // Clients (filtered by AM server-side)
@@ -146,6 +148,9 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
         }));
 
         setClients({ data: mapped, loading: false, error: null });
+        // If previously selected client is not in the new list, reset filter
+        const exists = mapped.some((c) => c.id === selectedClientId);
+        if (!exists) setSelectedClientId("");
       } catch {
         setClients({ data: [], loading: false, error: "Failed to load clients" });
       }
@@ -158,41 +163,46 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
   // ---------- Derived metrics ----------
   const now = new Date();
 
+  const filteredClients = useMemo(() => {
+    if (!selectedClientId) return clients.data;
+    return clients.data.filter((c) => c.id === selectedClientId);
+  }, [clients.data, selectedClientId]);
+
   const statusCounts = useMemo(() => {
     const acc: Record<string, number> = {};
-    for (const c of clients.data) {
+    for (const c of filteredClients) {
       const s = (c.status ?? "unknown").toString().toLowerCase();
       acc[s] = (acc[s] ?? 0) + 1;
     }
     return acc;
-  }, [clients.data]);
+  }, [filteredClients]);
 
-  const totalClients = clients.data.length;
-  const activeClients = clients.data.filter((c) => (c.status ?? "").toLowerCase() === "active").length;
+  const totalClients = filteredClients.length;
+  const activeClients = filteredClients.filter((c) => (c.status ?? "").toLowerCase() === "active").length;
 
   const avgProgress = useMemo(() => {
-    if (!clients.data.length) return 0;
-    const vals = clients.data.map((c) => Number(c.progress ?? 0));
+    if (!filteredClients.length) return 0;
+    const vals = filteredClients.map((c) => Number(c.progress ?? 0));
     const sum = vals.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
-    return Math.round(sum / clients.data.length);
-  }, [clients.data]);
+    return Math.round(sum / filteredClients.length);
+  }, [filteredClients]);
 
   const dueIn7Days = useMemo(() => {
     const in7 = new Date(now);
     in7.setDate(in7.getDate() + 7);
-    return clients.data.filter((c) => {
+    return filteredClients.filter((c) => {
       if (!c.dueDate) return false;
       const d = new Date(c.dueDate);
       return d >= now && d <= in7;
     }).length;
-  }, [clients.data]);
+  }, [filteredClients]);
 
   const upcomingDueList = useMemo(() => {
-    return [...clients.data]
+    return [...filteredClients]
       .filter((c) => !!c.dueDate)
       .sort((a, b) => new Date(a.dueDate as string).getTime() - new Date(b.dueDate as string).getTime())
       .slice(0, 8);
-  }, [clients.data]);
+  }, [filteredClients]);
 
   // Charts
   const pieData = useMemo(
@@ -213,13 +223,13 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
       { label: "81–100%", min: 81, max: 100 },
     ];
     const counts = buckets.map((b) => ({ ...b, count: 0 }));
-    for (const c of clients.data) {
+    for (const c of filteredClients) {
       const p = Number(c.progress ?? 0);
       const bucket = counts.find((b) => p >= b.min && p <= b.max);
       if (bucket) bucket.count += 1;
     }
     return counts.map((b) => ({ label: b.label, count: b.count }));
-  }, [clients.data]);
+  }, [filteredClients]);
 
   const startsByMonth = useMemo(() => {
     const months: { key: string; label: string; count: number }[] = [];
@@ -230,7 +240,7 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
       const label = temp.toLocaleString("en-US", { month: "short" });
       months.push({ key, label, count: 0 });
     }
-    for (const c of clients.data) {
+    for (const c of filteredClients) {
       if (!c.startDate) continue;
       const sd = new Date(c.startDate);
       const k = `${sd.getFullYear()}-${String(sd.getMonth() + 1).padStart(2, "0")}`;
@@ -238,7 +248,7 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
       if (row) row.count += 1;
     }
     return months;
-  }, [clients.data, now]);
+  }, [filteredClients, now]);
 
   const COLORS = ["#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444", "#64748b", "#0ea5e9"];
 
@@ -265,7 +275,30 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
         <div>
           <h1 className="text-2xl p-2 md:text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">{amLabel}'s Dashboard</h1>
         </div>
-        {/* AM dropdown removed; selection is session-based */}
+        {/* Client Filter (top-right) */}
+        <div className="flex items-center gap-2 self-start md:self-auto">
+          <Select
+            value={selectedClientId || "all"}
+            onValueChange={(v) => setSelectedClientId(v === "all" ? "" : v)}
+          >
+            <SelectTrigger className="bg-white/80 backdrop-blur border-slate-200 shadow-sm hover:shadow transition" aria-label="Filter by client">
+              <SelectValue placeholder="Filter by Client" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">
+                <span>All Clients</span>
+              </SelectItem>
+              {clients.data
+                .slice()
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    <span>{c.name}</span>
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Loading / Error */}
@@ -315,7 +348,7 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Avg. Progress</p>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Overall Progress</p>
                     <p className="text-3xl font-bold text-slate-800">{avgProgress}%</p>
                   </div>
                   <div className="p-3 bg-violet-500 rounded-xl shadow-lg">
@@ -436,6 +469,12 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
                 </Badge>
                 <span className="ml-auto text-sm text-slate-500 font-medium">
                   Viewing: {amLabel}
+                  {selectedClientId && (
+                    <>
+                      {" "}
+                      • Client: {clients.data.find((c) => c.id === selectedClientId)?.name || "—"}
+                    </>
+                  )}
                 </span>
               </CardTitle>
             </CardHeader>
