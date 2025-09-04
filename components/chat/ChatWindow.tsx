@@ -1,4 +1,3 @@
-// components/chat/ChatWindow.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -7,6 +6,7 @@ import { Send } from "lucide-react";
 import { pusherClient } from "@/lib/pusher/client";
 import { useUserSession } from "@/lib/hooks/use-user-session";
 import MessageBubble from "./MessageBubble";
+import ForwardModal from "./ForwardModal";
 
 function near(aIso: string, bIso: string, ms = 8000) {
   return Math.abs(new Date(aIso).getTime() - new Date(bIso).getTime()) <= ms;
@@ -17,14 +17,21 @@ type Receipt = {
   deliveredAt?: string | null;
   readAt?: string | null;
 };
+
 type Msg = {
   id: string;
   content?: string | null;
   createdAt: string;
   type?: "text" | "file" | "image" | "system";
-  sender?: { id: string; name?: string | null; image?: string | null } | null;
+  sender?: {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  } | null;
   attachments?: any;
   receipts?: Receipt[];
+  reactions?: { emoji: string; count: number; userIds: string[] }[];
 };
 
 const fetcher = (u: string) =>
@@ -43,13 +50,13 @@ export default function ChatWindow({
   const [messages, setMessages] = useState<Msg[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
 
-  // Conversation detail (for header/presence & lastReadAt)
+  // Conversation detail
   const { data: convDetail } = useSWR(
     `/api/chat/conversations/${conversationId}`,
     fetcher
   );
 
-  // Local mirror of participants (userId + lastReadAt) for live read state
+  // participants (for read pointers)
   const [participants, setParticipants] = useState<
     { userId: string; lastReadAt: string | null }[]
   >([]);
@@ -62,21 +69,21 @@ export default function ChatWindow({
     setParticipants(arr);
   }, [convDetail]);
 
-  // Figure other user for header
+  // other user (dm)
   const otherUser = useMemo(() => {
     if (convDetail?.type !== "dm") return null;
     const arr = convDetail?.participants?.map((p: any) => p.user) || [];
     return arr.find((u: any) => u.id !== user?.id) || null;
   }, [convDetail, user?.id]);
 
-  // Presence (optional)
+  // presence
   const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
   const isOtherOnline = !!(otherUser && onlineIds.has(otherUser.id));
   const lastSeenText = otherUser?.lastSeenAt
     ? new Date(otherUser.lastSeenAt).toLocaleString()
     : null;
 
-  // Typing
+  // typing
   const [typingMap, setTypingMap] = useState<
     Record<string, { name?: string; until: number }>
   >({});
@@ -247,6 +254,7 @@ export default function ChatWindow({
 
     // Conversation-level read pointer
     const onConvRead = (d: { userId: string; lastReadAt: string }) => {
+      // update local participants
       setParticipants((prev) => {
         const copy = [...prev];
         const i = copy.findIndex((p) => p.userId === d.userId);
@@ -254,7 +262,7 @@ export default function ChatWindow({
         return copy;
       });
 
-      // Apply readAt to all messages up to lastReadAt for that user (client-side)
+      // Apply readAt locally on msgs up to cutoff
       const cutoff = new Date(d.lastReadAt).getTime();
       setMessages((prev) =>
         prev.map((m) => {
@@ -347,10 +355,14 @@ export default function ChatWindow({
       content,
       createdAt: nowIso,
       sender: user
-        ? { id: user.id, name: user.name, image: user.image }
+        ? {
+            id: user.id,
+            name: user.name,
+            email: (user as any)?.email,
+            image: user.image,
+          }
         : undefined,
       type: "text",
-      // show self-receipt immediately
       receipts: user?.id
         ? [{ userId: user.id, deliveredAt: nowIso, readAt: nowIso }]
         : [],
@@ -392,16 +404,29 @@ export default function ChatWindow({
     );
   }, [typingText]);
 
+  // ---- Forward modal wiring
+  const [forwardOpen, setForwardOpen] = useState(false);
+  const [forwardMsgId, setForwardMsgId] = useState<string | null>(null);
+
+  function openForward(messageId: string) {
+    setForwardMsgId(messageId);
+    setForwardOpen(true);
+  }
+
+  const isDM = convDetail?.type === "dm";
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="border-b px-4 py-2 flex items-center justify-between">
         <div className="font-semibold">
-          {convDetail?.type === "dm"
-            ? `Chat with ${otherUser?.name || "Direct Message"}`
-            : "Conversation"}
+          {isDM
+            ? `Chat with ${
+                otherUser?.name || otherUser?.email || "Direct Message"
+              }`
+            : convDetail?.title || "Conversation"}
         </div>
-        {convDetail?.type === "dm" && (
+        {isDM && (
           <div className="text-xs">
             {isOtherOnline ? (
               <span className="text-emerald-600">● Online</span>
@@ -425,7 +450,13 @@ export default function ChatWindow({
         )}
 
         {messages.map((m) => (
-          <MessageBubble key={m.id} msg={m} meId={user?.id} />
+          <MessageBubble
+            key={m.id}
+            msg={m}
+            meId={user?.id}
+            onForward={openForward}
+            showSenderName={!isDM}
+          />
         ))}
 
         {!!typingText && (
@@ -463,6 +494,16 @@ export default function ChatWindow({
           Send
         </button>
       </div>
+
+      {/* Forward Modal */}
+      <ForwardModal
+        open={forwardOpen}
+        messageId={forwardMsgId}
+        onClose={() => {
+          setForwardOpen(false);
+          setForwardMsgId(null);
+        }}
+      />
     </div>
   );
 }
