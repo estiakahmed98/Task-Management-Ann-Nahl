@@ -111,6 +111,51 @@ export default function TaskDialogs({
       : null;
   };
 
+  // URL validation UI state
+  const [linkTouched, setLinkTouched] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [verifyingUrl, setVerifyingUrl] = useState(false);
+
+  // Basic format validation on the client
+  const validateUrlFormat = (value: string): string | null => {
+    const v = (value || "").trim();
+    if (!v) return "Completion link is required.";
+    try {
+      const u = new URL(v);
+      if (!/^https?:$/.test(u.protocol))
+        return "URL must start with http:// or https://";
+      const host = u.hostname.toLowerCase();
+      if (host === "localhost" || host === "127.0.0.1" || host === "::1") {
+        return "Local/loopback URLs are not allowed.";
+      }
+      return null;
+    } catch {
+      return "Enter a valid URL (e.g., https://example.com)";
+    }
+  };
+
+  // Server reachability check
+  const checkLinkReachability = async (value: string) => {
+    const v = (value || "").trim();
+    if (!v) return "Completion link is required.";
+    setVerifyingUrl(true);
+    try {
+      const res = await fetch(
+        `/api/utils/validate-url?url=${encodeURIComponent(v)}`,
+        {
+          method: "GET",
+          cache: "no-store",
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      setVerifyingUrl(false);
+      return res.ok ? null : data?.reason || "URL is not reachable.";
+    } catch {
+      setVerifyingUrl(false);
+      return "URL is not reachable (network error).";
+    }
+  };
+
   return (
     <>
       {/* Status Update Modal */}
@@ -214,9 +259,35 @@ export default function TaskDialogs({
                 type="url"
                 placeholder="https://example.com/completed-work"
                 value={completionLink}
-                onChange={(e) => setCompletionLink(e.target.value)}
-                className="w-full"
+                onChange={(e) => {
+                  setCompletionLink(e.target.value);
+                  if (linkTouched) {
+                    // live format validation
+                    setLinkError(validateUrlFormat(e.target.value));
+                  }
+                }}
+                onBlur={async () => {
+                  setLinkTouched(true);
+                  const formatErr = validateUrlFormat(completionLink);
+                  setLinkError(formatErr);
+                  if (!formatErr) {
+                    const reachErr = await checkLinkReachability(
+                      completionLink
+                    );
+                    setLinkError(reachErr);
+                  }
+                }}
+                aria-invalid={!!linkError}
+                className={`w-full ${
+                  linkError ? "border-red-400 focus-visible:ring-red-400" : ""
+                }`}
               />
+              {verifyingUrl && !linkError && (
+                <div className="text-xs text-gray-500">Verifying link…</div>
+              )}
+              {linkError && (
+                <div className="text-xs text-red-600">{linkError}</div>
+              )}
             </div>
 
             {/* Show credentials ONLY for categories outside Social/Blog/Graphics */}
@@ -284,7 +355,21 @@ export default function TaskDialogs({
             </Button>
 
             <Button
-              onClick={() => {
+              onClick={async () => {
+                // Format check
+                const formatErr = validateUrlFormat(completionLink);
+                if (formatErr) {
+                  setLinkTouched(true);
+                  setLinkError(formatErr);
+                  return;
+                }
+                // Reachability check
+                const reachErr = await checkLinkReachability(completionLink);
+                if (reachErr) {
+                  setLinkTouched(true);
+                  setLinkError(reachErr);
+                  return;
+                }
                 if (!taskToComplete) {
                   handleTaskCompletion();
                   return;
@@ -306,6 +391,7 @@ export default function TaskDialogs({
                 }
               }}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+              disabled={verifyingUrl}
             >
               <CheckCircle className="w-4 h-4 mr-2" />
               Complete Task
