@@ -10,8 +10,7 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, RefreshCw, Download, Eye, UserX, RotateCcw, AlertCircle, CheckCircle, ExternalLink } from "lucide-react";
+import { Loader2, RefreshCw, Eye, RotateCcw, AlertCircle, CheckCircle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useUserSession } from "@/lib/hooks/use-user-session";
 import { FilterSection } from "@/components/qc-review/filter-section";
@@ -104,7 +103,7 @@ export function QCReview() {
   };
 
   // -------- Reassign modal --------
-  const [reassignDialog, setReassignDialog] = useState<{ open:boolean; task:TaskRow|null; selectedAgent:string; reassignNotes:string; loading:boolean; }>({ open:false, task:null, selectedAgent:"", reassignNotes:"", loading:false });
+  const [reassignDialog, setReassignDialog] = useState<{ open:boolean; task:TaskRow|null; reassignNotes:string; loading:boolean; }>({ open:false, task:null, reassignNotes:"", loading:false });
 
   const handleReassignTask = async () => {
     if (!reassignDialog.task) return toast.error("No task selected to reassign.");
@@ -122,8 +121,8 @@ export function QCReview() {
       });
       if (!res.ok) throw new Error((await res.json()).message ?? "Failed to reassign task");
       await res.json();
-      toast.success(`Task "${reassignDialog.task.name}" re-assigned to current agent successfully.`);
-      setReassignDialog({ open:false, task:null, selectedAgent:"", reassignNotes:"", loading:false });
+      toast.success(`Task "${reassignDialog.task.name}" re-assigned successfully.`);
+      setReassignDialog({ open:false, task:null, reassignNotes:"", loading:false });
       fetchTasks();
     } catch (e:any) {
       toast.error(e?.message ?? "Failed to reassign task");
@@ -131,7 +130,7 @@ export function QCReview() {
     }
   };
 
-  // -------- Approve flow (use existing rating only) --------
+  // -------- Approve flow --------
   const handleApproveTask = async () => {
     if (!approveDialog.task) return;
     setApproveDialog((p)=>({...p,loading:true}));
@@ -157,19 +156,19 @@ export function QCReview() {
   const handleApprove = (task: TaskRow) => setApproveDialog({ open:true, task, loading:false });
 
   return (
-    <div className="mx-auto w-full p-6 space-y-8 bg-slate-50/30 dark:bg-slate-950/30 min-h-screen">
+    <div className="mx-auto w-full p-6 space-y-6 bg-gray-50 min-h-screen">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            QC Review — Tasks
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold text-gray-900">
+            QC Review
           </h1>
-          <p className="text-lg text-slate-600 dark:text-slate-400">
-            Advanced filters, approvals & reassignments
+          <p className="text-sm text-gray-600">
+            Review completed tasks, approve or reassign
           </p>
         </div>
-        <div className="flex gap-3">
-          <Button onClick={fetchTasks} disabled={loading} className="bg-slate-900 hover:bg-slate-800 text-white shadow-sm hover:shadow-md">
-            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+        <div className="flex gap-2">
+          <Button onClick={fetchTasks} disabled={loading} variant="outline" size="sm">
+            {loading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
             Refresh
           </Button>
         </div>
@@ -187,49 +186,45 @@ export function QCReview() {
         clearFilters={clearFilters}
       />
 
-      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-blue-500 via-purple-500 to-purple-700 text-white">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-white/10 backdrop-blur-sm rounded-xl">
-              <Eye className="h-6 w-6 text-white" />
+      <Card className="bg-white border border-gray-200 shadow-sm">
+        <CardHeader className="pb-3 bg-gradient-to-r from-sky-50 to-sky-100 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Eye className="h-4 w-4 text-gray-700" />
+              <CardTitle className="text-base font-medium text-gray-900">Task Results</CardTitle>
             </div>
-            <div>
-              <CardTitle className="text-xl font-bold text-white">Task Results & Quality Control</CardTitle>
-              <CardDescription className="text-slate-200 mt-1">Review completed tasks, approve or reassign</CardDescription>
+            <div className="text-sm text-gray-500">
+              {filtered.length} of {tasks.length} tasks
             </div>
           </div>
         </CardHeader>
 
-        <CardContent className="p-0">
+        <CardContent className="p-4">
           {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="text-center space-y-4">
-                <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
-                <p className="text-slate-600 dark:text-slate-400 font-medium">Loading tasks...</p>
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center space-y-3">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400 mx-auto" />
+                <p className="text-gray-500 text-sm">Loading tasks...</p>
               </div>
             </div>
           ) : (
-            <div className="p-8">
-              <div className="space-y-6">
-                {filtered.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    approvedMap={approvedMap}
-                    onApprove={handleApprove}
-                    onReject={(t) => setReassignDialog({ open:true, task:t, selectedAgent:t.assignedTo?.id || "", reassignNotes:"", loading:false })}
-                  />
-                ))}
-              </div>
+            <div className="space-y-4">
+              {filtered.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  approvedMap={approvedMap}
+                  onApprove={handleApprove}
+                  onReject={(t) => setReassignDialog({ open:true, task:t, reassignNotes:"", loading:false })}
+                />
+              ))}
               {filtered.length === 0 && (
-                <div className="text-center py-20">
-                  <div className="flex flex-col items-center gap-6">
-                    <div className="p-6 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 rounded-2xl">
-                      <AlertCircle className="h-16 w-16 text-slate-400 mx-auto" />
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">No completed tasks found</p>
-                      <p className="text-slate-600 dark:text-slate-400">Try adjusting your filters.</p>
+                <div className="text-center py-12">
+                  <div className="flex flex-col items-center gap-4">
+                    <AlertCircle className="h-10 w-10 text-gray-400" />
+                    <div className="space-y-1">
+                      <p className="font-medium text-gray-900">No completed tasks found</p>
+                      <p className="text-gray-500 text-sm">Try adjusting your filters</p>
                     </div>
                   </div>
                 </div>
@@ -239,67 +234,112 @@ export function QCReview() {
         </CardContent>
       </Card>
 
-      {/* Approve Modal (existing rating only) */}
+      {/* Approve Modal */}
       <Dialog open={approveDialog.open} onOpenChange={(open)=>setApproveDialog((p)=>({...p,open}))}>
-        <DialogContent className="sm:max-w-2xl bg-white dark:bg-slate-900 border-0 shadow-2xl">
-          <DialogHeader><DialogTitle>Approve Task</DialogTitle></DialogHeader>
+        <DialogContent className="sm:max-w-lg bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-base">Approve Task</DialogTitle>
+          </DialogHeader>
           {approveDialog.task && (
-            <div className="rounded-xl p-4 mb-6 border bg-emerald-50/60 dark:bg-slate-800 border-emerald-200 dark:border-slate-700">
-              <div className="flex items-start justify-between gap-4">
+            <div className="rounded-md p-3 mb-4 border bg-gray-50 border-gray-200">
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="font-semibold text-lg">{approveDialog.task.name}</h3>
-                  <div className="mt-2 flex gap-4 text-sm text-slate-600 dark:text-slate-400">
-                    <span>Agent: <strong>{approveDialog.task.assignedTo?.name || approveDialog.task.assignedTo?.email}</strong></span>
-                    <span>•</span>
-                    <span>Client: <strong>{approveDialog.task.client?.name}</strong></span>
+                  <h3 className="font-medium text-gray-900">{approveDialog.task.name}</h3>
+                  <div className="mt-1 text-sm text-gray-600">
+                    <div>Agent: {approveDialog.task.assignedTo?.name || approveDialog.task.assignedTo?.email}</div>
+                    <div>Client: {approveDialog.task.client?.name}</div>
                   </div>
                   {approveDialog.task.completionLink && (
-                    <div className="mt-3">
-                      <Button onClick={()=>window.open(approveDialog.task!.completionLink!, "_blank")} variant="outline" size="sm" className="text-xs">
+                    <div className="mt-2">
+                      <Button 
+                        onClick={()=>window.open(approveDialog.task!.completionLink!, "_blank")} 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs h-7"
+                      >
                         <ExternalLink className="h-3 w-3 mr-1" /> View Completion
                       </Button>
                     </div>
                   )}
                 </div>
-                <div className="text-sm opacity-80">
-                  {approveDialog.task.performanceRating ? (
-                    <div className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
-                      {approveDialog.task.performanceRating}
-                    </div>
-                  ) : "No rating"}
-                </div>
+                {approveDialog.task.performanceRating && (
+                  <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700">
+                    {approveDialog.task.performanceRating}
+                  </div>
+                )}
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={()=>setApproveDialog((p)=>({...p,open:false}))} disabled={approveDialog.loading}>Cancel</Button>
-            <Button onClick={handleApproveTask} disabled={approveDialog.loading}>
-              {approveDialog.loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Approving...</> : <> <CheckCircle className="h-4 w-4 mr-2" /> Approve </>}
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={()=>setApproveDialog((p)=>({...p,open:false}))} 
+              disabled={approveDialog.loading}
+              size="sm"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleApproveTask} 
+              disabled={approveDialog.loading}
+              size="sm"
+            >
+              {approveDialog.loading ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <CheckCircle className="h-4 w-4 mr-1" />
+              )}
+              Approve
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Reassign Dialog (kept same UX) */}
+      {/* Reassign Dialog */}
       <Dialog open={reassignDialog.open} onOpenChange={(open)=>setReassignDialog((p)=>({...p,open}))}>
-        <DialogContent className="sm:max-w-2xl bg-white dark:bg-slate-900 border-0 shadow-2xl">
-          <DialogHeader><DialogTitle>Reassign Task</DialogTitle></DialogHeader>
+        <DialogContent className="sm:max-w-lg bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-base">Reassign Task</DialogTitle>
+          </DialogHeader>
           {reassignDialog.task && (
-            <div className="rounded-xl p-4 mb-6 border bg-cyan-50/60 dark:bg-slate-800 border-cyan-200 dark:border-slate-700">
+            <div className="rounded-md p-3 mb-4 border bg-gray-50 border-gray-200">
               <div className="space-y-1">
-                <h3 className="font-semibold text-lg">{reassignDialog.task.name}</h3>
-                <p className="text-sm opacity-80">Current agent: <strong>{reassignDialog.task.assignedTo?.name || reassignDialog.task.assignedTo?.email}</strong></p>
+                <h3 className="font-medium text-gray-900">{reassignDialog.task.name}</h3>
+                <p className="text-sm text-gray-600">
+                  Current agent: {reassignDialog.task.assignedTo?.name || reassignDialog.task.assignedTo?.email}
+                </p>
               </div>
             </div>
           )}
-          <div className="space-y-3">
-            <label className="text-sm font-medium">Reassignment Notes</label>
-            <Textarea rows={4} value={reassignDialog.reassignNotes} onChange={(e)=>setReassignDialog((p)=>({...p,reassignNotes:e.target.value}))} />
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Reassignment Notes</label>
+            <Textarea 
+              rows={3} 
+              value={reassignDialog.reassignNotes} 
+              onChange={(e)=>setReassignDialog((p)=>({...p,reassignNotes:e.target.value}))}
+              className="resize-none"
+            />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={()=>setReassignDialog((p)=>({...p,open:false}))} disabled={reassignDialog.loading}>Cancel</Button>
-            <Button onClick={handleReassignTask} disabled={reassignDialog.loading || !reassignDialog.task}>
-              {reassignDialog.loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Reassigning...</> : <><RotateCcw className="h-4 w-4 mr-2" /> Reassign</>}
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={()=>setReassignDialog((p)=>({...p,open:false}))} 
+              disabled={reassignDialog.loading}
+              size="sm"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleReassignTask} 
+              disabled={reassignDialog.loading || !reassignDialog.task}
+              size="sm"
+            >
+              {reassignDialog.loading ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <RotateCcw className="h-4 w-4 mr-1" />
+              )}
+              Reassign
             </Button>
           </DialogFooter>
         </DialogContent>

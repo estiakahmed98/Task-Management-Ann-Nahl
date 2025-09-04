@@ -130,9 +130,6 @@ export function TaskCard({ task, approvedMap, onApprove, onReject }: TaskCardPro
                     </Badge>
                   )}
                 </div>
-                <div className="text-xs text-slate-500 dark:text-slate-400 font-mono bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded inline-block">
-                  ID: {task.id}
-                </div>
               </div>
 
               {task.performanceRating && (
@@ -142,9 +139,8 @@ export function TaskCard({ task, approvedMap, onApprove, onReject }: TaskCardPro
                       Admin Rating
                     </div>
                     <div
-                      className={`px-3 py-2 rounded-lg text-xs font-bold border ${
-                        performanceConfig[task.performanceRating as keyof typeof performanceConfig]?.color
-                      } flex items-center gap-2`}
+                      className={`px-3 py-2 rounded-lg text-xs font-bold border ${performanceConfig[task.performanceRating as keyof typeof performanceConfig]?.color
+                        } flex items-center gap-2`}
                     >
                       <Star className="h-3 w-3" />
                       <span>{performanceConfig[task.performanceRating as keyof typeof performanceConfig]?.icon}</span>
@@ -155,7 +151,7 @@ export function TaskCard({ task, approvedMap, onApprove, onReject }: TaskCardPro
               )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
               <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
                 <div className="flex items-center gap-2 mb-2">
                   <div className={`p-1.5 bg-gradient-to-r ${cardGradient} rounded-md`}>
@@ -220,7 +216,7 @@ export function TaskCard({ task, approvedMap, onApprove, onReject }: TaskCardPro
                   </div>
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Timeline</span>
                 </div>
-                <div className="space-y-1">
+                <div className="flex gap-4">
                   <div>
                     <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Created</div>
                     <div className="text-xs text-slate-700 dark:text-slate-300 font-mono">
@@ -237,39 +233,50 @@ export function TaskCard({ task, approvedMap, onApprove, onReject }: TaskCardPro
                   )}
                 </div>
               </div>
+
+
+              <div className="flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
+                {task.completionLink && (
+                  <Button
+                    onClick={() => window.open(task.completionLink, "_blank")}
+                    className="bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-600 hover:via-teal-600 hover:to-emerald-600 text-white font-bold text-xs border-0 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 px-3 py-2"
+                  >
+                    <ExternalLink className="h-3 w-3 mr-2" />
+                    View Completion
+                  </Button>
+                )}
+              </div>
+
             </div>
           </div>
 
           <div className="xl:w-72 space-y-3">
             <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700 shadow-md">
               <div className="grid grid-cols-2 gap-3 mb-3">
-                <div className="text-center">
+                <div className="text-center flex gap-2">
                   <div className={`text-xl font-black bg-gradient-to-r ${cardGradient} bg-clip-text text-transparent`}>
                     {efficiency.percentage}%
                   </div>
-                  <div className="text-xs text-slate-600 dark:text-slate-400 font-medium">Efficiency</div>
                   <div
-                    className={`text-xs font-bold mt-1 ${
-                      efficiency.status === "Efficient"
-                        ? "text-green-600"
-                        : efficiency.status === "Acceptable"
-                          ? "text-yellow-600"
-                          : "text-red-600"
-                    }`}
+                    className={`text-xs font-bold mt-1 ${efficiency.status === "Efficient"
+                      ? "text-green-600"
+                      : efficiency.status === "Acceptable"
+                        ? "text-yellow-600"
+                        : "text-red-600"
+                      }`}
                   >
                     {efficiency.status}
                   </div>
                 </div>
-                <div className="text-center">
-                  <div className={`text-xl font-black bg-gradient-to-r ${cardGradient} bg-clip-text text-transparent`}>
-                    {Math.round((task.actualDurationMinutes / 60) * 10) / 10}h
-                  </div>
-                  <div className="text-xs text-slate-600 dark:text-slate-400 font-medium">Actual</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    vs {Math.round((task.idealDurationMinutes / 60) * 10) / 10}h ideal
-                  </div>
+
+                <div className={`text-xl font-black bg-gradient-to-r ${cardGradient} bg-clip-text text-transparent`}>
+                  {Math.round((task.actualDurationMinutes / 60) * 10) / 10}h ideal
                 </div>
+                {/* <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    {Math.round((task.idealDurationMinutes / 60) * 10) / 10}h ideal
+                  </div> */}
               </div>
+
 
               <div className="space-y-2">
                 <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
@@ -287,28 +294,15 @@ export function TaskCard({ task, approvedMap, onApprove, onReject }: TaskCardPro
               </div>
             </div>
 
-            {task.completionLink && (
-              <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                <Button
-                  onClick={() => window.open(task.completionLink, "_blank")}
-                  className="w-full bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-600 hover:via-teal-600 hover:to-emerald-600 text-white font-bold text-xs border-0 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
-                >
-                  <ExternalLink className="h-3 w-3 mr-2" />
-                  View Completion
-                </Button>
-              </div>
-            )}
-
             <div className="flex gap-2">
               <Button
                 onClick={() => onApprove(task)}
                 disabled={isApproved}
                 size="sm"
-                className={`flex-1 font-bold text-xs py-2 ${
-                  isApproved
-                    ? "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 shadow-md"
-                    : `bg-gradient-to-r ${cardGradient} hover:opacity-90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105`
-                }`}
+                className={`flex-1 font-bold text-xs py-2 ${isApproved
+                  ? "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 shadow-md"
+                  : `bg-gradient-to-r ${cardGradient} hover:opacity-90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105`
+                  }`}
               >
                 <CheckCircle className="h-3 w-3 mr-1" />
                 {isApproved ? "Approved" : "Approve"}
