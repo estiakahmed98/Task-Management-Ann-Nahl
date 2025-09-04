@@ -4,7 +4,6 @@
 
 import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -44,7 +43,6 @@ import {
   BarChart3,
   Users,
   Activity,
-  ChevronDown,
 } from "lucide-react";
 
 // ---------- Types (loose, aligned to your API) ----------
@@ -554,8 +552,8 @@ export default function QCDashboardPro({ tasks = [] }: { tasks: AnyTask[] }) {
             value="overdue"
             className="rounded-xl font-medium transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-rose-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-slate-100/60 hover:shadow-md"
           >
-            <Timer className="h-4 w-4 mr-2" />
-            Overdue
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Reassign
           </TabsTrigger>
         </TabsList>
 
