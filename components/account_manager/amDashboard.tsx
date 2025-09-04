@@ -15,7 +15,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 // AM dropdown removed; selection now comes from session
 import {
   PieChart,
@@ -70,6 +71,7 @@ function safeParse<T = unknown>(raw: any): T {
 export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
   const [selectedAmId, setSelectedAmId] = useState<string>(defaultAmId);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [clientOpen, setClientOpen] = useState<boolean>(false);
   const { user, loading: sessionLoading } = useUserSession();
 
   // Clients (filtered by AM server-side)
@@ -265,6 +267,11 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
     return selectedAmId ? "Selected AM" : "All AMs";
   }, [user, selectedAmId, clients.data]);
 
+  const selectedClientName = useMemo(() => {
+    if (!selectedClientId) return "All Clients";
+    return clients.data.find((c) => c.id === selectedClientId)?.name || "Selected Client";
+  }, [selectedClientId, clients.data]);
+
   const formatDate = (s?: string | null) =>
     s ? new Date(s).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "—";
 
@@ -275,29 +282,41 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
         <div>
           <h1 className="text-2xl p-2 md:text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">{amLabel}'s Dashboard</h1>
         </div>
-        {/* Client Filter (top-right) */}
+        {/* Client Filter (top-right) - Searchable */}
         <div className="flex items-center gap-2 self-start md:self-auto">
-          <Select
-            value={selectedClientId || "all"}
-            onValueChange={(v) => setSelectedClientId(v === "all" ? "" : v)}
-          >
-            <SelectTrigger className="bg-white/80 backdrop-blur border-slate-200 shadow-sm hover:shadow transition" aria-label="Filter by client">
-              <SelectValue placeholder="Filter by Client" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                <span>All Clients</span>
-              </SelectItem>
-              {clients.data
-                .slice()
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    <span>{c.name}</span>
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
+          <Popover open={clientOpen} onOpenChange={setClientOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="bg-white/80 backdrop-blur border-slate-200 shadow-sm hover:shadow transition min-w-[180px] justify-between" aria-label="Filter by client">
+                <span className="inline-flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-slate-500" />
+                  {selectedClientName}
+                </span>
+                {/* caret */}
+                <span className="ml-2 text-slate-400">▾</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0 w-72">
+              <Command>
+                <CommandInput placeholder="Search clients..." />
+                <CommandList>
+                  <CommandEmpty>No clients found.</CommandEmpty>
+                  <CommandGroup heading="Clients">
+                    <CommandItem value="all" onSelect={() => { setSelectedClientId(""); setClientOpen(false); }}>
+                      All Clients
+                    </CommandItem>
+                    {clients.data
+                      .slice()
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((c) => (
+                        <CommandItem key={c.id} value={c.name} onSelect={() => { setSelectedClientId(c.id); setClientOpen(false); }}>
+                          {c.name}
+                        </CommandItem>
+                      ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
