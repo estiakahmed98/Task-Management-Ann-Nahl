@@ -132,6 +132,10 @@ export function ClientDashboard({ clientData }: ClientDashboardProps) {
     ? Math.round(((completedThisMonth + approvedThisMonth) / totalThisMonth) * 100)
     : 0
 
+  // Clamp values for display
+  const displayOverall = Math.min(100, Math.max(0, derivedProgress))
+  const displayThisMonth = Math.min(100, Math.max(0, derivedProgressThisMonth))
+
   const totalAssets = totalTasks
 
   return (
@@ -168,11 +172,11 @@ export function ClientDashboard({ clientData }: ClientDashboardProps) {
             {/* Statistics (Overall) */}
             <div className="flex space-x-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{derivedProgress}%</div>
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{displayOverall}%</div>
                 <div className="text-xs text-slate-500 dark:text-slate-400"> Overall Progress</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{derivedProgressThisMonth}%</div>
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{displayThisMonth}%</div>
                 <div className="text-xs text-slate-500 dark:text-slate-400">This Month Progress</div>
               </div>
               <div className="text-center">

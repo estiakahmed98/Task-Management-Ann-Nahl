@@ -147,6 +147,10 @@ export function ClientCard({ clientId, onViewDetails }: ClientCardProps) {
     ? Math.round(((completedThisMonth + approvedThisMonth) / totalThisMonth) * 100)
     : 0
 
+  // Clamp progress values for display
+  const displayOverall = Math.min(100, Math.max(0, derivedProgress))
+  const displayThisMonth = Math.min(100, Math.max(0, derivedProgressThisMonth))
+
   // Dynamic route segment based on user role (e.g., am, admin, qc)
   const roleRaw = (session as any)?.user?.role?.name ?? (session as any)?.user?.role
   const role = typeof roleRaw === "string" ? roleRaw.toLowerCase() : undefined
@@ -218,7 +222,7 @@ export function ClientCard({ clientId, onViewDetails }: ClientCardProps) {
               Overall Progress
             </span>
             <span className="font-bold text-gray-900 dark:text-white whitespace-nowrap">
-              {derivedProgress}%
+              {displayOverall}%
             </span>
           </div>
 
@@ -226,7 +230,7 @@ export function ClientCard({ clientId, onViewDetails }: ClientCardProps) {
           <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden mb-2">
             <div
               className="h-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all"
-              style={{ width: `${Math.min(100, Math.max(0, derivedProgress))}%` }}
+              style={{ width: `${displayOverall}%` }}
             />
           </div>
 
@@ -235,7 +239,7 @@ export function ClientCard({ clientId, onViewDetails }: ClientCardProps) {
               This Month Progress
             </span>
             <span className="font-bold text-gray-900 dark:text-white whitespace-nowrap">
-              {derivedProgressThisMonth}%
+              {displayThisMonth}%
             </span>
           </div>
 
@@ -243,7 +247,7 @@ export function ClientCard({ clientId, onViewDetails }: ClientCardProps) {
           <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
             <div
               className="h-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all"
-              style={{ width: `${Math.min(100, Math.max(0, derivedProgressThisMonth))}%` }}
+              style={{ width: `${displayThisMonth}%` }}
             />
           </div>
         </div>
