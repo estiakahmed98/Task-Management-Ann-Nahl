@@ -1,5 +1,3 @@
-//app/components/client-tasks-view/TaskDialogs.tsx
-
 "use client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +12,32 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 import type { Task, TimerState } from "../client-tasks-view/client-tasks-view";
+
+type TaskDialogsProps = {
+  isStatusModalOpen: boolean;
+  setIsStatusModalOpen: (b: boolean) => void;
+  selectedTasks: string[];
+  isUpdating: boolean;
+  handleUpdateSelectedTasks: (
+    action: "completed" | "pending" | "reassigned",
+    completionLink?: string
+  ) => void;
+  isCompletionConfirmOpen: boolean;
+  setIsCompletionConfirmOpen: (b: boolean) => void;
+  taskToComplete: Task | null;
+  completionLink: string;
+  setCompletionLink: (v: string) => void;
+  username: string;
+  setUsername: (v: string) => void;
+  email: string;
+  setEmail: (v: string) => void;
+  password: string;
+  setPassword: (v: string) => void;
+  timerState: TimerState | null;
+  handleTaskCompletion: () => void;
+  handleCompletionCancel: () => void;
+  formatTimerDisplay: (seconds: number) => string;
+};
 
 export default function TaskDialogs({
   isStatusModalOpen,
@@ -36,40 +60,8 @@ export default function TaskDialogs({
   handleTaskCompletion,
   handleCompletionCancel,
   formatTimerDisplay,
-}: {
-  isStatusModalOpen: boolean;
-  setIsStatusModalOpen: (b: boolean) => void;
-  selectedTasks: string[];
-  isUpdating: boolean;
-  handleUpdateSelectedTasks: (
-    action: "completed" | "pending" | "reassigned",
-    completionLink?: string
-  ) => void;
-  isCompletionConfirmOpen: boolean;
-  setIsCompletionConfirmOpen: (b: boolean) => void;
-  taskToComplete: Task | null;
-  setTaskToComplete: (t: Task | null) => void;
-  completionLink: string;
-  setCompletionLink: (v: string) => void;
-  username: string;
-  setUsername: (v: string) => void;
-  email: string;
-  setEmail: (v: string) => void;
-  password: string;
-  setPassword: (v: string) => void;
-  timerState: TimerState | null;
-  handleTaskCompletion: () => void;
-  handleCompletionCancel: () => void;
-  isBulkCompletionOpen: boolean;
-  setIsBulkCompletionOpen: (b: boolean) => void;
-  bulkCompletionLink: string;
-  setBulkCompletionLink: (v: string) => void;
-  handleBulkCompletion: () => void;
-  handleBulkCompletionCancel: () => void;
-  tasks: Task[];
-  formatTimerDisplay: (seconds: number) => string;
-}) {
-  // ✅ Categories where only completion link should be shown (no credentials)
+}: TaskDialogsProps) {
+  // Categories where only completion link should be shown (no credentials)
   const ASSETLESS_SET = new Set([
     "social activity",
     "blog posting",
@@ -79,7 +71,7 @@ export default function TaskDialogs({
   const showCredentialFields =
     !!taskToComplete && !ASSETLESS_SET.has(categoryName);
 
-  // extra confirm dialog if actual < 70% of ideal
+  // Extra confirm dialog if actual < 70% of ideal
   const [isShortDurationConfirmOpen, setIsShortDurationConfirmOpen] =
     useState(false);
   const [shortDurationInfo, setShortDurationInfo] = useState<{
@@ -87,14 +79,9 @@ export default function TaskDialogs({
     ideal: number;
   } | null>(null);
 
-  /**
-   * Predict actual duration in minutes for the pending submission:
-   * - If the timer is for this task, compute from (total - remaining)
-   * - Else fallback to taskToComplete.actualDurationMinutes (if any)
-   */
   const predictActualMinutes = (): number | null => {
     if (!taskToComplete) return null;
-    // prefer live timer measurement when this task is active
+    // Prefer live timer measurement when this task is active
     if (
       timerState?.taskId === taskToComplete.id &&
       typeof taskToComplete.idealDurationMinutes === "number"
@@ -105,7 +92,6 @@ export default function TaskDialogs({
       const mins = Math.ceil(totalUsedSeconds / 60);
       return Math.max(mins, 1);
     }
-    // fallback to whatever is already stored on the task (if any)
     return typeof taskToComplete.actualDurationMinutes === "number"
       ? taskToComplete.actualDurationMinutes
       : null;
@@ -163,6 +149,7 @@ export default function TaskDialogs({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       {/* Completion Confirmation Modal */}
       <Dialog
         open={isCompletionConfirmOpen}
@@ -201,7 +188,6 @@ export default function TaskDialogs({
               </div>
             )}
 
-            {/* Always show completion link */}
             <div className="space-y-2">
               <label
                 htmlFor="completion-link"
@@ -219,7 +205,6 @@ export default function TaskDialogs({
               />
             </div>
 
-            {/* Show credentials ONLY for categories outside Social/Blog/Graphics */}
             {showCredentialFields && (
               <div className="space-y-2">
                 <label
@@ -296,9 +281,7 @@ export default function TaskDialogs({
                   typeof actual === "number" &&
                   actual < ideal * 0.7
                 ) {
-                  // ✅ Close the background completion modal
                   setIsCompletionConfirmOpen(false);
-                  // Open short-duration confirmation
                   setShortDurationInfo({ actual, ideal });
                   setIsShortDurationConfirmOpen(true);
                 } else {
@@ -313,9 +296,8 @@ export default function TaskDialogs({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Short-duration confirmation (actual < 70% of ideal) */}
 
-      {/* Short-duration confirmation (actual < 70% of ideal) */}
+      {/* Short-duration confirmation */}
       <Dialog
         open={isShortDurationConfirmOpen}
         onOpenChange={setIsShortDurationConfirmOpen}
@@ -338,7 +320,6 @@ export default function TaskDialogs({
             </div>
           </DialogHeader>
 
-          {/* Metrics summary */}
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-amber-900/10 p-3">
               <p className="text-xs text-gray-500 dark:text-gray-400">Ideal</p>
@@ -367,14 +348,13 @@ export default function TaskDialogs({
             </div>
           </div>
 
-          {/* Context copy */}
           <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
             {shortDurationInfo
               ? `Actual ${
                   shortDurationInfo.actual
                 } min is less than 70% of ideal (${Math.ceil(
-                  shortDurationInfo.ideal * 0.7
-                )} of ${shortDurationInfo.ideal} min).`
+                    shortDurationInfo.ideal * 0.7
+                  )} of ${shortDurationInfo.ideal} min).`
               : "Actual time appears significantly lower than expected."}
           </div>
 
@@ -383,7 +363,6 @@ export default function TaskDialogs({
               variant="outline"
               className="flex-1 rounded-xl"
               onClick={() => {
-                // Close this confirm and re-open the completion modal for review
                 setIsShortDurationConfirmOpen(false);
                 setTimeout(() => {
                   setIsCompletionConfirmOpen(true);
@@ -396,7 +375,6 @@ export default function TaskDialogs({
               className="flex-1 rounded-xl bg-emerald-600 hover:bg-emerald-700"
               onClick={() => {
                 setIsShortDurationConfirmOpen(false);
-                // proceed with the real completion (parent computes & sends actualDurationMinutes)
                 handleTaskCompletion();
               }}
             >
