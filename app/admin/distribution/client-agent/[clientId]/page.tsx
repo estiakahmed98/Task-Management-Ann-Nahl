@@ -31,6 +31,7 @@ import {
   Building2,
   Repeat,
   CheckCircle2,
+  Star,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -623,91 +624,138 @@ export default function TaskDistributionForClient() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-gray-100 to-zinc-100">
-      <div className="container mx-auto p-8">
+      <div className="mx-auto">
         <Card className="shadow-2xl border-0 bg-gradient-to-br from-white via-gray-50 to-slate-50 overflow-hidden">
-          <CardHeader className="relative overflow-hidden bg-gradient-to-r from-cyan-50 via-blue-50 to-indigo-50 text-slate-800 p-6 rounded-t-xl border-b border-slate-200">
-            <div className="absolute inset-0 bg-[radial-gradient(1200px_400px_at_0%_0%,rgba(59,130,246,0.10),transparent_60%)]" />
+          <CardHeader className="relative overflow-hidden bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/40 text-slate-800 p-2 md:p-4 rounded-t-2xl border-b border-slate-100/80 backdrop-blur-sm">
+            {/* Ambient lighting effects */}
+            <div className="pointer-events-none absolute inset-0">
+              <div className="absolute top-0 left-0 w-72 h-72 bg-gradient-radial from-blue-400/8 via-transparent to-transparent rounded-full blur-3xl" />
+              <div className="absolute top-0 right-0 w-96 h-48 bg-gradient-radial from-indigo-400/6 via-transparent to-transparent rounded-full blur-3xl" />
+            </div>
 
-            <div className="relative flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <CardTitle className="text-2xl font-bold mb-1 bg-gradient-to-r from-cyan-700 via-blue-700 to-indigo-700 bg-clip-text text-transparent">
-                  Category-Based Task Distribution
-                </CardTitle>
-                <CardDescription className="text-slate-600">
-                  Asset Creation first, then Social Activity & Blog Posting —
-                  both go to Social Team.
-                </CardDescription>
-              </div>
+            {/* Main content */}
+            <div className="relative z-10">
+              {/* Header section with enhanced spacing */}
+              <div className="flex items-start justify-between gap-4 mb-6">
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-slate-800 via-blue-700 to-indigo-700 bg-clip-text text-transparent tracking-tight leading-tight mb-2">
+                    Category-Based Task Distribution
+                  </CardTitle>
+                </div>
 
-              <div className="hidden md:flex items-center">
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-tr from-cyan-100 via-blue-100 to-indigo-100 ring-1 ring-slate-200 shadow-sm flex items-center justify-center">
-                  <Repeat className="h-7 w-7 text-blue-700" />
+                {/* Enhanced icon container */}
+                <div className="group flex items-center justify-center w-12 h-12 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-blue-50 via-white to-indigo-50 ring-1 ring-blue-200/50 shadow-lg shadow-blue-100/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-200/60 hover:scale-105 shrink-0">
+                  <Repeat
+                    className="h-6 w-6 md:h-7 md:w-7 text-blue-600 transition-all duration-300 group-hover:rotate-180"
+                    aria-hidden
+                  />
                 </div>
               </div>
+
+              {/* Client section with improved layout */}
+              {client && (
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-white/60 via-white/40 to-white/60 backdrop-blur-sm border border-white/50 shadow-sm transition-all duration-300 hover:shadow-md hover:bg-white/70">
+                  {/* Enhanced avatar */}
+                  <div className="relative shrink-0">
+                    <Avatar className="h-12 w-12 md:h-14 md:w-14 ring-2 ring-white shadow-md transition-all duration-300 hover:ring-4 hover:ring-blue-200/50">
+                      {client.avatar ? (
+                        <AvatarImage
+                          src={client.avatar}
+                          alt={client.name || "Client avatar"}
+                          className="transition-all duration-300 hover:scale-110"
+                        />
+                      ) : (
+                        <AvatarFallback
+                          className="text-white text-sm md:text-base font-bold transition-all duration-300 hover:scale-110"
+                          style={{
+                            backgroundColor: nameToColor(
+                              client.name || client.id
+                            ),
+                          }}
+                        >
+                          {getInitialsFromName(client.name || client.id)}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    {client.status === "active" && (
+                      <div className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full ring-2 ring-white shadow-sm animate-pulse" />
+                    )}
+                  </div>
+
+                  {/* Client info with better typography */}
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <h3 className="text-lg md:text-xl font-bold text-slate-900 truncate">
+                        {client.name || "Unnamed Client"}
+                      </h3>
+                      {client.status === "active" && (
+                        <Star
+                          className="h-4 w-4 text-teal-500 shrink-0"
+                          fill="currentColor"
+                        />
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      {/* Company info */}
+                      <div className="flex items-center gap-1.5 text-slate-600">
+                        <Building2 className="h-4 w-4 text-slate-500 shrink-0" />
+                        <span className="text-sm font-medium truncate max-w-[200px]">
+                          {client.company || "No company"}
+                        </span>
+                      </div>
+
+                      {/* Status and package badges */}
+                      <div className="flex items-center gap-2">
+                        {client.status && (
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold transition-all duration-200 hover:scale-105",
+                              client.status === "active"
+                                ? "bg-green-100 text-green-700 ring-1 ring-green-200"
+                                : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "w-1.5 h-1.5 rounded-full mr-1.5",
+                                client.status === "active"
+                                  ? "bg-green-500"
+                                  : "bg-slate-400"
+                              )}
+                            />
+                            {client.status.charAt(0).toUpperCase() +
+                              client.status.slice(1)}
+                          </span>
+                        )}
+
+                        {client.package?.name && (
+                          <span
+                            title={client.package.name}
+                            className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200 px-3 py-1 text-xs font-semibold transition-all duration-200 hover:scale-105 hover:bg-indigo-200"
+                          >
+                            <span className="mr-1.5">📦</span>
+                            <span className="truncate max-w-[120px] md:max-w-[160px]">
+                              {client.package.name}
+                            </span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Subtle bottom accent */}
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-300/60 to-transparent" />
           </CardHeader>
 
-          <CardContent className="p-6 md:p-8 lg:p-10 space-y-10">
-            {/* CLIENT HEADER */}
-            {client && (
-              <div className="flex items-center gap-5 p-5 md:p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
-                <Avatar className="h-16 w-16 ring-2 ring-blue-500/60">
-                  {client.avatar && (
-                    <AvatarImage
-                      src={client.avatar}
-                      alt={client.name || "Client avatar"}
-                    />
-                  )}
-                  <AvatarFallback
-                    className="text-white text-xl font-bold"
-                    style={{
-                      backgroundColor: nameToColor(client.name || client.id),
-                    }}
-                  >
-                    {getInitialsFromName(client.name || client.id)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-xl md:text-2xl font-bold text-slate-900 truncate">
-                      {client.name || "Unnamed Client"}
-                    </h2>
-                  </div>
-                  <p className="mt-0.5 text-sm text-slate-600">
-                    <Building2 className="inline-block h-4 w-4 mr-1 text-slate-500" />
-                    {client.company || "N/A"}
-                  </p>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {client.status && (
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "border px-2.5 py-1 rounded-full text-xs",
-                          client.status === "active"
-                            ? "bg-green-50 text-green-800 border-green-200"
-                            : "bg-slate-50 text-slate-700 border-slate-200"
-                        )}
-                      >
-                        {client.status}
-                      </Badge>
-                    )}
-                    {client.package?.name && (
-                      <Badge
-                        variant="secondary"
-                        className="rounded-full text-xs bg-indigo-50 text-indigo-800 px-2.5 py-1"
-                      >
-                        📦 {client.package.name}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
+          <CardContent className="p-2 md:px-4 lg:px-4 space-y-8">
             {/* CATEGORY CONTROLS & SUMMARY */}
             <section
               aria-labelledby="category-assignment-heading"
-              className="space-y-6"
+              className="space-y-4"
             >
               <div className="border rounded-2xl p-6 md:p-7 bg-gradient-to-br from-purple-50 to-white border-purple-200/70">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -891,7 +939,7 @@ export default function TaskDistributionForClient() {
                 </h3>
 
                 {/* Summary */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/70 rounded-2xl p-5 md:p-6">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/70 rounded-2xl p-2 md:p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-base md:text-lg font-semibold text-blue-900">
                       Assignment Summary
