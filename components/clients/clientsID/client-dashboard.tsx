@@ -1,4 +1,4 @@
-//components/clients/clientsID/client-dashboard.tsx
+// components/clients/clientsID/client-dashboard.tsx
 "use client"
 
 import { useState } from "react"
@@ -46,7 +46,7 @@ export function ClientDashboard({ clientData }: ClientDashboardProps) {
     return diffDays
   }
 
-  // Derived progress from tasks with normalized statuses
+  // Derived progress from tasks with normalized statuses (overall)
   const normalizeStatus = (raw?: string | null) => {
     const s = (raw ?? "")
       .toString()
@@ -61,8 +61,76 @@ export function ClientDashboard({ clientData }: ClientDashboardProps) {
   }
 
   const totalTasks = clientData.tasks?.length || 0
-  const completedTasks = clientData.tasks?.filter((t: any) => normalizeStatus(t?.status) === "completed").length || 0
+  const completedTasks =
+    clientData.tasks?.filter((t: any) => normalizeStatus(t?.status) === "completed").length || 0
+
   const derivedProgress = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0
+
+  // ---------------------------
+  // This Month stats
+  // ---------------------------
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1) // exclusive
+
+  const parseDate = (v?: string | Date | null) => {
+    if (!v) return null
+    const d = new Date(v)
+    return isNaN(d.getTime()) ? null : d
+  }
+
+  // Prefer createdAt; fallback to startDate; then dueDate
+  const getBestDate = (task: any): Date | null => {
+    return parseDate(task?.createdAt) || parseDate(task?.startDate) || parseDate(task?.dueDate)
+  }
+
+  const inThisMonth = (task: any) => {
+    const d = getBestDate(task)
+    if (!d) return false
+    return d >= monthStart && d < monthEnd
+  }
+
+  // Monthly filtered tasks
+  const tasksThisMonth = (clientData.tasks ?? []).filter(inThisMonth)
+  const totalThisMonth = tasksThisMonth.length
+
+  // helper to keep raw (non-normalized) for approved detection
+  const rawStatus = (raw?: string | null) =>
+    (raw ?? "").toString().trim().toLowerCase().replace(/[\-\s]+/g, "_")
+
+  // Monthly tallies
+  let completedThisMonth = 0
+  let approvedThisMonth = 0
+  let pendingThisMonth = 0
+
+  for (const t of tasksThisMonth) {
+    const sRaw = rawStatus(t?.status)
+    const sNorm = normalizeStatus(t?.status)
+    const completedAt = parseDate(t?.completedAt)
+    const dueDate = parseDate(t?.dueDate)
+
+    // Completed if completedAt is in this month OR status says completed
+    const isCompleted =
+      (completedAt ? completedAt >= monthStart && completedAt < monthEnd : false) ||
+      sNorm === "completed"
+
+    // Approved if status explicitly qc_approved/approved
+    const isApproved = sRaw === "qc_approved" || sRaw === "approved"
+
+    // Pending if explicitly pending OR not completed/approved but tied to this month (due this month or no explicit dates)
+    const isPending =
+      sNorm === "pending" ||
+      (!isCompleted && !isApproved && (!!dueDate ? dueDate >= monthStart && dueDate < monthEnd : true))
+
+    if (isCompleted) completedThisMonth++
+    if (isApproved) approvedThisMonth++
+    if (isPending) pendingThisMonth++
+  }
+
+  // This month progress = (completed + approved) / totalThisMonth
+  const derivedProgressThisMonth = totalThisMonth
+    ? Math.round(((completedThisMonth + approvedThisMonth) / totalThisMonth) * 100)
+    : 0
 
   const totalAssets = totalTasks
 
@@ -90,16 +158,22 @@ export function ClientDashboard({ clientData }: ClientDashboardProps) {
                     <MapPin className="h-4 w-4 mr-1" />
                     <span className="text-sm">{clientData.location ?? ""}</span>
                   </div>
-                  <Badge variant={clientData.status === "active" ? "default" : "secondary"}>{clientData.status ?? "inactive"}</Badge>
+                  <Badge variant={clientData.status === "active" ? "default" : "secondary"}>
+                    {clientData.status ?? "inactive"}
+                  </Badge>
                 </div>
               </div>
             </div>
 
-            {/* Statistics */}
+            {/* Statistics (Overall) */}
             <div className="flex space-x-6">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{derivedProgress}%</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">Progress</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400"> Overall Progress</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{derivedProgressThisMonth}%</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">This Month Progress</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600 dark:text-green-400">{totalAssets}</div>
