@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 import type { Task, TimerState } from "../client-tasks-view/client-tasks-view";
+import { motion } from "framer-motion";
 
 export default function TaskDialogs({
   isStatusModalOpen,
@@ -35,6 +36,13 @@ export default function TaskDialogs({
   timerState,
   handleTaskCompletion,
   handleCompletionCancel,
+  isBulkCompletionOpen, // unused here but kept for props parity
+  setIsBulkCompletionOpen, // unused
+  bulkCompletionLink, // unused
+  setBulkCompletionLink, // unused
+  handleBulkCompletion, // unused
+  handleBulkCompletionCancel, // unused
+  tasks, // unused
   formatTimerDisplay,
 }: {
   isStatusModalOpen: boolean;
@@ -94,7 +102,6 @@ export default function TaskDialogs({
    */
   const predictActualMinutes = (): number | null => {
     if (!taskToComplete) return null;
-    // prefer live timer measurement when this task is active
     if (
       timerState?.taskId === taskToComplete.id &&
       typeof taskToComplete.idealDurationMinutes === "number"
@@ -105,7 +112,6 @@ export default function TaskDialogs({
       const mins = Math.ceil(totalUsedSeconds / 60);
       return Math.max(mins, 1);
     }
-    // fallback to whatever is already stored on the task (if any)
     return typeof taskToComplete.actualDurationMinutes === "number"
       ? taskToComplete.actualDurationMinutes
       : null;
@@ -115,6 +121,18 @@ export default function TaskDialogs({
   const [linkTouched, setLinkTouched] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [verifyingUrl, setVerifyingUrl] = useState(false);
+
+  // ✅ cred validation states (added)
+  const [credTouched, setCredTouched] = useState({
+    email: false,
+    username: false,
+    password: false,
+  });
+  const [credErrors, setCredErrors] = useState<{
+    email?: string;
+    username?: string;
+    password?: string;
+  }>({});
 
   // Basic format validation on the client
   const validateUrlFormat = (value: string): string | null => {
@@ -132,6 +150,35 @@ export default function TaskDialogs({
     } catch {
       return "Enter a valid URL (e.g., https://example.com)";
     }
+  };
+
+  // ✅ cred validators (added)
+  const validateEmail = (v: string): string | undefined => {
+    const s = (v || "").trim();
+    if (!s) return "Email is required.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) return "Enter a valid email.";
+    return;
+  };
+  const validateUsername = (v: string): string | undefined => {
+    const s = (v || "").trim();
+    if (!s) return "Username is required.";
+    if (s.length < 3) return "Username must be at least 3 characters.";
+    return;
+  };
+  const validatePassword = (v: string): string | undefined => {
+    const s = (v || "").trim();
+    if (!s) return "Password is required.";
+    if (s.length < 6) return "Password must be at least 6 characters.";
+    return;
+  };
+  const validateAllCreds = (e: string, u: string, p: string) => {
+    const next = {
+      email: validateEmail(e),
+      username: validateUsername(u),
+      password: validatePassword(p),
+    };
+    setCredErrors(next);
+    return next;
   };
 
   // Server reachability check
@@ -155,6 +202,12 @@ export default function TaskDialogs({
       return "URL is not reachable (network error).";
     }
   };
+
+  // Optional pre-disable heuristic
+  const prereqMissing =
+    !completionLink.trim() ||
+    (showCredentialFields &&
+      (!email.trim() || !username.trim() || !password.trim()));
 
   return (
     <>
@@ -208,6 +261,7 @@ export default function TaskDialogs({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       {/* Completion Confirmation Modal */}
       <Dialog
         open={isCompletionConfirmOpen}
@@ -262,7 +316,6 @@ export default function TaskDialogs({
                 onChange={(e) => {
                   setCompletionLink(e.target.value);
                   if (linkTouched) {
-                    // live format validation
                     setLinkError(validateUrlFormat(e.target.value));
                   }
                 }}
@@ -290,7 +343,7 @@ export default function TaskDialogs({
               )}
             </div>
 
-            {/* Show credentials ONLY for categories outside Social/Blog/Graphics */}
+            {/* Credentials (required for asset creation categories) */}
             {showCredentialFields && (
               <div className="space-y-2">
                 <label
@@ -304,9 +357,32 @@ export default function TaskDialogs({
                   type="email"
                   placeholder="example@gmail.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full"
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (credTouched.email) {
+                      setCredErrors((prev) => ({
+                        ...prev,
+                        email: validateEmail(e.target.value),
+                      }));
+                    }
+                  }}
+                  onBlur={() => {
+                    setCredTouched((t) => ({ ...t, email: true }));
+                    setCredErrors((prev) => ({
+                      ...prev,
+                      email: validateEmail(email),
+                    }));
+                  }}
+                  aria-invalid={!!credErrors.email}
+                  className={`w-full ${
+                    credErrors.email
+                      ? "border-red-400 focus-visible:ring-red-400"
+                      : ""
+                  }`}
                 />
+                {credErrors.email && (
+                  <div className="text-xs text-red-600">{credErrors.email}</div>
+                )}
 
                 <label
                   htmlFor="username"
@@ -319,9 +395,34 @@ export default function TaskDialogs({
                   type="text"
                   placeholder="username"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full"
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    if (credTouched.username) {
+                      setCredErrors((prev) => ({
+                        ...prev,
+                        username: validateUsername(e.target.value),
+                      }));
+                    }
+                  }}
+                  onBlur={() => {
+                    setCredTouched((t) => ({ ...t, username: true }));
+                    setCredErrors((prev) => ({
+                      ...prev,
+                      username: validateUsername(username),
+                    }));
+                  }}
+                  aria-invalid={!!credErrors.username}
+                  className={`w-full ${
+                    credErrors.username
+                      ? "border-red-400 focus-visible:ring-red-400"
+                      : ""
+                  }`}
                 />
+                {credErrors.username && (
+                  <div className="text-xs text-red-600">
+                    {credErrors.username}
+                  </div>
+                )}
 
                 <label
                   htmlFor="password"
@@ -334,9 +435,34 @@ export default function TaskDialogs({
                   type="text"
                   placeholder="Password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full"
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (credTouched.password) {
+                      setCredErrors((prev) => ({
+                        ...prev,
+                        password: validatePassword(e.target.value),
+                      }));
+                    }
+                  }}
+                  onBlur={() => {
+                    setCredTouched((t) => ({ ...t, password: true }));
+                    setCredErrors((prev) => ({
+                      ...prev,
+                      password: validatePassword(password),
+                    }));
+                  }}
+                  aria-invalid={!!credErrors.password}
+                  className={`w-full ${
+                    credErrors.password
+                      ? "border-red-400 focus-visible:ring-red-400"
+                      : ""
+                  }`}
                 />
+                {credErrors.password && (
+                  <div className="text-xs text-red-600">
+                    {credErrors.password}
+                  </div>
+                )}
               </div>
             )}
 
@@ -356,20 +482,31 @@ export default function TaskDialogs({
 
             <Button
               onClick={async () => {
-                // Format check
+                // URL format
                 const formatErr = validateUrlFormat(completionLink);
                 if (formatErr) {
                   setLinkTouched(true);
                   setLinkError(formatErr);
                   return;
                 }
-                // Reachability check
+                // URL reachability
                 const reachErr = await checkLinkReachability(completionLink);
                 if (reachErr) {
                   setLinkTouched(true);
                   setLinkError(reachErr);
                   return;
                 }
+                // Asset creation: all credential fields required
+                if (showCredentialFields) {
+                  setCredTouched({
+                    email: true,
+                    username: true,
+                    password: true,
+                  });
+                  const res = validateAllCreds(email, username, password);
+                  if (res.email || res.username || res.password) return;
+                }
+
                 if (!taskToComplete) {
                   handleTaskCompletion();
                   return;
@@ -381,9 +518,7 @@ export default function TaskDialogs({
                   typeof actual === "number" &&
                   actual < ideal * 0.7
                 ) {
-                  // ✅ Close the background completion modal
                   setIsCompletionConfirmOpen(false);
-                  // Open short-duration confirmation
                   setShortDurationInfo({ actual, ideal });
                   setIsShortDurationConfirmOpen(true);
                 } else {
@@ -391,7 +526,7 @@ export default function TaskDialogs({
                 }
               }}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700"
-              disabled={verifyingUrl}
+              disabled={verifyingUrl || prereqMissing}
             >
               <CheckCircle className="w-4 h-4 mr-2" />
               Complete Task
@@ -399,7 +534,6 @@ export default function TaskDialogs({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Short-duration confirmation (actual < 70% of ideal) */}
 
       {/* Short-duration confirmation (actual < 70% of ideal) */}
       <Dialog
@@ -408,15 +542,32 @@ export default function TaskDialogs({
       >
         <DialogContent className="sm:max-w-[520px] rounded-2xl border border-amber-200 dark:border-amber-800 bg-gradient-to-b from-white to-amber-50 dark:from-gray-900 dark:to-amber-950/20">
           <DialogHeader>
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 shrink-0 rounded-xl p-2 bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800">
-                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div className="space-y-1">
-                <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-50">
+            <div className="flex flex-col items-start gap-3">
+              {/* 🔥 Animated Icon + Title Wrapper */}
+              <motion.div
+                initial={{ opacity: 1 }}
+                animate={{ opacity: [1, 0.35, 1] }}
+                transition={{
+                  duration: 1,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="flex items-center gap-3"
+              >
+                {/* Icon */}
+                <div className="mt-0.5 shrink-0 rounded-xl p-2 bg-red-200 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800">
+                  <AlertTriangle className="h-6 w-6 text-red-600 dark:text-indigo-300" />
+                </div>
+
+                {/* Title */}
+                <h3 className="text-2xl font-bold text-red-600 dark:text-indigo-200">
                   Confirm Early Completion
-                </DialogTitle>
-                <DialogDescription className="text-sm text-gray-600 dark:text-gray-400">
+                </h3>
+              </motion.div>
+
+              {/* Description */}
+              <div className="flex-1">
+                <DialogDescription className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                   Your tracked time appears significantly lower than expected
                   for this task. Do you still want to submit it as completed?
                 </DialogDescription>
@@ -424,7 +575,6 @@ export default function TaskDialogs({
             </div>
           </DialogHeader>
 
-          {/* Metrics summary */}
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-amber-900/10 p-3">
               <p className="text-xs text-gray-500 dark:text-gray-400">Ideal</p>
@@ -453,7 +603,6 @@ export default function TaskDialogs({
             </div>
           </div>
 
-          {/* Context copy */}
           <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
             {shortDurationInfo
               ? `Actual ${
@@ -469,7 +618,6 @@ export default function TaskDialogs({
               variant="outline"
               className="flex-1 rounded-xl"
               onClick={() => {
-                // Close this confirm and re-open the completion modal for review
                 setIsShortDurationConfirmOpen(false);
                 setTimeout(() => {
                   setIsCompletionConfirmOpen(true);
@@ -482,7 +630,6 @@ export default function TaskDialogs({
               className="flex-1 rounded-xl bg-emerald-600 hover:bg-emerald-700"
               onClick={() => {
                 setIsShortDurationConfirmOpen(false);
-                // proceed with the real completion (parent computes & sends actualDurationMinutes)
                 handleTaskCompletion();
               }}
             >
