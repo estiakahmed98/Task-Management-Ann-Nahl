@@ -63,7 +63,7 @@ export default function ForwardModal({
           <h3 className="font-semibold text-lg">Forward message</h3>
           <button
             onClick={onClose}
-            className="text-sm text-gray-500 hover:underline"
+            className="text-sm text-gray-500 hover:underline hover:text-red-700"
           >
             Close
           </button>
@@ -107,14 +107,14 @@ export default function ForwardModal({
         <div className="mt-4 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded border border-gray-300"
+            className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
           >
             Cancel
           </button>
           <button
             onClick={submit}
             disabled={!selected.size}
-            className="px-4 py-2 rounded bg-black text-white disabled:opacity-50"
+            className="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50 hover:bg-blue-700"
           >
             Forward {selected.size ? `(${selected.size})` : ""}
           </button>
