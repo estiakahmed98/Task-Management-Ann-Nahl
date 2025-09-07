@@ -107,7 +107,7 @@ export default function ChatPage() {
             <h2 className="font-semibold">Conversations</h2>
             <BackgroundGradient><button
               type="button"
-              className="px-2 py-1 text-sm rounded bg-black text-white"
+              className="px-2 py-1 text-sm rounded bg-transparent text-white"
               onClick={handleCreateDMManual}
             >
               + DM
