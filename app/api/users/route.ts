@@ -4,12 +4,14 @@ import { type NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { logActivity } from "@/lib/logActivity";
+import { getAuthUser } from "@/lib/getAuthUser";
 
 // ============================ GET Users ============================
 // ...top kept same
 
 export async function GET(request: NextRequest) {
   try {
+    const me = await getAuthUser();
     const searchParams = request.nextUrl.searchParams;
     const limit = Number.parseInt(searchParams.get("limit") || "10");
     const offset = Number.parseInt(searchParams.get("offset") || "0");
@@ -24,6 +26,44 @@ export async function GET(request: NextRequest) {
           ],
         }
       : {};
+
+    // If requester is a client, only return their assigned AM
+    const roleName = (me as any)?.role?.name?.toLowerCase?.() || "";
+    if (roleName === "client") {
+      const clientId = (me as any)?.clientId || null;
+      if (!clientId) {
+        return NextResponse.json(
+          { users: [], total: 0, limit, offset, q },
+          { status: 200 }
+        );
+      }
+
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        select: { amId: true },
+      });
+      const amId = client?.amId || null;
+
+      if (!amId) {
+        return NextResponse.json(
+          { users: [], total: 0, limit, offset, q },
+          { status: 200 }
+        );
+      }
+
+      const am = await prisma.user.findMany({
+        skip: 0,
+        take: 1,
+        where: { id: amId, ...(Object.keys(where).length ? where : {}) },
+        orderBy: { createdAt: "desc" },
+        include: { role: { select: { id: true, name: true } } },
+      });
+
+      return NextResponse.json(
+        { users: am, total: am.length, limit, offset, q },
+        { status: 200 }
+      );
+    }
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({

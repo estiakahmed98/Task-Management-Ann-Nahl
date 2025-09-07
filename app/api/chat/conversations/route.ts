@@ -22,6 +22,29 @@ export async function POST(req: Request) {
     taskId,
   } = (await req.json()) || {};
 
+  // Enforce: clients may only create a DM with their assigned AM
+  const roleName = (me as any)?.role?.name?.toLowerCase?.() || "";
+  if (roleName === "client") {
+    // fetch client's AM
+    const myClientId = (me as any)?.clientId || null;
+    if (!myClientId) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+    const client = await prisma.client.findUnique({
+      where: { id: myClientId },
+      select: { amId: true },
+    });
+    const amId = client?.amId || null;
+    // Only allowed if: type === 'dm' and memberIds contain only AM (besides me)
+    const others = (Array.isArray(memberIds) ? memberIds : []).filter(
+      (id: string) => id && id !== me.id
+    );
+    const onlyAM = others.length === 1 && amId && others[0] === amId;
+    if (type !== "dm" || !onlyAM) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+  }
+
   const uniqueMemberIds = Array.from(new Set([...memberIds, me.id]));
 
   const conv = await prisma.conversation.create({

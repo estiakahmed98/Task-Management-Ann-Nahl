@@ -10,6 +10,7 @@ import { useRoster } from "@/hooks/useRoster";
 import { useDebounce } from "@/hooks/useDebounce";
 import ChatWindow from "@/components/chat/ChatWindow";
 import { Search } from "lucide-react";
+import { BackgroundGradient } from "@/components/ui/background-gradient";
 
 // helpers (same as before)
 function getOtherUser(c: any, myId?: string) {
@@ -73,7 +74,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!activeId) return;
-    markRead(activeId).catch(() => {});
+    markRead(activeId).catch(() => { });
   }, [activeId, messages?.length]);
 
   async function handleCreateDMManual() {
@@ -104,13 +105,14 @@ export default function ChatPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Conversations</h2>
-            <button
+            <BackgroundGradient><button
               type="button"
-              className="px-2 py-1 text-sm rounded bg-black text-white"
+              className="px-2 py-1 text-sm rounded bg-transparent text-white"
               onClick={handleCreateDMManual}
             >
               + DM
-            </button>
+            </button></BackgroundGradient>
+
           </div>
 
           {convLoading ? (
@@ -125,9 +127,8 @@ export default function ChatPage() {
                     <button
                       type="button"
                       onClick={() => setActiveId(c.id)}
-                      className={`w-full text-left px-3 py-2 rounded hover:bg-gray-100 ${
-                        activeId === c.id ? "bg-gray-100" : ""
-                      }`}
+                      className={`w-full text-left px-3 py-2 rounded hover:bg-gray-100 ${activeId === c.id ? "bg-gray-100" : ""
+                        }`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-medium">{title}</span>

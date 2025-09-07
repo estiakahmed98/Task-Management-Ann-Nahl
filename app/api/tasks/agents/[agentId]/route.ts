@@ -81,10 +81,10 @@ function calculatePerformanceRating(
   ideal: number,
   actual: number
 ): "Excellent" | "Good" | "Average" | "Lazy" {
-  if (actual <= ideal * 0.67) return "Excellent"; // ২০/৩০
-  if (actual <= ideal * 0.84) return "Good"; // ২৫/৩০
-  if (actual <= ideal) return "Average"; // ৩০/৩০
-  return "Lazy"; // >৩০
+  if (actual <= ideal * 0.9) return "Excellent"; // ≤ 90%
+  if (actual <= ideal * 0.95) return "Good"; // >90% && ≤95%
+  if (actual <= ideal) return "Average"; // >95% && ≤100%
+  return "Lazy"; // >100%
 }
 
 // ---------------- GET ----------------
