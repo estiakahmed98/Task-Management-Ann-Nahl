@@ -7,7 +7,12 @@ export default async function Page() {
   let tasks: any[] = [];
 
   try {
-    const res = await fetch("/api/tasks", { cache: "no-store" });
+    const base =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXTAUTH_URL ||
+      "http://localhost:3000";
+    const url = new URL("/api/tasks", base).toString();
+    const res = await fetch(url, { cache: "no-store" });
     if (res.ok) {
       tasks = await res.json();
     } else {
