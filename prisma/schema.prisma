@@ -26,7 +26,7 @@ enum TaskStatus {
   completed
   overdue
   cancelled
-  reassigned //✅ new
+  reassigned 
   qc_approved
 }
 
@@ -34,7 +34,7 @@ enum PerformanceRating {
   Excellent
   Good
   Average
-  Poor        // ✅ new
+  Poor        
   Lazy
 }
 
@@ -42,8 +42,8 @@ enum NotificationType {
   frequency_missed
   performance
   general
-  chat_message   // ✅ নতুন
-  chat_mention   // ✅ নতুন
+  chat_message   
+  chat_mention   
 }
 
 enum SiteAssetType {
@@ -413,9 +413,7 @@ model Task {
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
 
-  // ✅ QC data in one place (timer/manual scores, reviewerId, reviewedAt, notes, total)
   qcReview              Json?
-  // ✅ Cached total for fast listing/sorting (0–100)
   qcTotalScore          Int?             @default(0)
 
   assignment            Assignment?        @relation(fields: [assignmentId], references: [id])
