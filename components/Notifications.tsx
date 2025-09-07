@@ -40,7 +40,11 @@ function useDebounced<T>(val: T, delay = 400) {
   return v;
 }
 
-export default function Notifications() {
+type NotificationsProps = {
+  apiBase?: string; // defaults to "/api/notifications"
+};
+
+export default function Notifications({ apiBase = "/api/notifications" }: NotificationsProps) {
   // filters state
   const [type, setType] = useState<string>("all");
   const [readState, setReadState] = useState<string>("all");
@@ -66,7 +70,7 @@ export default function Notifications() {
     return params.toString();
   }, [type, readState, from, to, qDeb, sort]);
 
-  const { list, isLoading, error, refresh } = useNotifications(query);
+  const { list, isLoading, error, refresh } = useNotifications(query, apiBase);
 
   // group by day label
   const grouped = useMemo(() => {
@@ -105,208 +109,207 @@ export default function Notifications() {
     sort !== "desc";
 
   return (
-    <div className="container mx-auto p-6">
-      <Card className="border-0 shadow-md">
-        <CardHeader>
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl">Notifications</CardTitle>
-              <div className="flex gap-2">
-                <Button
-                  variant={
-                    showFilters || hasActiveFilters ? "default" : "outline"
-                  }
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2"
-                  size="sm"
-                >
-                  {showFilters ? <X size={16} /> : <Filter size={16} />}
-                  {showFilters ? "Hide" : "Filter"}
-                  {hasActiveFilters && !showFilters && (
-                    <span className="h-2 w-2 rounded-full bg-primary"></span>
-                  )}
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={async () => {
-                    await markAllRead();
-                    refresh();
-                  }}
-                  size="sm"
-                >
-                  Mark all read
-                </Button>
-              </div>
+
+    <Card className="border-0 shadow-md">
+      <CardHeader>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-2xl">Notifications</CardTitle>
+            <div className="flex gap-2">
+              <Button
+                variant={
+                  showFilters || hasActiveFilters ? "default" : "outline"
+                }
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2"
+                size="sm"
+              >
+                {showFilters ? <X size={16} /> : <Filter size={16} />}
+                {showFilters ? "Hide" : "Filter"}
+                {hasActiveFilters && !showFilters && (
+                  <span className="h-2 w-2 rounded-full bg-primary"></span>
+                )}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  await markAllRead(apiBase);
+                  refresh();
+                }}
+                size="sm"
+              >
+                Mark all read
+              </Button>
             </div>
-
-            {/* Search bar - always visible */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search notifications..."
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-
-            {/* Filters - conditionally rendered */}
-            {showFilters && (
-              <div className="grid grid-cols-1 md:grid-cols-6 gap-3 pt-2">
-                {/* Type */}
-                <div className="md:col-span-1">
-                  <Select value={type} onValueChange={setType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All types</SelectItem>
-                      <SelectItem value="general">General</SelectItem>
-                      <SelectItem value="performance">Performance</SelectItem>
-                      <SelectItem value="frequency_missed">
-                        Frequency missed
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Read state */}
-                <div className="md:col-span-1">
-                  <Select value={readState} onValueChange={setReadState}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Read state" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="unread">Unread only</SelectItem>
-                      <SelectItem value="read">Read</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* From */}
-                <div className="md:col-span-1">
-                  <Input
-                    type="date"
-                    value={from}
-                    onChange={(e) => setFrom(e.target.value)}
-                    placeholder="From date"
-                  />
-                </div>
-
-                {/* To */}
-                <div className="md:col-span-1">
-                  <Input
-                    type="date"
-                    value={to}
-                    onChange={(e) => setTo(e.target.value)}
-                    placeholder="To date"
-                  />
-                </div>
-
-                {/* Sort */}
-                <div className="md:col-span-1">
-                  <Select
-                    value={sort}
-                    onValueChange={(v: "asc" | "desc") => setSort(v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sort" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="desc">Newest first</SelectItem>
-                      <SelectItem value="asc">Oldest first</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Reset button */}
-                <div className="md:col-span-1">
-                  <Button
-                    variant="outline"
-                    onClick={resetFilters}
-                    className="w-full"
-                    disabled={!hasActiveFilters}
-                    size="sm"
-                  >
-                    Reset
-                  </Button>
-                </div>
-              </div>
-            )}
           </div>
-        </CardHeader>
 
-        <CardContent>
-          {error && (
-            <div className="text-red-600">Failed to load notifications.</div>
+          {/* Search bar - always visible */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search notifications..."
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {/* Filters - conditionally rendered */}
+          {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-3 pt-2">
+              {/* Type */}
+              <div className="md:col-span-1">
+                <Select value={type} onValueChange={setType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All types</SelectItem>
+                    <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="performance">Performance</SelectItem>
+                    <SelectItem value="frequency_missed">
+                      Frequency missed
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Read state */}
+              <div className="md:col-span-1">
+                <Select value={readState} onValueChange={setReadState}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Read state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="unread">Unread only</SelectItem>
+                    <SelectItem value="read">Read</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* From */}
+              <div className="md:col-span-1">
+                <Input
+                  type="date"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                  placeholder="From date"
+                />
+              </div>
+
+              {/* To */}
+              <div className="md:col-span-1">
+                <Input
+                  type="date"
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                  placeholder="To date"
+                />
+              </div>
+
+              {/* Sort */}
+              <div className="md:col-span-1">
+                <Select
+                  value={sort}
+                  onValueChange={(v: "asc" | "desc") => setSort(v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sort" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="desc">Newest first</SelectItem>
+                    <SelectItem value="asc">Oldest first</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Reset button */}
+              <div className="md:col-span-1">
+                <Button
+                  variant="outline"
+                  onClick={resetFilters}
+                  className="w-full"
+                  disabled={!hasActiveFilters}
+                  size="sm"
+                >
+                  Reset
+                </Button>
+              </div>
+            </div>
           )}
-          {isLoading && <div className="text-gray-500">Loading…</div>}
+        </div>
+      </CardHeader>
 
-          {!isLoading && !error && list.length === 0 && (
-            <div className="text-gray-500">No notifications found.</div>
-          )}
+      <CardContent>
+        {error && (
+          <div className="text-red-600">Failed to load notifications.</div>
+        )}
+        {isLoading && <div className="text-gray-500">Loading…</div>}
 
-          {!isLoading &&
-            !error &&
-            Object.entries(grouped).map(([dateLabel, items]) => (
-              <div key={dateLabel} className="mb-6">
-                <div className="text-xs font-semibold text-gray-500 mb-2">
-                  {dateLabel}
-                </div>
-                <div className="divide-y rounded-lg border">
-                  {items.map((n) => (
-                    <div
-                      key={n.id}
-                      className={`p-3 flex items-start justify-between ${
-                        n.isRead ? "" : "bg-blue-50/60"
+        {!isLoading && !error && list.length === 0 && (
+          <div className="text-gray-500">No notifications found.</div>
+        )}
+
+        {!isLoading &&
+          !error &&
+          Object.entries(grouped).map(([dateLabel, items]) => (
+            <div key={dateLabel} className="mb-6">
+              <div className="text-xs font-semibold text-gray-500 mb-2">
+                {dateLabel}
+              </div>
+              <div className="divide-y rounded-lg border">
+                {items.map((n) => (
+                  <div
+                    key={n.id}
+                    className={`p-3 flex items-start justify-between ${n.isRead ? "" : "bg-blue-50/60"
                       }`}
-                    >
-                      <div className="pr-3">
-                        <div className="text-sm">{n.message}</div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {new Date(n.createdAt).toLocaleString()}
-                        </div>
-                        <div className="mt-1">
-                          <Badge variant="outline">{n.type}</Badge>
-                          {n.taskId && (
-                            <Badge className="ml-2" variant="secondary">
-                              task: {String(n.taskId).slice(0, 6)}…
-                            </Badge>
-                          )}
-                        </div>
+                  >
+                    <div className="pr-3">
+                      <div className="text-sm">{n.message}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {new Date(n.createdAt).toLocaleString()}
                       </div>
-                      <div className="flex gap-2">
-                        {!n.isRead && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={async () => {
-                              await markOneRead(n.id);
-                              refresh();
-                            }}
-                          >
-                            Mark read
-                          </Button>
-                        )}
-                        {(n as any).targetPath && (
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              (window.location.href = (n as any).targetPath!)
-                            }
-                          >
-                            Open
-                          </Button>
+                      <div className="mt-1">
+                        <Badge variant="outline">{n.type}</Badge>
+                        {n.taskId && (
+                          <Badge className="ml-2" variant="secondary">
+                            task: {String(n.taskId).slice(0, 6)}…
+                          </Badge>
                         )}
                       </div>
                     </div>
-                  ))}
-                </div>
+                    <div className="flex gap-2">
+                      {!n.isRead && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={async () => {
+                            await markOneRead(n.id, apiBase);
+                            refresh();
+                          }}
+                        >
+                          Mark read
+                        </Button>
+                      )}
+                      {(n as any).targetPath && (
+                        <Button
+                          size="sm"
+                          onClick={() =>
+                            (window.location.href = (n as any).targetPath!)
+                          }
+                        >
+                          Open
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-        </CardContent>
-      </Card>
-    </div>
+            </div>
+          ))}
+      </CardContent>
+    </Card>
+
   );
 }

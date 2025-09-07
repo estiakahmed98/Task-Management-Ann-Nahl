@@ -3,7 +3,78 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { PrismaClient, NotificationType } from "@prisma/client";
 
+import dns from "node:dns/promises";
+import net from "node:net";
+
 const prisma = new PrismaClient();
+
+export const runtime = "nodejs";
+
+function isPrivateIp(ip: string) {
+  if (ip === "::1") return true;
+  if (ip.startsWith("127.")) return true;
+  if (ip.startsWith("0.")) return true;
+  const [a, b] = ip.split(".").map((n) => parseInt(n, 10));
+  if (a === 10) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  return false;
+}
+
+async function assertUrlReachable(raw: string) {
+  let url: URL;
+  try {
+    url = new URL(raw.trim());
+  } catch {
+    throw new Error("Enter a valid URL (e.g., https://example.com)");
+  }
+  if (!/^https?:$/.test(url.protocol)) {
+    throw new Error("URL must start with http:// or https://");
+  }
+  const host = url.hostname.toLowerCase();
+  if (host === "localhost" || host === "127.0.0.1" || host === "::1") {
+    throw new Error("Local/loopback URLs are not allowed.");
+  }
+
+  try {
+    const { address } = await dns.lookup(host);
+    if (net.isIP(address) && isPrivateIp(address)) {
+      throw new Error("Private network URLs are not allowed.");
+    }
+  } catch {
+    // ignore; fetch may still resolve
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  const commonOpts: RequestInit = {
+    redirect: "follow",
+    headers: {
+      "user-agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      accept: "*/*",
+    },
+    cache: "no-store",
+    signal: controller.signal,
+  };
+
+  try {
+    let res = await fetch(url, { ...commonOpts, method: "HEAD" });
+    if (res.status === 405 || res.status === 501) {
+      res = await fetch(url, { ...commonOpts, method: "GET" });
+    }
+    const ok =
+      (res.status >= 200 && res.status < 400) ||
+      res.status === 401 ||
+      res.status === 403;
+    if (!ok) throw new Error(`URL responded with status ${res.status}.`);
+  } catch {
+    throw new Error("URL is not reachable (network/DNS/timeout).");
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 // Utility function → Performance Rating auto-calc
 function calculatePerformanceRating(
@@ -141,6 +212,21 @@ export async function PATCH(
         task.idealDurationMinutes ?? 30,
         actualDurationMinutes
       );
+    }
+
+    // If a completion link is provided, validate its reachability first
+    if (typeof completionLink === "string" && completionLink.trim()) {
+      try {
+        await assertUrlReachable(completionLink.trim());
+      } catch (e: any) {
+        return NextResponse.json(
+          {
+            error: "Invalid completion link",
+            message: e.message || "URL check failed",
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Update task

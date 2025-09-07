@@ -47,10 +47,12 @@ type Task = BaseTask & {
   timerState?: any;
   assetUrl?: string;
   url?: string;
+  actualDurationMinutes?: number; // ✅ NEW
 };
 import { PerformanceBadge } from "./PerformanceBadge";
 
 export default function TaskList({
+  agentId, // ✅ NEW
   clientName,
   tasks,
   filteredTasks,
@@ -80,6 +82,7 @@ export default function TaskList({
   getPriorityBadge,
   formatTimerDisplay,
 }: {
+  agentId: string; // ✅ NEW
   clientName: string;
   tasks: Task[];
   filteredTasks: Task[];
@@ -172,7 +175,7 @@ export default function TaskList({
   // ✅ Copy + Password visibility
   const [copied, setCopied] = useState<{
     id: string;
-    type: "url" | "password";
+    type: "url" | "password" | "email" | "username";
   } | null>(null);
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(
     new Set()
@@ -181,7 +184,7 @@ export default function TaskList({
   const handleCopy = async (
     text: string,
     id: string,
-    type: "url" | "password"
+    type: "url" | "password" | "email" | "username"
   ) => {
     if (!text) return;
     try {
@@ -230,6 +233,11 @@ export default function TaskList({
           timerState?.taskId === task.id && timerState?.isRunning;
         const displayUrl = getDisplayUrl(task);
         const urlCopied = copied?.id === task.id && copied?.type === "url";
+        const emailCopied = copied?.id === task.id && copied?.type === "email";
+        const usernameCopied =
+          copied?.id === task.id && copied?.type === "username";
+        const passwordCopied =
+          copied?.id === task.id && copied?.type === "password";
         const locked = isLocked(task);
         const isThisTaskDisabled = locked || isTaskDisabled(task.id);
 
@@ -244,7 +252,7 @@ export default function TaskList({
               <div className="flex flex-col lg:flex-row gap-10 items-start lg:items-center w-full">
                 {/* Left: Basic Info */}
                 <div className="flex items-start gap-4 min-w-0">
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 space-y-4">
                     <PerformanceBadge rating={task.performanceRating as any} />
 
                     <div className="flex items-center gap-3 mb-3">
@@ -308,23 +316,61 @@ export default function TaskList({
                 {/* Center: Credentials & URL */}
                 <div className="flex-1 min-w-0 w-full lg:w-auto">
                   <div className="space-y-3 bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800/50 dark:to-slate-800/50 rounded-xl p-4 border-2 border-gray-200 dark:border-gray-700">
-                    <div className="text-xs">
+                    <div className="text-sm flex items-center gap-2">
                       <span className="font-bold text-gray-800 dark:text-gray-200">
                         Email:
                       </span>{" "}
                       <span className="font-mono text-gray-700 dark:text-gray-300 break-all bg-white dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-600">
                         {task.email || "N/A"}
                       </span>
+                      {!!task.email && !locked && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          onClick={() =>
+                            handleCopy(task.email!, task.id, "email")
+                          }
+                          aria-label="Copy email"
+                          title="Copy email"
+                        >
+                          {emailCopied ? (
+                            <Check className="h-3 w-3 text-emerald-600" />
+                          ) : (
+                            <Copy className="h-3 w-3 text-gray-600" />
+                          )}
+                        </Button>
+                      )}
                     </div>
-                    <div className="text-xs">
+                    <div className="text-sm flex items-center gap-2">
                       <span className="font-bold text-gray-800 dark:text-gray-200">
                         Username:
                       </span>{" "}
                       <span className="font-mono text-gray-700 dark:text-gray-300 break-all bg-white dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-600">
                         {task.username || "N/A"}
                       </span>
+                      {!!task.username && !locked && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          onClick={() =>
+                            handleCopy(task.username!, task.id, "username")
+                          }
+                          aria-label="Copy username"
+                          title="Copy username"
+                        >
+                          {usernameCopied ? (
+                            <Check className="h-3 w-3 text-emerald-600" />
+                          ) : (
+                            <Copy className="h-3 w-3 text-gray-600" />
+                          )}
+                        </Button>
+                      )}
                     </div>
-                    <div className="text-xs flex items-center gap-2">
+                    <div className="text-sm flex items-center gap-2">
                       <span className="font-bold text-gray-800 dark:text-gray-200">
                         Password:
                       </span>{" "}
@@ -362,11 +408,30 @@ export default function TaskList({
                           )}
                         </Button>
                       )}
+                      {task.password && !locked && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          onClick={() =>
+                            handleCopy(task.password!, task.id, "password")
+                          }
+                          aria-label="Copy password"
+                          title="Copy password"
+                        >
+                          {passwordCopied ? (
+                            <Check className="h-3 w-3 text-emerald-600" />
+                          ) : (
+                            <Copy className="h-3 w-3 text-gray-600" />
+                          )}
+                        </Button>
+                      )}
                     </div>
 
                     {displayUrl && (
                       <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 rounded-xl border-2 border-blue-200 dark:border-blue-700">
-                        <div className="text-xs flex items-start gap-2">
+                        <div className="text-sm flex items-start gap-2">
                           <span className="font-bold text-blue-800 dark:text-blue-300 flex-shrink-0">
                             URL:
                           </span>
@@ -438,6 +503,11 @@ export default function TaskList({
 
         const displayUrl = getDisplayUrl(task);
         const urlCopied = copied?.id === task.id && copied?.type === "url";
+        const emailCopied = copied?.id === task.id && copied?.type === "email";
+        const usernameCopied =
+          copied?.id === task.id && copied?.type === "username";
+        const passwordCopied =
+          copied?.id === task.id && copied?.type === "password";
         const locked = isLocked(task);
         const isThisTaskDisabled = locked || isTaskDisabled(task.id);
         const performanceRating = task.performanceRating;
@@ -558,21 +628,59 @@ export default function TaskList({
 
                 {/* Credentials */}
                 <div className="space-y-3 bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800/50 dark:to-slate-800/50 rounded-2xl p-4 border-2 border-gray-200 dark:border-gray-700">
-                  <div className="text-sm">
+                  <div className="text-sm flex items-center gap-2">
                     <span className="font-bold text-gray-800 dark:text-gray-200">
                       Email:
                     </span>{" "}
                     <span className="font-mono text-gray-700 dark:text-gray-300 break-all bg-white dark:bg-gray-800 px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-600">
                       {task.email || "N/A"}
                     </span>
+                    {!!task.email && !locked && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        onClick={() =>
+                          handleCopy(task.email!, task.id, "email")
+                        }
+                        aria-label="Copy email"
+                        title="Copy email"
+                      >
+                        {emailCopied ? (
+                          <Check className="h-4 w-4 text-emerald-600" />
+                        ) : (
+                          <Copy className="h-4 w-4 text-gray-600" />
+                        )}
+                      </Button>
+                    )}
                   </div>
-                  <div className="text-sm">
+                  <div className="text-sm flex items-center gap-2">
                     <span className="font-bold text-gray-800 dark:text-gray-200">
                       Username:
                     </span>{" "}
                     <span className="font-mono text-gray-700 dark:text-gray-300 break-all bg-white dark:bg-gray-800 px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-600">
                       {task.username || "N/A"}
                     </span>
+                    {!!task.username && !locked && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        onClick={() =>
+                          handleCopy(task.username!, task.id, "username")
+                        }
+                        aria-label="Copy username"
+                        title="Copy username"
+                      >
+                        {usernameCopied ? (
+                          <Check className="h-4 w-4 text-emerald-600" />
+                        ) : (
+                          <Copy className="h-4 w-4 text-gray-600" />
+                        )}
+                      </Button>
+                    )}
                   </div>
                   <div className="text-sm flex items-center gap-2">
                     <span className="font-bold text-gray-800 dark:text-gray-200">
@@ -609,6 +717,25 @@ export default function TaskList({
                           <EyeOff className="h-4 w-4 text-gray-600" />
                         ) : (
                           <Eye className="h-4 w-4 text-gray-600" />
+                        )}
+                      </Button>
+                    )}
+                    {task.password && !locked && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        onClick={() =>
+                          handleCopy(task.password!, task.id, "password")
+                        }
+                        aria-label="Copy password"
+                        title="Copy password"
+                      >
+                        {passwordCopied ? (
+                          <Check className="h-4 w-4 text-emerald-600" />
+                        ) : (
+                          <Copy className="h-4 w-4 text-gray-600" />
                         )}
                       </Button>
                     )}

@@ -33,9 +33,9 @@ const fetcher = async <T = any>(url: string): Promise<T> => {
 };
 
 // --- Unread count (badge) ---
-export function useUnreadCount() {
+export function useUnreadCount(apiBase: string = "/api/notifications") {
   const { data, error, isLoading, mutate } = useSWR<UnreadCountResp>(
-    "/api/notifications/unread-count",
+    `${apiBase}/unread-count`,
     fetcher,
     {
       refreshInterval: 8000, // poll
@@ -56,8 +56,11 @@ export function useUnreadCount() {
 /**
  * params উদাহরণ: "onlyUnread=1&take=20" বা "onlyUnread=0&take=50"
  */
-export function useNotifications(params = "onlyUnread=0&take=20") {
-  const key = `/api/notifications?${params}`;
+export function useNotifications(
+  params: string = "onlyUnread=0&take=20",
+  apiBase: string = "/api/notifications"
+) {
+  const key = `${apiBase}?${params}`;
   const { data, error, isLoading, mutate } = useSWR<NotificationItem[]>(
     key,
     fetcher
@@ -72,8 +75,8 @@ export function useNotifications(params = "onlyUnread=0&take=20") {
 }
 
 // --- Actions ---
-export async function markOneRead(id: number) {
-  await fetch("/api/notifications/mark-read", {
+export async function markOneRead(id: number, apiBase: string = "/api/notifications") {
+  await fetch(`${apiBase}/mark-read`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -82,16 +85,16 @@ export async function markOneRead(id: number) {
 }
 
 // সবগুলো রিড
-export async function markAllRead() {
-  await fetch("/api/notifications/mark-all-read", {
+export async function markAllRead(apiBase: string = "/api/notifications") {
+  await fetch(`${apiBase}/mark-all-read`, {
     method: "PATCH",
     credentials: "include",
   });
 }
 
 // একটাকে আনরেড (UI টগল দরকার হলে)
-export async function markUnread(id: number) {
-  await fetch(`/api/notifications/${id}/mark-unread`, {
+export async function markUnread(id: number, apiBase: string = "/api/notifications") {
+  await fetch(`${apiBase}/${id}/mark-unread`, {
     method: "PATCH",
     credentials: "include",
   });
