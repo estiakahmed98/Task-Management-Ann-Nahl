@@ -1,4 +1,4 @@
-// app/chat/page.tsx
+// app/am/chat/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -92,6 +92,11 @@ export default function ChatPage() {
       const { id } = await openDM(userId);
       await refetchConvos();
       setActiveId(id);
+    } catch (err: any) {
+      const message = err?.message || "Failed to open DM";
+      // Surface a clear reason to the user (e.g., Forbidden)
+      alert(message);
+      console.error("openDM error:", err);
     } finally {
       setOpening(null);
     }
@@ -121,8 +126,8 @@ export default function ChatPage() {
           ) : (
             <ul className="space-y-1 overflow-auto max-h-[38vh] pr-1">
               {conversations.map((c: any) => {
-                const title = getConversationTitle(c, me?.id);
-                const subtitle = getConversationSubtitle(c, me?.id);
+                const title = getConversationTitle(c, me?.id ?? undefined);
+                const subtitle = getConversationSubtitle(c, me?.id ?? undefined);
                 return (
                   <li key={c.id}>
                     <button

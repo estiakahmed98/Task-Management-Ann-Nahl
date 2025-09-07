@@ -137,6 +137,44 @@ export async function POST(req: Request, ctx: Ctx) {
     }
   }
 
+  // Extra policy: if sender is an AM, only allow DM to admins/managers or AM's clients
+  if (["am", "account manager", "account_manager"].includes(roleName)) {
+    const conv = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+      select: {
+        type: true,
+        participants: {
+          select: {
+            user: { select: { id: true, role: { select: { name: true } }, clientId: true } },
+          },
+        },
+      },
+    });
+    const isDM = conv?.type === "dm";
+    if (!isDM) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+    const others = (conv?.participants || [])
+      .map((p) => (p as any).user)
+      .filter((u: any) => u?.id !== me.id);
+    if (others.length !== 1) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+    const other = others[0];
+    const otherRole = other?.role?.name?.toLowerCase?.() || "";
+    let allowed = otherRole === "admin" || otherRole === "manager";
+    if (!allowed) {
+      const tClientId = (other as any)?.clientId || null;
+      if (tClientId) {
+        const count = await prisma.client.count({ where: { id: tClientId, amId: me.id } });
+        allowed = count > 0;
+      }
+    }
+    if (!allowed) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+  }
+
   const body = await req.json().catch(() => ({}));
   const type = (body?.type as "text" | "file" | "image" | "system") || "text";
   const content = (body?.content as string | undefined)?.trim() || "";

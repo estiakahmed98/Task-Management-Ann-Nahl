@@ -30,6 +30,7 @@ export async function POST(req: Request) {
     if (!myClientId) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
+
     const client = await prisma.client.findUnique({
       where: { id: myClientId },
       select: { amId: true },
@@ -46,6 +47,52 @@ export async function POST(req: Request) {
   }
 
   const uniqueMemberIds = Array.from(new Set([...memberIds, me.id]));
+
+  // Enforce: Agent may only create DM and cannot target AM/account manager or client
+  if (roleName === "agent") {
+    if (type !== "dm") {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+    const others = uniqueMemberIds.filter((id) => id !== me.id);
+    if (others.length !== 1) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+    const otherId = others[0];
+    const target = await prisma.user.findUnique({ where: { id: otherId }, include: { role: true } });
+    const targetRole = target?.role?.name?.toLowerCase?.() || "";
+    if (["client", "am", "account manager", "account_manager"].includes(targetRole)) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+  }
+
+  // Enforce: AM may only create DM with allowed targets (admin/manager or AM's client)
+  if (["am", "account manager", "account_manager"].includes(roleName)) {
+    // Only DM allowed
+    if (type !== "dm") {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+    const others = uniqueMemberIds.filter((id) => id !== me.id);
+    if (others.length !== 1) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+    const otherId = others[0];
+    const target = await prisma.user.findUnique({ where: { id: otherId }, include: { role: true } });
+    if (!target) {
+      return NextResponse.json({ message: "Invalid member" }, { status: 400 });
+    }
+    const targetRole = target.role?.name?.toLowerCase?.() || "";
+    let allowed = targetRole === "admin" || targetRole === "manager";
+    if (!allowed) {
+      const tClientId = (target as any)?.clientId || null;
+      if (tClientId) {
+        const count = await prisma.client.count({ where: { id: tClientId, amId: me.id } });
+        allowed = count > 0;
+      }
+    }
+    if (!allowed) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+  }
 
   const conv = await prisma.conversation.create({
     data: {

@@ -51,7 +51,14 @@ export async function openDM(userId: string): Promise<{ id: string }> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ userId }),
   });
-  if (!res.ok) throw new Error("Failed to open DM");
+  if (!res.ok) {
+    let message = "Failed to open DM";
+    try {
+      const data = await res.json();
+      message = data?.message || data?.error || message;
+    } catch {}
+    throw new Error(message);
+  }
   return res.json();
 }
 
