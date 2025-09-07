@@ -389,17 +389,17 @@ model AssignmentSiteAssetSetting {
 
 // ========== TASKS ==========
 model Task {
-  id                  String  @id
-  assignmentId        String?
-  clientId            String?
-  templateSiteAssetId Int?
-  categoryId          String?
-  assignedToId        String?
+  id                    String  @id
+  assignmentId          String?
+  clientId              String?
+  templateSiteAssetId   Int?
+  categoryId            String?
+  assignedToId          String?
 
   name                  String
-  priority              TaskPriority       @default(medium)
+  priority              TaskPriority     @default(medium)
   dueDate               DateTime?
-  status                TaskStatus         @default(pending)
+  status                TaskStatus       @default(pending)
   idealDurationMinutes  Int?
   actualDurationMinutes Int?
   performanceRating     PerformanceRating?
@@ -410,21 +410,27 @@ model Task {
   notes                 String?
   reassignNotes         String?
   completedAt           DateTime?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
 
-  assignment        Assignment?        @relation(fields: [assignmentId], references: [id])
-  client            Client?            @relation(fields: [clientId], references: [id])
-  templateSiteAsset TemplateSiteAsset? @relation(fields: [templateSiteAssetId], references: [id])
-  category          TaskCategory?      @relation(fields: [categoryId], references: [id])
-  assignedTo        User?              @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  // ✅ QC data in one place (timer/manual scores, reviewerId, reviewedAt, notes, total)
+  qcReview              Json?
+  // ✅ Cached total for fast listing/sorting (0–100)
+  qcTotalScore          Int?             @default(0)
 
-  comments      Comment[]
-  reports       Report[]
-  notifications Notification[]
+  assignment            Assignment?        @relation(fields: [assignmentId], references: [id])
+  client                Client?            @relation(fields: [clientId], references: [id])
+  templateSiteAsset     TemplateSiteAsset? @relation(fields: [templateSiteAssetId], references: [id])
+  category              TaskCategory?      @relation(fields: [categoryId], references: [id])
+  assignedTo            User?              @relation("AssignedTasks", fields: [assignedToId], references: [id])
 
-  conversations Conversation[] @relation("TaskConversations")
+  comments              Comment[]
+  reports               Report[]
+  notifications         Notification[]
+
+  conversations         Conversation[]     @relation("TaskConversations")
 }
+
 
 // ========== COMMENTS ==========
 model Comment {
