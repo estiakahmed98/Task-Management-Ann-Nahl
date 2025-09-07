@@ -324,7 +324,7 @@ export default function AgentFormPage({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="container mx-auto py-4 px-4">
+      <div className="p-4">
         <div className="w-full mx-auto space-y-8">
           {/* Enhanced Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
