@@ -1,5 +1,5 @@
 import Notifications from "@/components/Notifications";
 
 export default function NotificationsPage() {
-    return <Notifications />;
+    return <Notifications apiBase="/api/am/notifications" />;
 }

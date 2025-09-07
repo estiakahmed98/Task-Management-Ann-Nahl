@@ -134,7 +134,7 @@ export default function AllAgentsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 p-4">
         <div className="container mx-auto py-8 px-4">
           <div className="flex items-center justify-center min-h-[500px]">
             <div className="text-center space-y-6">
@@ -165,7 +165,7 @@ export default function AllAgentsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="container mx-auto py-8 px-4">
+      <div className="p-4">
         <div className="flex flex-col space-y-8">
           {/* Enhanced Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
