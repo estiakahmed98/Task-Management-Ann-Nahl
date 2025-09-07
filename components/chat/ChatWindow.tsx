@@ -7,6 +7,7 @@ import { pusherClient } from "@/lib/pusher/client";
 import { useUserSession } from "@/lib/hooks/use-user-session";
 import MessageBubble from "./MessageBubble";
 import ForwardModal from "./ForwardModal";
+import { BackgroundGradient } from "../ui/background-gradient";
 
 function near(aIso: string, bIso: string, ms = 8000) {
   return Math.abs(new Date(aIso).getTime() - new Date(bIso).getTime()) <= ms;
@@ -354,14 +355,14 @@ export default function ChatWindow({
       id: `opt-${Date.now()}`,
       content,
       createdAt: nowIso,
-      sender: user
+      sender: user?.id
         ? {
             id: user.id,
             name: user.name,
-            email: (user as any)?.email,
+            email: user.email,
             image: user.image,
           }
-        : undefined,
+        : null,
       type: "text",
       receipts: user?.id
         ? [{ userId: user.id, deliveredAt: nowIso, readAt: nowIso }]
@@ -422,7 +423,7 @@ export default function ChatWindow({
         <div className="font-semibold">
           {isDM
             ? `Chat with ${
-                otherUser?.name || otherUser?.email || "Direct Message"
+                otherUser?.name || otherUser?.email
               }`
             : convDetail?.title || "Conversation"}
         </div>
@@ -453,7 +454,7 @@ export default function ChatWindow({
           <MessageBubble
             key={m.id}
             msg={m}
-            meId={user?.id}
+            meId={user?.id ?? undefined}
             onForward={openForward}
             showSenderName={!isDM}
           />
@@ -485,14 +486,16 @@ export default function ChatWindow({
             }
           }}
         />
-        <button
-          onClick={handleSend}
-          disabled={!text.trim()}
-          className="px-4 py-2 rounded bg-black text-white disabled:opacity-50 inline-flex items-center gap-2"
-        >
-          <Send className="h-4 w-4" />
-          Send
-        </button>
+        <BackgroundGradient>
+          <button
+            onClick={handleSend}
+            disabled={!text.trim()}
+            className="px-4 py-2 rounded bg-transparent text-white disabled:opacity-50 inline-flex items-center gap-2"
+          >
+            <Send className="h-4 w-4" />
+            Send
+          </button>
+        </BackgroundGradient>
       </div>
 
       {/* Forward Modal */}
