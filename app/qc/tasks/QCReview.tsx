@@ -27,6 +27,7 @@ import {
   AlertCircle,
   CheckCircle,
   ExternalLink,
+  Star,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useUserSession } from "@/lib/hooks/use-user-session";
@@ -44,7 +45,6 @@ type AgentLite = {
 type ClientLite = { id: string; name: string; company?: string };
 type CategoryLite = { id: string; name: string };
 
-// ✅ Optional qc fields added
 type QCReviewBlob = {
   timerScore: number; // 40..70
   keyword: number; // 0..5
@@ -59,6 +59,8 @@ type QCReviewBlob = {
   notes?: string | null;
 } | null;
 
+type Perf = "Excellent" | "Good" | "Average" | "Lazy";
+
 type TaskRow = {
   id: string;
   name: string;
@@ -70,7 +72,7 @@ type TaskRow = {
   updatedAt: string;
   notes: string | null;
   completionLink: string | null;
-  performanceRating: "Excellent" | "Good" | "Average" | "Lazy" | null;
+  performanceRating: Perf | null;
   idealDurationMinutes: number | null;
   actualDurationMinutes: number | null;
   completionPercentage: number;
@@ -80,10 +82,99 @@ type TaskRow = {
   assignment?: { template?: { name: string; package?: { name: string } } };
   templateSiteAsset?: { name: string; type: string };
 
-  // ✅ NEW
+  // QC fields (optional)
   qcTotalScore?: number | null;
   qcReview?: QCReviewBlob;
 };
+
+/* ----------------------------
+   Small helper components
+----------------------------- */
+
+// 5-star input (0..5). Accessible + keyboardable.
+function StarRating({
+  label,
+  value,
+  onChange,
+  id,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  id?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between border rounded px-3 py-2">
+      <label htmlFor={id} className="text-sm text-gray-700">
+        {label}
+      </label>
+      <div
+        id={id}
+        className="flex items-center gap-1"
+        role="radiogroup"
+        aria-label={label}
+      >
+        {[1, 2, 3, 4, 5].map((i) => {
+          const active = i <= value;
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onChange(i === value ? i - 1 : i)} // toggle down by one if clicking same
+              onKeyDown={(e) => {
+                if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+                  e.preventDefault();
+                  onChange(Math.min(5, value + 1));
+                } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+                  e.preventDefault();
+                  onChange(Math.max(0, value - 1));
+                }
+              }}
+              className="p-1 outline-none focus:ring-2 focus:ring-blue-500 rounded"
+              role="radio"
+              aria-checked={active}
+              aria-label={`${i} star${i > 1 ? "s" : ""}`}
+            >
+              <Star
+                className={`h-5 w-5 ${
+                  active ? "text-yellow-500" : "text-gray-300"
+                }`}
+                fill={active ? "currentColor" : "none"}
+              />
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------
+   Utility scoring helpers
+----------------------------- */
+
+const timerScoreFromRating = (r?: Perf | null) =>
+  r === "Excellent"
+    ? 70
+    : r === "Good"
+    ? 60
+    : r === "Average"
+    ? 50
+    : r === "Lazy"
+    ? 40
+    : 0;
+
+// Fallback derive if server forgot to set performanceRating
+function derivePerformanceRating(
+  ideal?: number | null,
+  actual?: number | null
+): Perf | undefined {
+  if (!ideal || !actual || ideal <= 0) return undefined;
+  if (actual <= ideal * 0.9) return "Excellent";
+  if (actual <= ideal * 0.95) return "Good";
+  if (actual <= ideal) return "Average";
+  return "Lazy";
+}
 
 export function QCReview() {
   // -------- Filters --------
@@ -102,17 +193,17 @@ export function QCReview() {
   const [loading, setLoading] = useState<boolean>(false);
   const { user } = useUserSession();
 
-  // -------- Approve modal (popup before approve) --------
+  // -------- Approve modal --------
   const [approveDialog, setApproveDialog] = useState<{
     open: boolean;
     task: TaskRow | null;
     loading: boolean;
   }>({ open: false, task: null, loading: false });
 
-  // QC inputs in modal
-  const [rating, setRating] = useState<
-    "Excellent" | "Good" | "Average" | "Lazy" | undefined
-  >(undefined);
+  // Auto-picked system rating (read-only in UI)
+  const [rating, setRating] = useState<Perf | undefined>(undefined);
+
+  // 6 manual dimensions via stars
   const [scores, setScores] = useState({
     keyword: 0,
     contentQuality: 0,
@@ -250,20 +341,7 @@ export function QCReview() {
     }
   };
 
-  // -------- Helpers for QC scoring preview --------
-  const timerScoreFromRating = (
-    r?: "Excellent" | "Good" | "Average" | "Lazy"
-  ) =>
-    r === "Excellent"
-      ? 70
-      : r === "Good"
-      ? 60
-      : r === "Average"
-      ? 50
-      : r === "Lazy"
-      ? 40
-      : 0;
-
+  // -------- Live QC total --------
   const liveTotal = useMemo(() => {
     const t = timerScoreFromRating(rating);
     const m =
@@ -276,11 +354,26 @@ export function QCReview() {
     return Math.min(100, Math.max(0, t + m));
   }, [rating, scores]);
 
-  // -------- Approve flow (open popup, then submit) --------
+  // -------- Approve flow --------
   const handleApprove = (task: TaskRow) => {
     setApproveDialog({ open: true, task, loading: false });
-    // Prefill rating with agent-side performanceRating if you want; or force QC to choose:
-    setRating(undefined); // QC must pick
+
+    // Pick system-provided rating automatically (read-only)
+    const sysRating =
+      task.performanceRating ??
+      derivePerformanceRating(
+        task.idealDurationMinutes,
+        task.actualDurationMinutes
+      );
+
+    setRating(sysRating);
+    if (!sysRating) {
+      toast.warning(
+        "No performance rating found from system. Please ensure the task has ideal & actual durations."
+      );
+    }
+
+    // reset stars & notes
     setScores({
       keyword: 0,
       contentQuality: 0,
@@ -295,7 +388,7 @@ export function QCReview() {
   const handleApproveTask = async () => {
     if (!approveDialog.task) return;
     if (!rating) {
-      toast.error("Please choose a performance rating before approving.");
+      toast.error("System rating not available. Cannot approve.");
       return;
     }
     setApproveDialog((p) => ({ ...p, loading: true }));
@@ -304,7 +397,9 @@ export function QCReview() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          // ✅ auto performance rating (system)
           performanceRating: rating,
+          // ✅ star ratings (0..5)
           keyword: scores.keyword,
           contentQuality: scores.contentQuality,
           image: scores.image,
@@ -320,11 +415,11 @@ export function QCReview() {
       await r.json();
 
       toast.success(
-        `Task "${approveDialog.task.name}" approved with ${rating}.`
+        `Task "${approveDialog.task.name}" approved. Rating: ${rating}.`
       );
       setApprovedMap((m) => ({ ...m, [approveDialog.task!.id]: true }));
       setApproveDialog({ open: false, task: null, loading: false });
-      // Reset local QC inputs
+      // reset local state
       setRating(undefined);
       setScores({
         keyword: 0,
@@ -450,7 +545,7 @@ export function QCReview() {
         </CardContent>
       </Card>
 
-      {/* Approve Modal (popup first, then submit) */}
+      {/* Approve Modal */}
       <Dialog
         open={approveDialog.open}
         onOpenChange={(open) => setApproveDialog((p) => ({ ...p, open }))}
@@ -462,7 +557,7 @@ export function QCReview() {
 
           {approveDialog.task && (
             <div className="space-y-4">
-              {/* Task summary */}
+              {/* Summary */}
               <div className="rounded-md p-3 border bg-gray-50 border-gray-200">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -496,82 +591,69 @@ export function QCReview() {
                       </div>
                     )}
                   </div>
-                  {approveDialog.task.performanceRating && (
-                    <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700">
-                      Agent Rating: {approveDialog.task.performanceRating}
-                    </div>
-                  )}
+
+                  {/* Auto system rating (read-only) */}
+                  <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700">
+                    System Rating: {rating ?? "N/A"}
+                  </div>
                 </div>
               </div>
 
-              {/* Performance rating (required) */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Performance Rating (required)
-                </label>
-                <select
-                  className="w-full border rounded px-3 py-2 text-sm"
-                  value={rating ?? ""}
-                  onChange={(e) =>
-                    setRating(
-                      (e.target.value as
-                        | "Excellent"
-                        | "Good"
-                        | "Average"
-                        | "Lazy"
-                        | "") || undefined
-                    )
-                  }
-                >
-                  <option value="" disabled>
-                    Choose rating
-                  </option>
-                  <option value="Excellent">Excellent (≤90%)</option>
-                  <option value="Good">Good (≤95%)</option>
-                  <option value="Average">Average (≤100%)</option>
-                  <option value="Lazy">Lazy (&gt;100%)</option>
-                </select>
+              {/* Auto Timer score overview */}
+              <div className="rounded-md border bg-gray-50 p-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span>Timer score (auto from system rating)</span>
+                  <span className="font-medium">
+                    {timerScoreFromRating(rating)} / 70
+                  </span>
+                </div>
               </div>
 
-              {/* Manual 6 inputs */}
+              {/* Star inputs for manual metrics */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[
-                  ["keyword", "Keyword (0–5)"],
-                  ["contentQuality", "Content Quality (0–5)"],
-                  ["image", "Image (0–5)"],
-                  ["seo", "SEO (0–5)"],
-                  ["grammar", "Grammar (0–5)"],
-                  ["humanization", "Humanization (0–5)"],
-                ].map(([key, label]) => (
-                  <div
-                    key={key}
-                    className="flex items-center justify-between border rounded px-3 py-2"
-                  >
-                    <label className="text-sm text-gray-700">{label}</label>
-                    <select
-                      className="text-sm border rounded px-2 py-1"
-                      value={scores[key as keyof typeof scores]}
-                      onChange={(e) =>
-                        setScores((s) => ({
-                          ...s,
-                          [key]: Math.max(
-                            0,
-                            Math.min(5, parseInt(e.target.value || "0", 10))
-                          ),
-                        }))
-                      }
-                    >
-                      {[0, 1, 2, 3, 4, 5].map((n) => (
-                        <option key={n} value={n}>
-                          {n}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
+                <StarRating
+                  label="Keyword (0–5)"
+                  value={scores.keyword}
+                  onChange={(v) => setScores((s) => ({ ...s, keyword: v }))}
+                  id="qc-keyword"
+                />
+                <StarRating
+                  label="Content Quality (0–5)"
+                  value={scores.contentQuality}
+                  onChange={(v) =>
+                    setScores((s) => ({ ...s, contentQuality: v }))
+                  }
+                  id="qc-content"
+                />
+                <StarRating
+                  label="Image (0–5)"
+                  value={scores.image}
+                  onChange={(v) => setScores((s) => ({ ...s, image: v }))}
+                  id="qc-image"
+                />
+                <StarRating
+                  label="SEO (0–5)"
+                  value={scores.seo}
+                  onChange={(v) => setScores((s) => ({ ...s, seo: v }))}
+                  id="qc-seo"
+                />
+                <StarRating
+                  label="Grammar (0–5)"
+                  value={scores.grammar}
+                  onChange={(v) => setScores((s) => ({ ...s, grammar: v }))}
+                  id="qc-grammar"
+                />
+                <StarRating
+                  label="Humanization (0–5)"
+                  value={scores.humanization}
+                  onChange={(v) =>
+                    setScores((s) => ({ ...s, humanization: v }))
+                  }
+                  id="qc-human"
+                />
               </div>
 
-              {/* Notes (optional) */}
+              {/* Notes */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">
                   Notes (optional)
@@ -585,15 +667,9 @@ export function QCReview() {
                 />
               </div>
 
-              {/* Live total & bar */}
+              {/* Live total */}
               <div className="rounded-md border bg-gray-50 p-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <span>Timer score (auto)</span>
-                  <span className="font-medium">
-                    {timerScoreFromRating(rating)} / 70
-                  </span>
-                </div>
-                <div className="mt-1 flex items-center justify-between">
                   <span>Manual (sum)</span>
                   <span className="font-medium">
                     {scores.keyword +
