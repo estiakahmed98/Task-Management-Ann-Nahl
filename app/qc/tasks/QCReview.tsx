@@ -25,7 +25,6 @@ import {
   AlertCircle,
   CheckCircle,
   ExternalLink,
-  Star,
   TrendingUp,
   Clock,
   Award,
@@ -34,6 +33,10 @@ import { toast } from "sonner";
 import { useUserSession } from "@/lib/hooks/use-user-session";
 import { FilterSection } from "@/components/qc-review/filter-section";
 import { TaskCard } from "@/components/qc-review/task-card";
+
+/* =========================
+   Types
+========================= */
 
 type AgentLite = {
   id: string;
@@ -45,6 +48,8 @@ type AgentLite = {
 };
 type ClientLite = { id: string; name: string; company?: string };
 type CategoryLite = { id: string; name: string };
+
+type Perf = "Excellent" | "Good" | "Average" | "Lazy";
 
 type QCReviewBlob = {
   timerScore: number; // 40..70
@@ -60,7 +65,14 @@ type QCReviewBlob = {
   notes?: string | null;
 } | null;
 
-type Perf = "Excellent" | "Good" | "Average" | "Lazy";
+export type QCScores = {
+  keyword: number;
+  contentQuality: number;
+  image: number;
+  seo: number;
+  grammar: number;
+  humanization: number;
+};
 
 type TaskRow = {
   id: string;
@@ -88,79 +100,18 @@ type TaskRow = {
   qcReview?: QCReviewBlob;
 };
 
-/* ----------------------------
-   Small helper components
------------------------------ */
+/* =========================
+   Helpers
+========================= */
 
-function StarRating({
-  label,
-  value,
-  onChange,
-  id,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  id?: string;
-}) {
-  const [hoverValue, setHoverValue] = useState<number>(0);
-
-  return (
-    <div className="group flex items-center justify-between bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-xl px-3 py-2 transition-all duration-200 hover:shadow-md hover:border-slate-300">
-      <label
-        htmlFor={id}
-        className="text-sm font-medium text-slate-700 select-none"
-      >
-        {label}
-      </label>
-      <div
-        id={id}
-        className="flex items-center gap-1"
-        role="radiogroup"
-        aria-label={label}
-        onMouseLeave={() => setHoverValue(0)}
-      >
-        {[1, 2, 3, 4, 5].map((i) => {
-          const active = i <= (hoverValue || value);
-          return (
-            <button
-              key={i}
-              type="button"
-              onClick={() => onChange(i === value ? i - 1 : i)}
-              onMouseEnter={() => setHoverValue(i)}
-              onKeyDown={(e) => {
-                if (e.key === "ArrowRight" || e.key === "ArrowUp") {
-                  e.preventDefault();
-                  onChange(Math.min(5, value + 1));
-                } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
-                  e.preventDefault();
-                  onChange(Math.max(0, value - 1));
-                }
-              }}
-              className="p-1 outline-none focus:ring-2 focus:ring-blue-500 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95"
-              role="radio"
-              aria-checked={active}
-              aria-label={`${i} star${i > 1 ? "s" : ""}`}
-            >
-              <Star
-                className={`h-4 w-4 transition-all duration-200 ${
-                  active
-                    ? "text-amber-400 drop-shadow-sm"
-                    : "text-slate-300 hover:text-amber-200"
-                }`}
-                fill={active ? "currentColor" : "none"}
-              />
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/* ----------------------------
-   Utility scoring helpers
------------------------------ */
+const defaultScores: QCScores = {
+  keyword: 0,
+  contentQuality: 0,
+  image: 0,
+  seo: 0,
+  grammar: 0,
+  humanization: 0,
+};
 
 const timerScoreFromRating = (r?: Perf | null) =>
   r === "Excellent"
@@ -185,6 +136,10 @@ function derivePerformanceRating(
   return "Lazy";
 }
 
+/* =========================
+   Component
+========================= */
+
 export function QCReview() {
   // -------- Filters --------
   const [agentId, setAgentId] = useState<string>("all");
@@ -202,6 +157,11 @@ export function QCReview() {
   const [loading, setLoading] = useState<boolean>(false);
   const { user } = useUserSession();
 
+  // Map of taskId -> current QC star scores (edited in TaskCard)
+  const [qcScoresByTask, setQcScoresByTask] = useState<
+    Record<string, QCScores>
+  >({});
+
   // -------- Approve modal --------
   const [approveDialog, setApproveDialog] = useState<{
     open: boolean;
@@ -209,18 +169,7 @@ export function QCReview() {
     loading: boolean;
   }>({ open: false, task: null, loading: false });
 
-  // Auto-picked system rating (read-only in UI)
-  const [rating, setRating] = useState<Perf | undefined>(undefined);
-
-  // 6 manual dimensions via stars
-  const [scores, setScores] = useState({
-    keyword: 0,
-    contentQuality: 0,
-    image: 0,
-    seo: 0,
-    grammar: 0,
-    humanization: 0,
-  });
+  // Only notes remain in modal
   const [qcNotes, setQcNotes] = useState<string>("");
 
   const [approvedMap, setApprovedMap] = useState<Record<string, boolean>>({});
@@ -350,71 +299,63 @@ export function QCReview() {
     }
   };
 
-  // -------- Live QC total --------
-  const liveTotal = useMemo(() => {
-    const t = timerScoreFromRating(rating);
-    const m =
-      scores.keyword +
-      scores.contentQuality +
-      scores.image +
-      scores.seo +
-      scores.grammar +
-      scores.humanization;
-    return Math.min(100, Math.max(0, t + m));
-  }, [rating, scores]);
-
   // -------- Approve flow --------
   const handleApprove = (task: TaskRow) => {
+    // open modal with just the notes field now
     setApproveDialog({ open: true, task, loading: false });
-
-    // Pick system-provided rating automatically (read-only)
-    const sysRating =
-      task.performanceRating ??
-      derivePerformanceRating(
-        task.idealDurationMinutes,
-        task.actualDurationMinutes
-      );
-
-    setRating(sysRating);
-    if (!sysRating) {
-      toast.warning(
-        "No performance rating found from system. Please ensure the task has ideal & actual durations."
-      );
-    }
-
-    // reset stars & notes
-    setScores({
-      keyword: 0,
-      contentQuality: 0,
-      image: 0,
-      seo: 0,
-      grammar: 0,
-      humanization: 0,
-    });
     setQcNotes("");
   };
 
   const handleApproveTask = async () => {
     if (!approveDialog.task) return;
-    if (!rating) {
-      toast.error("System rating not available. Cannot approve.");
+
+    // System performance rating (auto) — still required by your endpoint
+    const sysRating =
+      approveDialog.task.performanceRating ??
+      derivePerformanceRating(
+        approveDialog.task.idealDurationMinutes,
+        approveDialog.task.actualDurationMinutes
+      );
+
+    if (!sysRating) {
+      toast.error(
+        "System rating not available (ideal/actual missing). Cannot approve."
+      );
       return;
     }
+
     setApproveDialog((p) => ({ ...p, loading: true }));
     try {
+      const scores =
+        qcScoresByTask[approveDialog.task.id] ?? { ...defaultScores };
+
+      // Compute a total for record (optional)
+      const total =
+        Math.min(
+          100,
+          timerScoreFromRating(sysRating) +
+            scores.keyword +
+            scores.contentQuality +
+            scores.image +
+            scores.seo +
+            scores.grammar +
+            scores.humanization
+        ) || 0;
+
       const r = await fetch(`/api/tasks/${approveDialog.task.id}/approve`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          // ✅ auto performance rating (system)
-          performanceRating: rating,
-          // ✅ star ratings (0..5)
+          performanceRating: sysRating, // auto
+          // stars from TaskCard
           keyword: scores.keyword,
           contentQuality: scores.contentQuality,
           image: scores.image,
           seo: scores.seo,
           grammar: scores.grammar,
           humanization: scores.humanization,
+          // optional rollup
+          total,
           reviewerId: user?.id,
           notes: qcNotes || undefined,
         }),
@@ -424,20 +365,17 @@ export function QCReview() {
       await r.json();
 
       toast.success(
-        `Task "${approveDialog.task.name}" approved. Rating: ${rating}.`
+        `Task "${approveDialog.task.name}" approved. Rating: ${sysRating}.`
       );
       setApprovedMap((m) => ({ ...m, [approveDialog.task!.id]: true }));
-      setApproveDialog({ open: false, task: null, loading: false });
-      // reset local state
-      setRating(undefined);
-      setScores({
-        keyword: 0,
-        contentQuality: 0,
-        image: 0,
-        seo: 0,
-        grammar: 0,
-        humanization: 0,
+      // clear local scores for this task (optional)
+      setQcScoresByTask((m) => {
+        const next = { ...m };
+        delete next[approveDialog.task!.id];
+        return next;
       });
+
+      setApproveDialog({ open: false, task: null, loading: false });
       setQcNotes("");
       fetchTasks();
     } catch (e: any) {
@@ -564,6 +502,11 @@ export function QCReview() {
                         loading: false,
                       })
                     }
+                    // ⭐ pass/edit QC star scores here (lives per task)
+                    scores={qcScoresByTask[task.id] ?? { ...defaultScores }}
+                    onChangeScores={(next) =>
+                      setQcScoresByTask((m) => ({ ...m, [task.id]: next }))
+                    }
                   />
                 </div>
               ))}
@@ -597,6 +540,7 @@ export function QCReview() {
         </CardContent>
       </Card>
 
+      {/* ====== Approve Dialog (NOT showing star ratings anymore) ====== */}
       <Dialog
         open={approveDialog.open}
         onOpenChange={(open) => setApproveDialog((p) => ({ ...p, open }))}
@@ -615,6 +559,7 @@ export function QCReview() {
 
           {approveDialog.task && (
             <div className="space-y-4 py-1">
+              {/* Basic task block (kept minimal) */}
               <div className="rounded-2xl p-3 border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-slate-50 shadow-sm">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
@@ -657,87 +602,10 @@ export function QCReview() {
                       </div>
                     )}
                   </div>
-
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
-                    <Clock className="h-4 w-4 text-blue-600" />
-                    <div className="text-center">
-                      <div className="text-xs font-medium text-blue-600">
-                        System Rating
-                      </div>
-                      <div className="text-sm font-bold text-blue-700">
-                        {rating ?? "N/A"}
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-amber-50 to-orange-50 p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Award className="h-5 w-5 text-amber-600" />
-                    <span className="font-medium text-slate-700">
-                      Timer Score (Auto-calculated)
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-amber-700">
-                      {timerScoreFromRating(rating)}
-                    </div>
-                    <div className="text-xs text-amber-600">out of 70</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <h4 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                  <Star className="h-5 w-5 text-amber-500" />
-                  Quality Assessment
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  <StarRating
-                    label="Keyword Optimization"
-                    value={scores.keyword}
-                    onChange={(v) => setScores((s) => ({ ...s, keyword: v }))}
-                    id="qc-keyword"
-                  />
-                  <StarRating
-                    label="Content Quality"
-                    value={scores.contentQuality}
-                    onChange={(v) =>
-                      setScores((s) => ({ ...s, contentQuality: v }))
-                    }
-                    id="qc-content"
-                  />
-                  <StarRating
-                    label="Image Quality"
-                    value={scores.image}
-                    onChange={(v) => setScores((s) => ({ ...s, image: v }))}
-                    id="qc-image"
-                  />
-                  <StarRating
-                    label="SEO Optimization"
-                    value={scores.seo}
-                    onChange={(v) => setScores((s) => ({ ...s, seo: v }))}
-                    id="qc-seo"
-                  />
-                  <StarRating
-                    label="Grammar & Style"
-                    value={scores.grammar}
-                    onChange={(v) => setScores((s) => ({ ...s, grammar: v }))}
-                    id="qc-grammar"
-                  />
-                  <StarRating
-                    label="Humanization"
-                    value={scores.humanization}
-                    onChange={(v) =>
-                      setScores((s) => ({ ...s, humanization: v }))
-                    }
-                    id="qc-human"
-                  />
-                </div>
-              </div>
-
+              {/* ✅ KEEP ONLY THIS BLOCK FROM YOUR ORIGINAL MODAL */}
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                   <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
@@ -750,44 +618,6 @@ export function QCReview() {
                   className="resize-none border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl"
                   placeholder="Add any specific feedback or observations about this task..."
                 />
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-slate-700">
-                    Manual Assessment Score
-                  </span>
-                  <span className="text-lg font-bold text-blue-700">
-                    {scores.keyword +
-                      scores.contentQuality +
-                      scores.image +
-                      scores.seo +
-                      scores.grammar +
-                      scores.humanization}{" "}
-                    / 30
-                  </span>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-emerald-50 to-green-50 p-3">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-slate-700">
-                      Total QC Score
-                    </span>
-                    <span className="text-2xl font-bold text-emerald-700">
-                      {liveTotal}%
-                    </span>
-                  </div>
-                  <div className="h-3 w-full bg-slate-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-500 ease-out"
-                      style={{ width: `${liveTotal}%` }}
-                      aria-label={`QC total score ${liveTotal}%`}
-                      title={`QC total score ${liveTotal}%`}
-                    />
-                  </div>
-                </div>
               </div>
             </div>
           )}
@@ -803,7 +633,7 @@ export function QCReview() {
             </Button>
             <Button
               onClick={handleApproveTask}
-              disabled={approveDialog.loading || !rating}
+              disabled={approveDialog.loading || !approveDialog.task}
               className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
             >
               {approveDialog.loading ? (
@@ -817,6 +647,7 @@ export function QCReview() {
         </DialogContent>
       </Dialog>
 
+      {/* Reassign dialog unchanged */}
       <Dialog
         open={reassignDialog.open}
         onOpenChange={(open) => setReassignDialog((p) => ({ ...p, open }))}
@@ -887,7 +718,7 @@ export function QCReview() {
               ) : (
                 <RotateCcw className="h-4 w-4 mr-2" />
               )}
-              Reassign Task
+              Reassign
             </Button>
           </DialogFooter>
         </DialogContent>
