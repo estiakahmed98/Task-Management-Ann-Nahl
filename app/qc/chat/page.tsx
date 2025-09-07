@@ -121,8 +121,8 @@ export default function ChatPage() {
           ) : (
             <ul className="space-y-1 overflow-auto max-h-[38vh] pr-1">
               {conversations.map((c: any) => {
-                const title = getConversationTitle(c, me?.id);
-                const subtitle = getConversationSubtitle(c, me?.id);
+                const title = getConversationTitle(c, me?.id ?? undefined);
+                const subtitle = getConversationSubtitle(c, me?.id ?? undefined);
                 return (
                   <li key={c.id}>
                     <button
