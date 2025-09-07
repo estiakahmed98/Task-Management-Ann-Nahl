@@ -694,7 +694,7 @@ export function QCReview() {
                   <Star className="h-5 w-5 text-amber-500" />
                   Quality Assessment
                 </h4>
-                <div className="grid grid-cols-1 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <StarRating
                     label="Keyword Optimization"
                     value={scores.keyword}
@@ -752,37 +752,40 @@ export function QCReview() {
                 />
               </div>
 
+              <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-slate-700">
+                    Manual Assessment Score
+                  </span>
+                  <span className="text-lg font-bold text-blue-700">
+                    {scores.keyword +
+                      scores.contentQuality +
+                      scores.image +
+                      scores.seo +
+                      scores.grammar +
+                      scores.humanization}{" "}
+                    / 30
+                  </span>
+                </div>
+              </div>
+
               <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-emerald-50 to-green-50 p-3">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-slate-700">
-                      Manual Assessment Score
+                      Total QC Score
                     </span>
-                    <span className="text-lg font-bold text-emerald-700">
-                      {scores.keyword +
-                        scores.contentQuality +
-                        scores.image +
-                        scores.seo +
-                        scores.grammar +
-                        scores.humanization}{" "}
-                      / 30
+                    <span className="text-2xl font-bold text-emerald-700">
+                      {liveTotal}%
                     </span>
                   </div>
-                  <div className="space-y-2">
-                    <div className="h-3 w-full bg-slate-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-500 ease-out"
-                        style={{ width: `${liveTotal}%` }}
-                        aria-label={`QC total score ${liveTotal}%`}
-                        title={`QC total score ${liveTotal}%`}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-600">Total QC Score</span>
-                      <span className="font-bold text-emerald-700 text-lg">
-                        {liveTotal}%
-                      </span>
-                    </div>
+                  <div className="h-3 w-full bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${liveTotal}%` }}
+                      aria-label={`QC total score ${liveTotal}%`}
+                      title={`QC total score ${liveTotal}%`}
+                    />
                   </div>
                 </div>
               </div>
