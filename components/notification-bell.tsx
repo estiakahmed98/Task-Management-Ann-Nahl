@@ -17,7 +17,11 @@ import {
 } from "@/components/ui/popover";
 import { useRouter } from "next/navigation";
 
-export function NotificationBell() {
+type NotificationBellProps = {
+  apiBase?: string; // defaults to "/api/notifications"
+};
+
+export function NotificationBell({ apiBase = "/api/notifications" }: NotificationBellProps) {
   const router = useRouter();
 
   // SWR hooks
@@ -26,14 +30,14 @@ export function NotificationBell() {
     isLoading: countLoading,
     error: countError,
     refresh: refreshCount,
-  } = useUnreadCount();
+  } = useUnreadCount(apiBase);
 
   const {
     list,
     isLoading: listLoading,
     error: listError,
     refresh: refreshList,
-  } = useNotifications("onlyUnread=0&take=20");
+  } = useNotifications("onlyUnread=0&take=20", apiBase);
 
   // sound
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -79,7 +83,7 @@ export function NotificationBell() {
 
   // open one notification
   const openNotification = async (n: any) => {
-    await markOneRead(n.id);
+    await markOneRead(n.id, apiBase);
     refreshCount();
     refreshList();
     if (n.targetPath) router.push(n.targetPath);
@@ -110,7 +114,7 @@ export function NotificationBell() {
         variant="ghost"
         size="sm"
         onClick={async () => {
-          await markAllRead();
+          await markAllRead(apiBase);
           refreshCount();
           refreshList();
         }}

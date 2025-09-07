@@ -402,7 +402,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
               )}
             </div>
             <div className="flex items-center gap-1">
-              <NotificationBell />
+              <NotificationBell apiBase={role === "am" ? "/api/am/notifications" : "/api/notifications"} />
               <Button
                 variant="ghost"
                 size="icon"
