@@ -184,9 +184,10 @@ export default function TaskList({
   const handleCopy = async (
     text: string,
     id: string,
-    type: "url" | "password" | "email" | "username"
+    type: "url" | "password" | "email" | "username",
+    revealAllowed?: boolean // ✅ নতুন প্যারাম
   ) => {
-    if (!text) return;
+    if (!text || revealAllowed === false) return; // ⛔ hidden হলে কপি নয়
     try {
       await navigator.clipboard.writeText(text);
       setCopied({ id, type });
@@ -225,6 +226,16 @@ export default function TaskList({
   const getDisplayUrl = (t: Task) =>
     computeUrl(t) ?? lastKnownUrl.get(t.id) ?? null;
 
+  // 🧩 helper: কোন টাস্কে data দেখা যাবে?
+  const canReveal = (t: Task, timer: TimerState | null) => {
+    const isActive = timer?.taskId === t.id && timer?.isRunning;
+    // pending হলে কেবল timer চালু থাকলে দেখাবে; অন্য status আগের মতই দেখাবে
+    return t.status !== "pending" || isActive;
+  };
+
+  // 🧩 helper: mask করা টেক্সট (তুমি চাইলে সবসময় "****" ফিরিয়েও দিতে পার)
+  const mask = (s?: string | null) => (s ? "*********" : "N/A");
+
   // ListView Component (no multi-select, no checkbox)
   const renderListView = () => (
     <div className="space-y-4">
@@ -240,6 +251,8 @@ export default function TaskList({
           copied?.id === task.id && copied?.type === "password";
         const locked = isLocked(task);
         const isThisTaskDisabled = locked || isTaskDisabled(task.id);
+
+        const reveal = canReveal(task, timerState);
 
         return (
           <div
@@ -321,19 +334,24 @@ export default function TaskList({
                         Email:
                       </span>{" "}
                       <span className="font-mono text-gray-700 dark:text-gray-300 break-all bg-white dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-600">
-                        {task.email || "N/A"}
+                        {reveal ? task.email || "N/A" : mask(task.email)}
                       </span>
                       {!!task.email && !locked && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          className={`h-6 w-6 rounded-xl transition-colors ${
+                            reveal
+                              ? "hover:bg-gray-100 dark:hover:bg-gray-700"
+                              : "opacity-50 cursor-not-allowed"
+                          }`}
                           onClick={() =>
-                            handleCopy(task.email!, task.id, "email")
+                            handleCopy(task.email!, task.id, "email", reveal)
                           }
+                          disabled={!reveal}
                           aria-label="Copy email"
-                          title="Copy email"
+                          title={reveal ? "Copy email" : "Start timer to view"}
                         >
                           {emailCopied ? (
                             <Check className="h-3 w-3 text-emerald-600" />
@@ -348,19 +366,31 @@ export default function TaskList({
                         Username:
                       </span>{" "}
                       <span className="font-mono text-gray-700 dark:text-gray-300 break-all bg-white dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-600">
-                        {task.username || "N/A"}
+                        {reveal ? task.username || "N/A" : mask(task.username)}
                       </span>
                       {!!task.username && !locked && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          className={`h-6 w-6 rounded-xl transition-colors ${
+                            reveal
+                              ? "hover:bg-gray-100 dark:hover:bg-gray-700"
+                              : "opacity-50 cursor-not-allowed"
+                          }`}
                           onClick={() =>
-                            handleCopy(task.username!, task.id, "username")
+                            handleCopy(
+                              task.username!,
+                              task.id,
+                              "username",
+                              reveal
+                            )
                           }
+                          disabled={!reveal}
                           aria-label="Copy username"
-                          title="Copy username"
+                          title={
+                            reveal ? "Copy username" : "Start timer to view"
+                          }
                         >
                           {usernameCopied ? (
                             <Check className="h-3 w-3 text-emerald-600" />
@@ -378,9 +408,11 @@ export default function TaskList({
                         {task.password
                           ? isLocked(task)
                             ? "••••••••"
-                            : isPasswordVisible(task.id)
-                            ? task.password
-                            : "••••••••"
+                            : reveal
+                            ? isPasswordVisible(task.id)
+                              ? task.password
+                              : "••••••••"
+                            : mask(task.password)
                           : "N/A"}
                       </span>
                       {task.password && !isLocked(task) && (
@@ -388,17 +420,24 @@ export default function TaskList({
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                          onClick={() => togglePassword(task.id)}
+                          className={`h-6 w-6 rounded-xl transition-colors ${
+                            reveal
+                              ? "hover:bg-gray-100 dark:hover:bg-gray-700"
+                              : "opacity-50 cursor-not-allowed"
+                          }`}
+                          onClick={() => reveal && togglePassword(task.id)}
+                          disabled={!reveal}
                           aria-label={
                             isPasswordVisible(task.id)
                               ? "Hide password"
                               : "Show password"
                           }
                           title={
-                            isPasswordVisible(task.id)
-                              ? "Hide password"
-                              : "Show password"
+                            reveal
+                              ? isPasswordVisible(task.id)
+                                ? "Hide password"
+                                : "Show password"
+                              : "Start timer to view"
                           }
                         >
                           {isPasswordVisible(task.id) ? (
@@ -413,12 +452,24 @@ export default function TaskList({
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          className={`h-6 w-6 rounded-xl transition-colors ${
+                            reveal
+                              ? "hover:bg-gray-100 dark:hover:bg-gray-700"
+                              : "opacity-50 cursor-not-allowed"
+                          }`}
                           onClick={() =>
-                            handleCopy(task.password!, task.id, "password")
+                            handleCopy(
+                              task.password!,
+                              task.id,
+                              "password",
+                              reveal
+                            )
                           }
+                          disabled={!reveal}
                           aria-label="Copy password"
-                          title="Copy password"
+                          title={
+                            reveal ? "Copy password" : "Start timer to view"
+                          }
                         >
                           {passwordCopied ? (
                             <Check className="h-3 w-3 text-emerald-600" />
@@ -436,28 +487,41 @@ export default function TaskList({
                             URL:
                           </span>
                           <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <a
-                              href={displayUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 dark:text-blue-400 truncate underline underline-offset-2 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
-                              title={displayUrl}
-                            >
-                              <span className="truncate break-all inline-block max-w-full">
-                                {displayUrl}
+                            {reveal ? (
+                              <a
+                                href={displayUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 dark:text-blue-400 truncate underline underline-offset-2 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+                                title={displayUrl}
+                              >
+                                <span className="truncate break-all inline-block max-w-full">
+                                  {displayUrl}
+                                </span>
+                              </a>
+                            ) : (
+                              <span className="font-mono text-gray-700 dark:text-gray-300 break-all bg-white/70 dark:bg-gray-800/70 px-2 py-1 rounded border border-gray-200 dark:border-gray-600">
+                                {mask(displayUrl)}
                               </span>
-                            </a>
+                            )}
                             {!locked && (
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-6 w-6 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-colors flex-shrink-0"
+                                className={`h-6 w-6 rounded-xl transition-colors flex-shrink-0 ${
+                                  reveal
+                                    ? "hover:bg-blue-100 dark:hover:bg-blue-800/50"
+                                    : "opacity-50 cursor-not-allowed"
+                                }`}
                                 onClick={() =>
-                                  handleCopy(displayUrl, task.id, "url")
+                                  handleCopy(displayUrl, task.id, "url", reveal)
                                 }
+                                disabled={!reveal}
                                 aria-label="Copy URL"
-                                title="Copy URL"
+                                title={
+                                  reveal ? "Copy URL" : "Start timer to view"
+                                }
                               >
                                 {urlCopied ? (
                                   <Check className="h-3 w-3 text-emerald-600" />
@@ -511,6 +575,9 @@ export default function TaskList({
         const locked = isLocked(task);
         const isThisTaskDisabled = locked || isTaskDisabled(task.id);
         const performanceRating = task.performanceRating;
+
+        // ✅ reveal only if NOT pending OR (pending + timer is active)
+        const reveal = task.status !== "pending" || isTimerActive;
 
         return (
           <div
@@ -591,17 +658,30 @@ export default function TaskList({
                         URL:
                       </span>
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <a
-                          href={displayUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 truncate underline underline-offset-2 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
-                          title={displayUrl}
-                        >
-                          <span className="truncate break-all inline-block max-w-full">
-                            {displayUrl}
+                        {reveal ? (
+                          <a
+                            href={displayUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 dark:text-blue-400 truncate underline underline-offset-2 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+                            title={displayUrl}
+                          >
+                            <span className="truncate break-all inline-block max-w-full">
+                              {displayUrl}
+                            </span>
+                          </a>
+                        ) : (
+                          // keep visual weight similar (no design change)
+                          <span
+                            className="text-blue-600 dark:text-blue-400 truncate underline underline-offset-2 font-medium"
+                            title="Start timer to view"
+                          >
+                            <span className="truncate break-all inline-block max-w-full">
+                              {mask(displayUrl)}
+                            </span>
                           </span>
-                        </a>
+                        )}
+
                         {!locked && (
                           <Button
                             type="button"
@@ -609,10 +689,10 @@ export default function TaskList({
                             size="icon"
                             className="h-8 w-8 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-colors flex-shrink-0"
                             onClick={() =>
-                              handleCopy(displayUrl, task.id, "url")
+                              reveal && handleCopy(displayUrl, task.id, "url")
                             }
                             aria-label="Copy URL"
-                            title="Copy URL"
+                            title={reveal ? "Copy URL" : "Start timer to view"}
                           >
                             {urlCopied ? (
                               <Check className="h-4 w-4 text-emerald-600" />
@@ -633,7 +713,7 @@ export default function TaskList({
                       Email:
                     </span>{" "}
                     <span className="font-mono text-gray-700 dark:text-gray-300 break-all bg-white dark:bg-gray-800 px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-600">
-                      {task.email || "N/A"}
+                      {reveal ? task.email || "N/A" : mask(task.email)}
                     </span>
                     {!!task.email && !locked && (
                       <Button
@@ -642,10 +722,10 @@ export default function TaskList({
                         size="icon"
                         className="h-8 w-8 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         onClick={() =>
-                          handleCopy(task.email!, task.id, "email")
+                          reveal && handleCopy(task.email!, task.id, "email")
                         }
                         aria-label="Copy email"
-                        title="Copy email"
+                        title={reveal ? "Copy email" : "Start timer to view"}
                       >
                         {emailCopied ? (
                           <Check className="h-4 w-4 text-emerald-600" />
@@ -660,7 +740,7 @@ export default function TaskList({
                       Username:
                     </span>{" "}
                     <span className="font-mono text-gray-700 dark:text-gray-300 break-all bg-white dark:bg-gray-800 px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-600">
-                      {task.username || "N/A"}
+                      {reveal ? task.username || "N/A" : mask(task.username)}
                     </span>
                     {!!task.username && !locked && (
                       <Button
@@ -669,10 +749,11 @@ export default function TaskList({
                         size="icon"
                         className="h-8 w-8 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         onClick={() =>
+                          reveal &&
                           handleCopy(task.username!, task.id, "username")
                         }
                         aria-label="Copy username"
-                        title="Copy username"
+                        title={reveal ? "Copy username" : "Start timer to view"}
                       >
                         {usernameCopied ? (
                           <Check className="h-4 w-4 text-emerald-600" />
@@ -690,9 +771,11 @@ export default function TaskList({
                       {task.password
                         ? isLocked(task)
                           ? "••••••••"
-                          : isPasswordVisible(task.id)
-                          ? task.password
-                          : "••••••••"
+                          : reveal
+                          ? isPasswordVisible(task.id)
+                            ? task.password
+                            : "••••••••"
+                          : mask(task.password)
                         : "N/A"}
                     </span>
                     {task.password && !isLocked(task) && (
@@ -701,16 +784,18 @@ export default function TaskList({
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        onClick={() => togglePassword(task.id)}
+                        onClick={() => reveal && togglePassword(task.id)}
                         aria-label={
                           isPasswordVisible(task.id)
                             ? "Hide password"
                             : "Show password"
                         }
                         title={
-                          isPasswordVisible(task.id)
-                            ? "Hide password"
-                            : "Show password"
+                          reveal
+                            ? isPasswordVisible(task.id)
+                              ? "Hide password"
+                              : "Show password"
+                            : "Start timer to view"
                         }
                       >
                         {isPasswordVisible(task.id) ? (
@@ -727,10 +812,11 @@ export default function TaskList({
                         size="icon"
                         className="h-8 w-8 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         onClick={() =>
+                          reveal &&
                           handleCopy(task.password!, task.id, "password")
                         }
                         aria-label="Copy password"
-                        title="Copy password"
+                        title={reveal ? "Copy password" : "Start timer to view"}
                       >
                         {passwordCopied ? (
                           <Check className="h-4 w-4 text-emerald-600" />

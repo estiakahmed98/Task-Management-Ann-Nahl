@@ -1,4 +1,4 @@
-// app/chat/page.tsx
+// app/am/chat/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -10,6 +10,7 @@ import { useRoster } from "@/hooks/useRoster";
 import { useDebounce } from "@/hooks/useDebounce";
 import ChatWindow from "@/components/chat/ChatWindow";
 import { Search } from "lucide-react";
+import { BackgroundGradient } from "@/components/ui/background-gradient";
 
 // helpers (same as before)
 function getOtherUser(c: any, myId?: string) {
@@ -91,6 +92,11 @@ export default function ChatPage() {
       const { id } = await openDM(userId);
       await refetchConvos();
       setActiveId(id);
+    } catch (err: any) {
+      const message = err?.message || "Failed to open DM";
+      // Surface a clear reason to the user (e.g., Forbidden)
+      alert(message);
+      console.error("openDM error:", err);
     } finally {
       setOpening(null);
     }
@@ -104,13 +110,15 @@ export default function ChatPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Conversations</h2>
+            <BackgroundGradient>
             <button
               type="button"
-              className="px-2 py-1 text-sm rounded bg-black text-white"
+              className="px-2 py-1 text-sm rounded bg-transparent text-white"
               onClick={handleCreateDMManual}
             >
               + DM
             </button>
+            </BackgroundGradient>
           </div>
 
           {convLoading ? (
@@ -118,8 +126,8 @@ export default function ChatPage() {
           ) : (
             <ul className="space-y-1 overflow-auto max-h-[38vh] pr-1">
               {conversations.map((c: any) => {
-                const title = getConversationTitle(c, me?.id);
-                const subtitle = getConversationSubtitle(c, me?.id);
+                const title = getConversationTitle(c, me?.id ?? undefined);
+                const subtitle = getConversationSubtitle(c, me?.id ?? undefined);
                 return (
                   <li key={c.id}>
                     <button

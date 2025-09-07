@@ -4,12 +4,14 @@ import { type NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { logActivity } from "@/lib/logActivity";
+import { getAuthUser } from "@/lib/getAuthUser";
 
 // ============================ GET Users ============================
 // ...top kept same
 
 export async function GET(request: NextRequest) {
   try {
+    const me = await getAuthUser();
     const searchParams = request.nextUrl.searchParams;
     const limit = Number.parseInt(searchParams.get("limit") || "10");
     const offset = Number.parseInt(searchParams.get("offset") || "0");
@@ -24,6 +26,83 @@ export async function GET(request: NextRequest) {
           ],
         }
       : {};
+    const roleName = (me as any)?.role?.name?.toLowerCase?.() || "";
+
+    // If requester is a client, only return their assigned AM
+    if (roleName === "client") {
+      const clientId = (me as any)?.clientId || null;
+      if (!clientId) {
+        return NextResponse.json(
+          { users: [], total: 0, limit, offset, q },
+          { status: 200 }
+        );
+      }
+
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        select: { amId: true },
+      });
+      const amId = client?.amId || null;
+
+      if (!amId) {
+        return NextResponse.json(
+          { users: [], total: 0, limit, offset, q },
+          { status: 200 }
+        );
+      }
+
+      const am = await prisma.user.findMany({
+        skip: 0,
+        take: 1,
+        where: { id: amId, ...(Object.keys(where).length ? where : {}) },
+        orderBy: { createdAt: "desc" },
+        include: { role: { select: { id: true, name: true } } },
+      });
+
+      return NextResponse.json(
+        { users: am, total: am.length, limit, offset, q },
+        { status: 200 }
+      );
+    }
+
+    // If requester is an AM, only return admins, managers, and AM's clients
+    if (["am", "account manager", "account_manager"].includes(roleName)) {
+      // Find clients managed by this AM
+      const managed = await prisma.client.findMany({
+        where: { amId: me?.id || "" },
+        select: { id: true },
+      });
+      const clientIds = managed.map((c) => c.id);
+
+      const adminManager = await prisma.user.findMany({
+        where: {
+          role: { name: { in: ["admin", "manager"] } },
+          ...(Object.keys(where).length ? where : {}),
+        },
+        orderBy: { createdAt: "desc" },
+        include: { role: { select: { id: true, name: true } } },
+      });
+
+      const clientUsers = clientIds.length
+        ? await prisma.user.findMany({
+            where: {
+              clientId: { in: clientIds },
+              ...(Object.keys(where).length ? where : {}),
+            },
+            orderBy: { createdAt: "desc" },
+            include: { role: { select: { id: true, name: true } } },
+          })
+        : [];
+
+      const map = new Map<string, any>();
+      [...adminManager, ...clientUsers].forEach((u) => map.set(u.id, u));
+      const result = Array.from(map.values());
+
+      return NextResponse.json(
+        { users: result, total: result.length, limit, offset, q },
+        { status: 200 }
+      );
+    }
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
