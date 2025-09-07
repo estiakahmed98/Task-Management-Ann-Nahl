@@ -48,8 +48,15 @@ type Task = BaseTask & {
   assetUrl?: string;
   url?: string;
   actualDurationMinutes?: number; // ✅ NEW
+  qcTotalScore?: number; // added to avoid TS error when accessing task.qcTotalScore
 };
 import { PerformanceBadge } from "./PerformanceBadge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 
 export default function TaskList({
   agentId, // ✅ NEW
@@ -236,6 +243,35 @@ export default function TaskList({
   // 🧩 helper: mask করা টেক্সট (তুমি চাইলে সবসময় "****" ফিরিয়েও দিতে পার)
   const mask = (s?: string | null) => (s ? "*********" : "N/A");
 
+  // --- helpers (for showing score tooltip ) ---
+  function ScorePill({
+    label,
+    value,
+  }: {
+    label: string;
+    value: number | null | undefined;
+  }) {
+    const v = typeof value === "number" ? value : null;
+    return (
+      <div className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 px-2 py-1">
+        <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
+          {label}
+        </span>
+        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold bg-gradient-to-r from-indigo-100 to-pink-100 text-indigo-700 dark:from-indigo-900/30 dark:to-pink-900/30 dark:text-pink-200">
+          {v ?? "—"}
+        </span>
+      </div>
+    );
+  }
+  function fmt(dt?: string) {
+    if (!dt) return "—";
+    try {
+      return new Date(dt).toLocaleString();
+    } catch {
+      return dt;
+    }
+  }
+
   // ListView Component (no multi-select, no checkbox)
   const renderListView = () => (
     <div className="space-y-4">
@@ -266,7 +302,125 @@ export default function TaskList({
                 {/* Left: Basic Info */}
                 <div className="flex items-start gap-4 min-w-0">
                   <div className="flex-1 min-w-0 space-y-4">
-                    <PerformanceBadge rating={task.performanceRating as any} />
+                    <div className="flex items-center gap-3">
+                      <PerformanceBadge
+                        rating={task.performanceRating as any}
+                      />
+                      {task.status === "qc_approved" && (
+                        <TooltipProvider delayDuration={100}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-block px-3 py-1 text-sm font-semibold rounded-full bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100 text-indigo-700 dark:from-indigo-900/30 dark:via-purple-900/30 dark:to-pink-900/30 dark:text-pink-300 shadow-sm cursor-pointer">
+                                🎯 Total Score:{" "}
+                                <span className="text-emerald-700 dark:text-emerald-300 font-bold">
+                                  {task.qcTotalScore ?? "-"}
+                                </span>
+                              </span>
+                            </TooltipTrigger>
+
+                            <TooltipContent
+                              side="top"
+                              align="start"
+                              className="w-[400px] p-0 rounded-xl shadow-xl border border-gray-200 bg-gray-800 text-gray-100"
+                            >
+                              {(() => {
+                                const r = (task?.qcReview as any) || {};
+                                const total = Number(
+                                  r.total ?? task.qcTotalScore ?? 0
+                                );
+
+                                return (
+                                  <div className="p-4 space-y-3">
+                                    {/* Header */}
+                                    <div className="flex items-center justify-between border-b border-gray-600 pb-2">
+                                      <div className="text-xs font-semibold uppercase tracking-wide text-gray-100">
+                                        QC Review
+                                      </div>
+                                      <div className="text-xs text-gray-100">
+                                        {fmt(r.reviewedAt)}
+                                      </div>
+                                    </div>
+
+                                    {/* Total Score */}
+                                    <div>
+                                      <div className="flex items-center justify-between mb-1">
+                                        <span className="text-sm font-semibold">
+                                          Total Score
+                                        </span>
+                                        <span className="text-sm font-bold text-blue-400">
+                                          {total}/100
+                                        </span>
+                                      </div>
+                                      <div className="h-2 rounded-full bg-gray-700 overflow-hidden">
+                                        <div
+                                          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600"
+                                          style={{
+                                            width: `${Math.max(
+                                              0,
+                                              Math.min(100, total)
+                                            )}%`,
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Grid of scores */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <ScorePill
+                                        label="Timer"
+                                        value={r.timerScore}
+                                      />
+                                      <ScorePill label="SEO" value={r.seo} />
+                                      <ScorePill
+                                        label="Image"
+                                        value={r.image}
+                                      />
+                                      <ScorePill
+                                        label="Grammar"
+                                        value={r.grammar}
+                                      />
+                                      <ScorePill
+                                        label="Keyword"
+                                        value={r.keyword}
+                                      />
+
+                                      <ScorePill
+                                        label="Humanization"
+                                        value={r.humanization}
+                                      />
+                                      <ScorePill
+                                        label="Content"
+                                        value={r.contentQuality}
+                                      />
+                                    </div>
+
+                                    {/* Notes */}
+                                    {r.notes && (
+                                      <div className="rounded-lg bg-gray-700 p-3 border border-gray-600">
+                                        <div className="text-xs font-semibold text-gray-300 mb-1">
+                                          Notes
+                                        </div>
+                                        <div className="text-xs leading-relaxed text-gray-200">
+                                          {String(r.notes)}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Footer */}
+                                    <div className="text-xs text-gray-200 border-t border-gray-600 pt-2">
+                                      Reviewer ID:{" "}
+                                      <span className="font-mono text-gray-300">
+                                        {r.reviewerId ?? "—"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
 
                     <div className="flex items-center gap-3 mb-3">
                       <h3 className="font-bold text-gray-900 dark:text-gray-50 text-lg truncate">
