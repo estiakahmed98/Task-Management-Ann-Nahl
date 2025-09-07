@@ -1,5 +1,3 @@
-// app/qc/tasks/QCReview.tsx
-
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -28,6 +26,9 @@ import {
   CheckCircle,
   ExternalLink,
   Star,
+  TrendingUp,
+  Clock,
+  Award,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useUserSession } from "@/lib/hooks/use-user-session";
@@ -91,7 +92,6 @@ type TaskRow = {
    Small helper components
 ----------------------------- */
 
-// 5-star input (0..5). Accessible + keyboardable.
 function StarRating({
   label,
   value,
@@ -103,9 +103,14 @@ function StarRating({
   onChange: (v: number) => void;
   id?: string;
 }) {
+  const [hoverValue, setHoverValue] = useState<number>(0);
+
   return (
-    <div className="flex items-center justify-between border rounded px-3 py-2">
-      <label htmlFor={id} className="text-sm text-gray-700">
+    <div className="group flex items-center justify-between bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-xl px-3 py-2 transition-all duration-200 hover:shadow-md hover:border-slate-300">
+      <label
+        htmlFor={id}
+        className="text-sm font-medium text-slate-700 select-none"
+      >
         {label}
       </label>
       <div
@@ -113,14 +118,16 @@ function StarRating({
         className="flex items-center gap-1"
         role="radiogroup"
         aria-label={label}
+        onMouseLeave={() => setHoverValue(0)}
       >
         {[1, 2, 3, 4, 5].map((i) => {
-          const active = i <= value;
+          const active = i <= (hoverValue || value);
           return (
             <button
               key={i}
               type="button"
-              onClick={() => onChange(i === value ? i - 1 : i)} // toggle down by one if clicking same
+              onClick={() => onChange(i === value ? i - 1 : i)}
+              onMouseEnter={() => setHoverValue(i)}
               onKeyDown={(e) => {
                 if (e.key === "ArrowRight" || e.key === "ArrowUp") {
                   e.preventDefault();
@@ -130,14 +137,16 @@ function StarRating({
                   onChange(Math.max(0, value - 1));
                 }
               }}
-              className="p-1 outline-none focus:ring-2 focus:ring-blue-500 rounded"
+              className="p-1 outline-none focus:ring-2 focus:ring-blue-500 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95"
               role="radio"
               aria-checked={active}
               aria-label={`${i} star${i > 1 ? "s" : ""}`}
             >
               <Star
-                className={`h-5 w-5 ${
-                  active ? "text-yellow-500" : "text-gray-300"
+                className={`h-4 w-4 transition-all duration-200 ${
+                  active
+                    ? "text-amber-400 drop-shadow-sm"
+                    : "text-slate-300 hover:text-amber-200"
                 }`}
                 fill={active ? "currentColor" : "none"}
               />
@@ -438,27 +447,37 @@ export function QCReview() {
   };
 
   return (
-    <div className="mx-auto w-full p-6 space-y-6 bg-gray-50 min-h-screen">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-gray-900">QC Review</h1>
-          <p className="text-sm text-gray-600">
-            Review completed tasks, approve or reassign
-          </p>
+    <div className="mx-auto w-full p-6 space-y-6 bg-gradient-to-br from-slate-50 via-white to-slate-50 min-h-screen">
+      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+              <Eye className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                QC Review
+              </h1>
+              <p className="text-slate-600 font-medium">
+                Review completed tasks, approve or reassign with precision
+              </p>
+            </div>
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Button
             onClick={fetchTasks}
             disabled={loading}
             variant="outline"
-            size="sm"
+            size="default"
+            className="bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 shadow-sm hover:shadow-md"
           >
             {loading ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
-              <RefreshCw className="h-4 w-4 mr-1" />
+              <RefreshCw className="h-4 w-4 mr-2" />
             )}
-            Refresh
+            Refresh Data
           </Button>
         </div>
       </div>
@@ -484,59 +503,92 @@ export function QCReview() {
         clearFilters={clearFilters}
       />
 
-      <Card className="bg-white border border-gray-200 shadow-sm">
-        <CardHeader className="pb-3 bg-gradient-to-r from-sky-50 to-sky-100 border-b border-gray-100">
+      <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60 shadow-xl shadow-slate-200/50 rounded-2xl overflow-hidden">
+        <CardHeader className="pb-4 bg-gradient-to-r from-slate-50 via-white to-slate-50 border-b border-slate-100/80">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Eye className="h-4 w-4 text-gray-700" />
-              <CardTitle className="text-base font-medium text-gray-900">
-                Task Results
-              </CardTitle>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-sm">
+                <TrendingUp className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-semibold text-slate-900">
+                  Task Results
+                </CardTitle>
+                <CardDescription className="text-slate-600 font-medium">
+                  Quality control dashboard for completed tasks
+                </CardDescription>
+              </div>
             </div>
-            <div className="text-sm text-gray-500">
-              {filtered.length} of {tasks.length} tasks
+            <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+              <Award className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-semibold text-blue-700">
+                {filtered.length} of {tasks.length} tasks
+              </span>
             </div>
           </div>
         </CardHeader>
 
-        <CardContent className="p-4">
+        <CardContent className="p-6">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center space-y-3">
-                <Loader2 className="h-8 w-8 animate-spin text-gray-400 mx-auto" />
-                <p className="text-gray-500 text-sm">Loading tasks...</p>
+            <div className="flex items-center justify-center py-16">
+              <div className="text-center space-y-4">
+                <div className="relative">
+                  <div className="w-16 h-16 border-4 border-slate-200 rounded-full animate-pulse"></div>
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-500 absolute top-4 left-4" />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-slate-700 font-medium">Loading tasks...</p>
+                  <p className="text-slate-500 text-sm">
+                    Please wait while we fetch the latest data
+                  </p>
+                </div>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
-              {filtered.map((task) => (
-                <TaskCard
+              {filtered.map((task, index) => (
+                <div
                   key={task.id}
-                  task={task}
-                  approvedMap={approvedMap}
-                  onApprove={handleApprove}
-                  onReject={(t) =>
-                    setReassignDialog({
-                      open: true,
-                      task: t,
-                      reassignNotes: "",
-                      loading: false,
-                    })
-                  }
-                />
+                  className="animate-in fade-in-0 slide-in-from-bottom-4"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <TaskCard
+                    task={task}
+                    approvedMap={approvedMap}
+                    onApprove={handleApprove}
+                    onReject={(t) =>
+                      setReassignDialog({
+                        open: true,
+                        task: t,
+                        reassignNotes: "",
+                        loading: false,
+                      })
+                    }
+                  />
+                </div>
               ))}
               {filtered.length === 0 && (
-                <div className="text-center py-12">
-                  <div className="flex flex-col items-center gap-4">
-                    <AlertCircle className="h-10 w-10 text-gray-400" />
-                    <div className="space-y-1">
-                      <p className="font-medium text-gray-900">
+                <div className="text-center py-16">
+                  <div className="flex flex-col items-center gap-6">
+                    <div className="p-4 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl">
+                      <AlertCircle className="h-12 w-12 text-slate-400" />
+                    </div>
+                    <div className="space-y-2 max-w-md">
+                      <h3 className="text-xl font-semibold text-slate-900">
                         No completed tasks found
-                      </p>
-                      <p className="text-gray-500 text-sm">
-                        Try adjusting your filters
+                      </h3>
+                      <p className="text-slate-600">
+                        Try adjusting your filters or check back later for new
+                        completed tasks
                       </p>
                     </div>
+                    <Button
+                      onClick={clearFilters}
+                      variant="outline"
+                      className="mt-2 bg-transparent"
+                    >
+                      Clear All Filters
+                    </Button>
                   </div>
                 </div>
               )}
@@ -545,32 +597,46 @@ export function QCReview() {
         </CardContent>
       </Card>
 
-      {/* Approve Modal */}
       <Dialog
         open={approveDialog.open}
         onOpenChange={(open) => setApproveDialog((p) => ({ ...p, open }))}
       >
-        <DialogContent className="sm:max-w-lg bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-base">Approve Task</DialogTitle>
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-sm border-slate-200 shadow-2xl rounded-2xl">
+          <DialogHeader className="pb-2 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-sm">
+                <CheckCircle className="h-5 w-5 text-white" />
+              </div>
+              <DialogTitle className="text-xl font-semibold text-slate-900">
+                Approve Task
+              </DialogTitle>
+            </div>
           </DialogHeader>
 
           {approveDialog.task && (
-            <div className="space-y-4">
-              {/* Summary */}
-              <div className="rounded-md p-3 border bg-gray-50 border-gray-200">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-medium text-gray-900">
+            <div className="space-y-4 py-1">
+              <div className="rounded-2xl p-3 border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-slate-50 shadow-sm">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-slate-900 mb-2">
                       {approveDialog.task.name}
                     </h3>
-                    <div className="mt-1 text-sm text-gray-600">
-                      <div>
-                        Agent:{" "}
-                        {approveDialog.task.assignedTo?.name ||
-                          approveDialog.task.assignedTo?.email}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-slate-600">Agent:</span>
+                        <span className="font-medium text-slate-900">
+                          {approveDialog.task.assignedTo?.name ||
+                            approveDialog.task.assignedTo?.email}
+                        </span>
                       </div>
-                      <div>Client: {approveDialog.task.client?.name}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                        <span className="text-slate-600">Client:</span>
+                        <span className="font-medium text-slate-900">
+                          {approveDialog.task.client?.name}
+                        </span>
+                      </div>
                     </div>
                     {approveDialog.task.completionLink && (
                       <div className="mt-2">
@@ -583,203 +649,242 @@ export function QCReview() {
                           }
                           variant="outline"
                           size="sm"
-                          className="text-xs h-7"
+                          className="bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300 transition-all duration-200"
                         >
-                          <ExternalLink className="h-3 w-3 mr-1" /> View
-                          Completion
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          View Completion
                         </Button>
                       </div>
                     )}
                   </div>
 
-                  {/* Auto system rating (read-only) */}
-                  <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700">
-                    System Rating: {rating ?? "N/A"}
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
+                    <Clock className="h-4 w-4 text-blue-600" />
+                    <div className="text-center">
+                      <div className="text-xs font-medium text-blue-600">
+                        System Rating
+                      </div>
+                      <div className="text-sm font-bold text-blue-700">
+                        {rating ?? "N/A"}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Auto Timer score overview */}
-              <div className="rounded-md border bg-gray-50 p-3 text-sm">
+              <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-amber-50 to-orange-50 p-3">
                 <div className="flex items-center justify-between">
-                  <span>Timer score (auto from system rating)</span>
-                  <span className="font-medium">
-                    {timerScoreFromRating(rating)} / 70
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <Award className="h-5 w-5 text-amber-600" />
+                    <span className="font-medium text-slate-700">
+                      Timer Score (Auto-calculated)
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-amber-700">
+                      {timerScoreFromRating(rating)}
+                    </div>
+                    <div className="text-xs text-amber-600">out of 70</div>
+                  </div>
                 </div>
               </div>
 
-              {/* Star inputs for manual metrics */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <StarRating
-                  label="Keyword (0–5)"
-                  value={scores.keyword}
-                  onChange={(v) => setScores((s) => ({ ...s, keyword: v }))}
-                  id="qc-keyword"
-                />
-                <StarRating
-                  label="Content Quality (0–5)"
-                  value={scores.contentQuality}
-                  onChange={(v) =>
-                    setScores((s) => ({ ...s, contentQuality: v }))
-                  }
-                  id="qc-content"
-                />
-                <StarRating
-                  label="Image (0–5)"
-                  value={scores.image}
-                  onChange={(v) => setScores((s) => ({ ...s, image: v }))}
-                  id="qc-image"
-                />
-                <StarRating
-                  label="SEO (0–5)"
-                  value={scores.seo}
-                  onChange={(v) => setScores((s) => ({ ...s, seo: v }))}
-                  id="qc-seo"
-                />
-                <StarRating
-                  label="Grammar (0–5)"
-                  value={scores.grammar}
-                  onChange={(v) => setScores((s) => ({ ...s, grammar: v }))}
-                  id="qc-grammar"
-                />
-                <StarRating
-                  label="Humanization (0–5)"
-                  value={scores.humanization}
-                  onChange={(v) =>
-                    setScores((s) => ({ ...s, humanization: v }))
-                  }
-                  id="qc-human"
-                />
+              <div className="space-y-2">
+                <h4 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                  <Star className="h-5 w-5 text-amber-500" />
+                  Quality Assessment
+                </h4>
+                <div className="grid grid-cols-1 gap-2">
+                  <StarRating
+                    label="Keyword Optimization"
+                    value={scores.keyword}
+                    onChange={(v) => setScores((s) => ({ ...s, keyword: v }))}
+                    id="qc-keyword"
+                  />
+                  <StarRating
+                    label="Content Quality"
+                    value={scores.contentQuality}
+                    onChange={(v) =>
+                      setScores((s) => ({ ...s, contentQuality: v }))
+                    }
+                    id="qc-content"
+                  />
+                  <StarRating
+                    label="Image Quality"
+                    value={scores.image}
+                    onChange={(v) => setScores((s) => ({ ...s, image: v }))}
+                    id="qc-image"
+                  />
+                  <StarRating
+                    label="SEO Optimization"
+                    value={scores.seo}
+                    onChange={(v) => setScores((s) => ({ ...s, seo: v }))}
+                    id="qc-seo"
+                  />
+                  <StarRating
+                    label="Grammar & Style"
+                    value={scores.grammar}
+                    onChange={(v) => setScores((s) => ({ ...s, grammar: v }))}
+                    id="qc-grammar"
+                  />
+                  <StarRating
+                    label="Humanization"
+                    value={scores.humanization}
+                    onChange={(v) =>
+                      setScores((s) => ({ ...s, humanization: v }))
+                    }
+                    id="qc-human"
+                  />
+                </div>
               </div>
 
-              {/* Notes */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Notes (optional)
+                <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+                  Additional Notes (Optional)
                 </label>
                 <Textarea
                   rows={3}
                   value={qcNotes}
                   onChange={(e) => setQcNotes(e.target.value)}
-                  className="resize-none"
-                  placeholder="Add any QC notes…"
+                  className="resize-none border-slate-200 focus:border-blue-300 focus:ring-blue-200 rounded-xl"
+                  placeholder="Add any specific feedback or observations about this task..."
                 />
               </div>
 
-              {/* Live total */}
-              <div className="rounded-md border bg-gray-50 p-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span>Manual (sum)</span>
-                  <span className="font-medium">
-                    {scores.keyword +
-                      scores.contentQuality +
-                      scores.image +
-                      scores.seo +
-                      scores.grammar +
-                      scores.humanization}{" "}
-                    / 30
-                  </span>
-                </div>
-                <div className="mt-2 h-2 w-full bg-gray-200 rounded">
-                  <div
-                    className="h-2 bg-blue-500 rounded"
-                    style={{ width: `${liveTotal}%` }}
-                    aria-label={`QC total score ${liveTotal}%`}
-                    title={`QC total score ${liveTotal}%`}
-                  />
-                </div>
-                <div className="mt-1 text-xs text-gray-600">
-                  Total: <b>{liveTotal}%</b>
+              <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-emerald-50 to-green-50 p-3">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-slate-700">
+                      Manual Assessment Score
+                    </span>
+                    <span className="text-lg font-bold text-emerald-700">
+                      {scores.keyword +
+                        scores.contentQuality +
+                        scores.image +
+                        scores.seo +
+                        scores.grammar +
+                        scores.humanization}{" "}
+                      / 30
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-3 w-full bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${liveTotal}%` }}
+                        aria-label={`QC total score ${liveTotal}%`}
+                        title={`QC total score ${liveTotal}%`}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-600">Total QC Score</span>
+                      <span className="font-bold text-emerald-700 text-lg">
+                        {liveTotal}%
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-3 pt-2 border-t border-slate-100">
             <Button
               variant="outline"
               onClick={() => setApproveDialog((p) => ({ ...p, open: false }))}
               disabled={approveDialog.loading}
-              size="sm"
+              className="bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300"
             >
               Cancel
             </Button>
             <Button
               onClick={handleApproveTask}
               disabled={approveDialog.loading || !rating}
-              size="sm"
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
             >
               {approveDialog.loading ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                <CheckCircle className="h-4 w-4 mr-1" />
+                <CheckCircle className="h-4 w-4 mr-2" />
               )}
-              Approve
+              Approve Task
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Reassign Dialog */}
       <Dialog
         open={reassignDialog.open}
         onOpenChange={(open) => setReassignDialog((p) => ({ ...p, open }))}
       >
-        <DialogContent className="sm:max-w-lg bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-base">Reassign Task</DialogTitle>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto bg-white/95 backdrop-blur-sm border-slate-200 shadow-2xl rounded-2xl">
+          <DialogHeader className="pb-2 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl shadow-sm">
+                <RotateCcw className="h-5 w-5 text-white" />
+              </div>
+              <DialogTitle className="text-xl font-semibold text-slate-900">
+                Reassign Task
+              </DialogTitle>
+            </div>
           </DialogHeader>
           {reassignDialog.task && (
-            <div className="rounded-md p-3 mb-4 border bg-gray-50 border-gray-200">
-              <div className="space-y-1">
-                <h3 className="font-medium text-gray-900">
-                  {reassignDialog.task.name}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Current agent:{" "}
-                  {reassignDialog.task.assignedTo?.name ||
-                    reassignDialog.task.assignedTo?.email}
-                </p>
+            <div className="space-y-3">
+              <div className="rounded-xl p-3 border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-slate-50">
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-slate-900">
+                    {reassignDialog.task.name}
+                  </h3>
+                  <p className="text-sm text-slate-600 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    Current agent:{" "}
+                    <span className="font-medium text-slate-900">
+                      {reassignDialog.task.assignedTo?.name ||
+                        reassignDialog.task.assignedTo?.email}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">
+                  Reassignment Notes
+                </label>
+                <Textarea
+                  rows={3}
+                  value={reassignDialog.reassignNotes}
+                  onChange={(e) =>
+                    setReassignDialog((p) => ({
+                      ...p,
+                      reassignNotes: e.target.value,
+                    }))
+                  }
+                  className="resize-none border-slate-200 focus:border-orange-300 focus:ring-orange-200 rounded-xl"
+                  placeholder="Explain why this task needs to be reassigned..."
+                />
               </div>
             </div>
           )}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
-              Reassignment Notes
-            </label>
-            <Textarea
-              rows={3}
-              value={reassignDialog.reassignNotes}
-              onChange={(e) =>
-                setReassignDialog((p) => ({
-                  ...p,
-                  reassignNotes: e.target.value,
-                }))
-              }
-              className="resize-none"
-            />
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-3 pt-2 border-t border-slate-100">
             <Button
               variant="outline"
               onClick={() => setReassignDialog((p) => ({ ...p, open: false }))}
               disabled={reassignDialog.loading}
-              size="sm"
+              className="bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300"
             >
               Cancel
             </Button>
             <Button
               onClick={handleReassignTask}
               disabled={reassignDialog.loading || !reassignDialog.task}
-              size="sm"
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
             >
               {reassignDialog.loading ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                <RotateCcw className="h-4 w-4 mr-1" />
+                <RotateCcw className="h-4 w-4 mr-2" />
               )}
-              Reassign
+              Reassign Task
             </Button>
           </DialogFooter>
         </DialogContent>
