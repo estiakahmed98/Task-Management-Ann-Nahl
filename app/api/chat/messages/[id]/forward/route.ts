@@ -14,10 +14,10 @@ export async function POST(req: Request, ctx: Ctx) {
 
   const { id: sourceMessageId } = await ctx.params;
   const body = await req.json().catch(() => ({}));
-  const targetUserIds: string[] = Array.isArray(body?.targetUserIds)
+  let targetUserIds: string[] = Array.isArray(body?.targetUserIds)
     ? body.targetUserIds
     : [];
-  const targetConversationIds: string[] = Array.isArray(
+  let targetConversationIds: string[] = Array.isArray(
     body?.targetConversationIds
   )
     ? body.targetConversationIds
@@ -45,6 +45,45 @@ export async function POST(req: Request, ctx: Ctx) {
   );
   if (!isMember)
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+
+  // Policy: If the forwarder is a client, only allow forwarding to their assigned AM
+  const roleName = (me as any)?.role?.name?.toLowerCase?.() || "";
+  if (roleName === "client") {
+    const meClientId = (me as any)?.clientId || null;
+    if (!meClientId) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+    const client = await prisma.client.findUnique({
+      where: { id: meClientId },
+      select: { amId: true },
+    });
+    const amId = client?.amId || null;
+    if (!amId) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+
+    // Filter targets: only the AM user allowed
+    targetUserIds = targetUserIds.filter((uid) => uid === amId);
+
+    // Only allow conversation targets that are DM between client and AM
+    if (targetConversationIds.length) {
+      const convs = await prisma.conversation.findMany({
+        where: { id: { in: targetConversationIds } },
+        select: { id: true, type: true, participants: { select: { userId: true } } },
+      });
+      const allowed = convs
+        .filter((c) => {
+          const ids = new Set(c.participants.map((p) => p.userId));
+          return c.type === "dm" && ids.size === 2 && ids.has(me.id) && ids.has(amId);
+        })
+        .map((c) => c.id);
+      targetConversationIds = targetConversationIds.filter((cid) => allowed.includes(cid));
+    }
+
+    if (!targetUserIds.length && !targetConversationIds.length) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+  }
 
   // 2) Compose forwarded payload
   const forwardedMeta = {

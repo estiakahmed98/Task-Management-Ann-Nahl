@@ -1,4 +1,4 @@
-// app/chat/page.tsx
+// app/client/chat/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -105,15 +105,17 @@ export default function ChatPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Conversations</h2>
-            <BackgroundGradient>
-            <button
-              type="button"
-              className="px-2 py-1 text-sm rounded bg-transparent text-white"
-              onClick={handleCreateDMManual}
-            >
-              + DM
-            </button>
-            </BackgroundGradient>
+            {me?.role?.toLowerCase?.() !== "client" && (
+              <BackgroundGradient>
+                <button
+                  type="button"
+                  className="px-2 py-1 text-sm rounded bg-transparent text-white"
+                  onClick={handleCreateDMManual}
+                >
+                  + DM
+                </button>
+              </BackgroundGradient>
+            )}
           </div>
 
           {convLoading ? (

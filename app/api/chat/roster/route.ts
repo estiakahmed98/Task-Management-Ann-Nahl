@@ -15,6 +15,62 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q")?.trim() || "";
 
+  // If current user is a client, only return their assigned AM in the roster
+  const roleName = (me as any)?.role?.name?.toLowerCase?.() || "";
+  if (roleName === "client") {
+    // Find the client's assigned AM
+    const clientId = (me as any)?.clientId || null;
+    if (!clientId) {
+      return NextResponse.json({ online: [], offline: [], counts: { online: 0, offline: 0 }, q });
+    }
+
+    const client = await prisma.client.findUnique({
+      where: { id: clientId },
+      select: { amId: true },
+    });
+
+    const amId = client?.amId || null;
+    if (!amId) {
+      return NextResponse.json({ online: [], offline: [], counts: { online: 0, offline: 0 }, q });
+    }
+
+    const am = await prisma.user.findFirst({
+      where: {
+        id: amId,
+        status: "active",
+        ...(q
+          ? {
+              OR: [
+                { name: { contains: q, mode: "insensitive" } },
+                { email: { contains: q, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      select: { id: true, name: true, email: true, image: true, lastSeenAt: true },
+    });
+
+    const now = Date.now();
+    const amRow = am
+      ? {
+          ...am,
+          isOnline: !!(
+            am.lastSeenAt && now - new Date(am.lastSeenAt).getTime() <= ONLINE_WINDOW_MS
+          ),
+        }
+      : null;
+
+    const online = amRow && amRow.isOnline ? [amRow] : [];
+    const offline = amRow && !amRow.isOnline ? [amRow] : [];
+
+    return NextResponse.json({
+      online,
+      offline,
+      counts: { online: online.length, offline: offline.length },
+      q,
+    });
+  }
+
   // name/email contains (insensitive); চাইলে inactive-ও আনতে পারেন
   const users = await prisma.user.findMany({
     where: {

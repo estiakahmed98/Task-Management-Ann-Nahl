@@ -14,6 +14,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "Invalid userId" }, { status: 400 });
   }
 
+  // Enforce: clients can only DM their assigned AM
+  const roleName = (me as any)?.role?.name?.toLowerCase?.() || "";
+  if (roleName === "client") {
+    const clientId = (me as any)?.clientId || null;
+    if (!clientId) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+    const client = await prisma.client.findUnique({
+      where: { id: clientId },
+      select: { amId: true },
+    });
+    const amId = client?.amId || null;
+    if (!amId || amId !== userId) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+  }
+
   // exists?
   const existing = await prisma.conversation.findFirst({
     where: {
