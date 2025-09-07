@@ -31,17 +31,16 @@ function normalizeClientData(apiData: any): Client {
 }
 
 async function fetchClient(clientId: string): Promise<Client | null> {
-  const h = await headers()
-  const host = h.get("host")
-  const protocol =
-    process.env.NODE_ENV === "development" || (host && host.startsWith("localhost")) ? "http" : "https"
-  const base = `${protocol}://${host ?? "localhost:3000"}`
-  const url = `${base}/api/clients/${clientId}`
+  try {
+    const res = await fetch(`/api/clients/${clientId}`, { cache: "no-store" });
+    if (!res.ok) return null;
 
-  const res = await fetch(url, { cache: "no-store" })
-  if (!res.ok) return null
-  const raw = await res.json()
-  return normalizeClientData(raw)
+    const raw = await res.json();
+    return normalizeClientData(raw);
+  } catch (error) {
+    console.error("Failed to fetch client:", error);
+    return null;
+  }
 }
 
 export default async function ClientPage({
