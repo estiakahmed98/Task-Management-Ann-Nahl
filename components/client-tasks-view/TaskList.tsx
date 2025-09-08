@@ -985,7 +985,7 @@ export default function TaskList({
 
               {/* ===== Bottom Action Section (separate) ===== */}
               <div className="mt-6 -mx-6 -mb-8 px-8 py-5 bg-gradient-to-r from-violet-50/70 to-purple-50/70 dark:from-violet-900/20 dark:to-purple-900/20 border-t-2 border-violet-200/70 dark:border-violet-700/70 backdrop-blur-sm">
-                <div className="mt-3">
+                <div className="flex justify-between mt-3">
                   <TaskTimer
                     task={task}
                     timerState={timerState}
@@ -995,6 +995,117 @@ export default function TaskList({
                     onRequestComplete={onRequestComplete}
                     formatTimerDisplay={formatTimerDisplay}
                   />
+                  {task.status === "qc_approved" && (
+                    <TooltipProvider delayDuration={100}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="flex items-center px-3 py-0 text-sm font-semibold rounded-full bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100 text-indigo-700 dark:from-indigo-900/30 dark:via-purple-900/30 dark:to-pink-900/30 dark:text-pink-300 shadow-sm cursor-pointer">
+                            🎯 Total Score:{" "}
+                            <span className="text-emerald-700 dark:text-emerald-300 font-bold">
+                              {task.qcTotalScore ?? "-"}
+                            </span>
+                          </span>
+                        </TooltipTrigger>
+
+                        <TooltipContent
+                          side="top"
+                          align="start"
+                          className="w-[400px] p-0 rounded-xl shadow-xl border border-gray-200 bg-gray-800 text-gray-100"
+                        >
+                          {(() => {
+                            const r = (task?.qcReview as any) || {};
+                            const total = Number(
+                              r.total ?? task.qcTotalScore ?? 0
+                            );
+
+                            return (
+                              <div className="p-4 space-y-3">
+                                {/* Header */}
+                                <div className="flex items-center justify-between border-b border-gray-600 pb-2">
+                                  <div className="text-xs font-semibold uppercase tracking-wide text-gray-100">
+                                    QC Review
+                                  </div>
+                                  <div className="text-xs text-gray-100">
+                                    {fmt(r.reviewedAt)}
+                                  </div>
+                                </div>
+
+                                {/* Total Score */}
+                                <div>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-sm font-semibold">
+                                      Total Score
+                                    </span>
+                                    <span className="text-sm font-bold text-blue-400">
+                                      {total}/100
+                                    </span>
+                                  </div>
+                                  <div className="h-2 rounded-full bg-gray-700 overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600"
+                                      style={{
+                                        width: `${Math.max(
+                                          0,
+                                          Math.min(100, total)
+                                        )}%`,
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Grid of scores */}
+                                <div className="grid grid-cols-2 gap-2">
+                                  <ScorePill
+                                    label="Timer"
+                                    value={r.timerScore}
+                                  />
+                                  <ScorePill label="SEO" value={r.seo} />
+                                  <ScorePill label="Image" value={r.image} />
+                                  <ScorePill
+                                    label="Grammar"
+                                    value={r.grammar}
+                                  />
+                                  <ScorePill
+                                    label="Keyword"
+                                    value={r.keyword}
+                                  />
+
+                                  <ScorePill
+                                    label="Humanization"
+                                    value={r.humanization}
+                                  />
+                                  <ScorePill
+                                    label="Content"
+                                    value={r.contentQuality}
+                                  />
+                                </div>
+
+                                {/* Notes */}
+                                {r.notes && (
+                                  <div className="rounded-lg bg-gray-700 p-3 border border-gray-600">
+                                    <div className="text-xs font-semibold text-gray-300 mb-1">
+                                      Notes
+                                    </div>
+                                    <div className="text-xs leading-relaxed text-gray-200">
+                                      {String(r.notes)}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Footer */}
+                                <div className="text-xs text-gray-200 border-t border-gray-600 pt-2">
+                                  Reviewer ID:{" "}
+                                  <span className="font-mono text-gray-300">
+                                    {r.reviewerId ?? "—"}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                 </div>
               </div>
             </div>
