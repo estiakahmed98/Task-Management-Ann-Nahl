@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { QCScores } from "@/app/qc/tasks/QCReview";
 
-
 interface TaskCardProps {
   task: any; // your TaskRow type is complex; keep as any for now
   approvedMap: Record<string, boolean>;
@@ -211,7 +210,9 @@ export function TaskCard({
 
   return (
     <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:scale-[1.005] bg-white dark:bg-slate-900 border-0 shadow-md group">
-      <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${cardGradient}`} />
+      <div
+        className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${cardGradient}`}
+      />
       <div
         className={`absolute inset-0 bg-gradient-to-br ${cardGradient} opacity-2 group-hover:opacity-4 transition-opacity duration-300`}
       />
@@ -291,41 +292,15 @@ export function TaskCard({
                   QC: {manualTotal}/30
                 </div>
               </div>
-
-              {/* Right: Admin Rating (system) */}
-              {task.performanceRating && (
-                <div className="flex flex-col items-end gap-2">
-                  <div className="space-y-1">
-                    <div className="text-xs text-slate-500 dark:text-slate-400 text-right font-medium">
-                      Admin Rating
-                    </div>
-                    <div
-                      className={`px-3 py-2 rounded-lg text-xs font-bold border ${
-                        performanceConfig[
-                          task.performanceRating as keyof typeof performanceConfig
-                        ]?.color
-                      } flex items-center gap-2`}
-                    >
-                      <Star className="h-3 w-3" />
-                      <span>
-                        {
-                          performanceConfig[
-                            task.performanceRating as keyof typeof performanceConfig
-                          ]?.icon
-                        }
-                      </span>
-                      <span>{task.performanceRating}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* ===== Body grid ===== */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
               <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className={`p-1.5 bg-gradient-to-r ${cardGradient} rounded-md`}>
+                  <div
+                    className={`p-1.5 bg-gradient-to-r ${cardGradient} rounded-md`}
+                  >
                     <Building2 className="h-3 w-3 text-white" />
                   </div>
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -360,7 +335,9 @@ export function TaskCard({
 
               <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className={`p-1.5 bg-gradient-to-r ${cardGradient} rounded-md`}>
+                  <div
+                    className={`p-1.5 bg-gradient-to-r ${cardGradient} rounded-md`}
+                  >
                     <User className="h-3 w-3 text-white" />
                   </div>
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -397,10 +374,12 @@ export function TaskCard({
 
               <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className={`p-1.5 bg-gradient-to-r ${cardGradient} rounded-md`}>
+                  <div
+                    className={`p-1.5 bg-gradient-to-r ${cardGradient} rounded-md`}
+                  >
                     <Clock className="h-3 w-3 text-white" />
                   </div>
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                     Timeline
                   </span>
                 </div>
@@ -441,75 +420,107 @@ export function TaskCard({
           </div>
 
           {/* Right column: efficiency + actions */}
-          <div className="xl:w-72 space-y-3">
-            <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700 shadow-md">
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div className="text-center flex gap-2">
+          <div className="flex flex-col items-end justify-between gap-3">
+            {/* Right: Admin Rating (system) */}
+            {task.performanceRating && (
+              <div className="flex gap-2">
+                <div className="space-y-1">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 text-center font-medium">
+                    Admin Rating
+                  </div>
+                  <div
+                    className={`px-3 py-2 rounded-lg text-xs font-bold border ${
+                      performanceConfig[
+                        task.performanceRating as keyof typeof performanceConfig
+                      ]?.color
+                    } flex items-center gap-2`}
+                  >
+                    <Star className="h-3 w-3" />
+                    <span>
+                      {
+                        performanceConfig[
+                          task.performanceRating as keyof typeof performanceConfig
+                        ]?.icon
+                      }
+                    </span>
+                    <span>{task.performanceRating}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="xl:w-72 space-y-3">
+              <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700 shadow-md">
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="text-center flex gap-2">
+                    <div
+                      className={`text-xl font-black bg-gradient-to-r ${cardGradient} bg-clip-text text-transparent`}
+                    >
+                      {efficiency.percentage}%
+                    </div>
+                    <div
+                      className={`text-xs font-bold mt-1 ${
+                        efficiency.status === "Efficient"
+                          ? "text-green-600"
+                          : efficiency.status === "Acceptable"
+                          ? "text-yellow-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {efficiency.status}
+                    </div>
+                  </div>
+
                   <div
                     className={`text-xl font-black bg-gradient-to-r ${cardGradient} bg-clip-text text-transparent`}
                   >
-                    {efficiency.percentage}%
-                  </div>
-                  <div
-                    className={`text-xs font-bold mt-1 ${
-                      efficiency.status === "Efficient"
-                        ? "text-green-600"
-                        : efficiency.status === "Acceptable"
-                        ? "text-yellow-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {efficiency.status}
+                    {Math.round((task.actualDurationMinutes / 60) * 10) / 10}h
+                    ideal
                   </div>
                 </div>
 
-                <div
-                  className={`text-xl font-black bg-gradient-to-r ${cardGradient} bg-clip-text text-transparent`}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
+                    <span>Progress</span>
+                    <span className="font-bold">
+                      {task.completionPercentage}%
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full bg-gradient-to-r ${cardGradient} rounded-full transition-all duration-1000 shadow-sm`}
+                        style={{ width: `${task.completionPercentage}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => onApprove(task)}
+                  disabled={isApproved}
+                  size="sm"
+                  className={`flex-1 font-bold text-xs py-2 ${
+                    isApproved
+                      ? "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 shadow-md"
+                      : `bg-gradient-to-r ${cardGradient} hover:opacity-90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105`
+                  }`}
                 >
-                  {Math.round((task.actualDurationMinutes / 60) * 10) / 10}h ideal
-                </div>
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  {isApproved ? "Approved" : "Approve"}
+                </Button>
+
+                <Button
+                  onClick={() => onReject(task)}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 border border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-950/30 font-bold text-xs py-2 shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Reassign
+                </Button>
               </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
-                  <span>Progress</span>
-                  <span className="font-bold">{task.completionPercentage}%</span>
-                </div>
-                <div className="relative">
-                  <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full bg-gradient-to-r ${cardGradient} rounded-full transition-all duration-1000 shadow-sm`}
-                      style={{ width: `${task.completionPercentage}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                onClick={() => onApprove(task)}
-                disabled={isApproved}
-                size="sm"
-                className={`flex-1 font-bold text-xs py-2 ${
-                  isApproved
-                    ? "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 shadow-md"
-                    : `bg-gradient-to-r ${cardGradient} hover:opacity-90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105`
-                }`}
-              >
-                <CheckCircle className="h-3 w-3 mr-1" />
-                {isApproved ? "Approved" : "Approve"}
-              </Button>
-
-              <Button
-                onClick={() => onReject(task)}
-                variant="outline"
-                size="sm"
-                className="flex-1 border border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-950/30 font-bold text-xs py-2 shadow-md hover:shadow-lg transition-all duration-200"
-              >
-                <RotateCcw className="h-3 w-3 mr-1" />
-                Reassign
-              </Button>
             </div>
           </div>
         </div>
