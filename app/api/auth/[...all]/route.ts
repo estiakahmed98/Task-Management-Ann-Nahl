@@ -1,7 +1,6 @@
-//app/api/auth/[...all]/route.ts
+// app/api/auth/[...all]/route.ts
+import { handlers } from "@/lib/auth";
 
-import authDefault, { auth as namedAuth } from "@/lib/auth";
-import { toNextJsHandler } from "better-auth/next-js";
-
-const auth = (namedAuth ?? authDefault)!;
-export const { GET, POST } = toNextJsHandler(auth.handler);
+// ⚠️ ফাইল/পাথ 100% আগের মতোই থাকছে (/api/auth/*),
+// ভিতরে শুধু NextAuth এর handlers attach করা হলো।
+export const { GET, POST } = handlers;

@@ -209,8 +209,8 @@ model Team {
   description         String?
   clientTeamMembers   ClientTeamMember[]
   templateTeamMembers TemplateTeamMember[]
-
-  conversations Conversation[] @relation("TeamConversations")
+  // teamwise conversation
+  conversations Conversation[] @relation("TeamConversations") 
 }
 
 // ========== PACKAGES ==========
@@ -371,6 +371,7 @@ model Assignment {
   tasks             Task[]
   siteAssetSettings AssignmentSiteAssetSetting[]
 
+  // Assignment Conversations (e.g., discussion, support, etc.).
   conversations Conversation[] @relation("AssignmentConversations")
 }
 
@@ -425,7 +426,8 @@ model Task {
   comments              Comment[]
   reports               Report[]
   notifications         Notification[]
-
+  
+  // Each Task can have its own dedicated Conversation thread.
   conversations         Conversation[]     @relation("TaskConversations")
 }
 
