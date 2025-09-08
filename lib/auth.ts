@@ -1,8 +1,22 @@
 // lib/auth.ts
-import NextAuth, { type NextAuthConfig } from "next-auth";
+import NextAuth from "next-auth";
+import type { NextAuthConfig, Session, User as NextAuthUser } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
+
+// Extend the built-in session types
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      role: string | null;
+      permissions: string[];
+    };
+  }
+}
 
 // 👉 তোমার বিদ্যমান Prisma schema-র সাথে 1:1 mapping করা Adapter
 // টাইপিং ইস্যু এড়াতে Adapter-টাকে any হিসেবে রিটার্ন করলাম।
@@ -214,20 +228,18 @@ export const authConfig: NextAuthConfig = {
   ],
   callbacks: {
     // চাইলে session().user-এ role/permissions যোগ করে দিচ্ছি
-    async session({ session, user }) {
-      if (session?.user && user?.id) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          include: {
-            role: {
-              include: { rolePermissions: { include: { permission: true } } },
-            },
-          },
-        });
-        (session.user as any).id = user.id;
-        (session.user as any).role = dbUser?.role?.name ?? null;
-        (session.user as any).permissions =
-          dbUser?.role?.rolePermissions.map((rp) => rp.permission.name) || [];
+    async session({ session, user }): Promise<Session> {
+      if (session.user) {
+        const dbUser = user as any;
+        return {
+          ...session,
+          user: {
+            ...session.user,
+            id: dbUser.id,
+            role: dbUser?.role?.name ?? null,
+            permissions: dbUser?.role?.rolePermissions?.map((rp: any) => rp.permission.name) || []
+          }
+        };
       }
       return session;
     },
@@ -235,7 +247,16 @@ export const authConfig: NextAuthConfig = {
   // debug: true,
 };
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+// Export the auth config, handlers, and auth functions
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
+  // Ensure we're using the correct base path for the API routes
+  basePath: '/api/auth',
+  // Trust the host header for production
+  trustHost: process.env.NODE_ENV === 'production',
+  // Add debug logging in development
+  debug: process.env.NODE_ENV === 'development',
+});
 
 // আগের ডিফল্ট এক্সপোর্ট রাখা হলো (কোথাও import authDefault থাকলে)
 export default auth;
