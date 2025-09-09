@@ -152,6 +152,7 @@ export async function PUT(
     const {
       name,
       birthdate,
+      gender,
       company,
       designation,
       location,
@@ -189,6 +190,7 @@ export async function PUT(
       data: ({
         name,
         birthdate: birthdate ? new Date(birthdate) : undefined,
+        gender,
         company,
         designation,
         location,

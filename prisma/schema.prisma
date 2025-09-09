@@ -239,6 +239,7 @@ model Client {
   id          String    @id @default(cuid())
   name        String
   birthdate   DateTime?
+  gender      String?
   company     String?
   designation String?
   location    String?

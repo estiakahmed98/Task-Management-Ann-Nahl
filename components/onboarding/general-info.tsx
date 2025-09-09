@@ -135,7 +135,7 @@ export function GeneralInfo({ formData, updateFormData, onNext }: StepProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="birthdate">Birth Date</Label>
             <div className="mt-1">
@@ -150,6 +150,20 @@ export function GeneralInfo({ formData, updateFormData, onNext }: StepProps) {
                 className="w-full border border-gray-300 rounded-md px-4 py-2"
               />
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="gender">Gender</Label>
+            <select
+              id="gender"
+              value={formData.gender || ""}
+              onChange={(e) => updateFormData({ gender: e.target.value })}
+              className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option disabled value="">Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
           </div>
 
           <div>
