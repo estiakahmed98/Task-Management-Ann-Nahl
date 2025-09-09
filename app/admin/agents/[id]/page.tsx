@@ -44,6 +44,13 @@ import {
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import PerformanceFilterSelect from "@/components/agents/performance-filter-select";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
+import { ChevronDown } from "lucide-react";
 
 export const revalidate = 0; // always fresh
 
@@ -505,14 +512,17 @@ export default async function AgentPerformancePage({
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-6">
+            <Accordion
+              type="multiple"
+              className="space-y-4" /* no defaultValue => none open by default */
+            >
               {clientGroups.map((group) => (
-                <ClientPerformanceCard
+                <ClientAccordionItem
                   key={group.client.id}
                   clientGroup={group}
                 />
               ))}
-            </div>
+            </Accordion>
           )}
         </div>
       </div>
@@ -1302,3 +1312,154 @@ function KpiCard({
     </Card>
   );
 }
+
+
+function getClientStats(tasks: TaskWithDetails[]) {
+  const count = (s: TaskWithDetails["status"]) =>
+    tasks.filter((t) => t.status === s).length;
+
+  const total = tasks.length;
+  const pending = count("pending");
+  const in_progress = count("in_progress");
+  const completed = count("completed");
+  const overdue = count("overdue");
+  const qc_approved = count("qc_approved");
+
+  // ⬇️ Only qc_approved tasks contribute to QC average
+  const qcApprovedScores = tasks
+    .filter((t) => t.status === "qc_approved" && typeof t.qcTotalScore === "number")
+    .map((t) => t.qcTotalScore as number);
+
+  const avgQcScore = qcApprovedScores.length
+    ? Math.round(qcApprovedScores.reduce((a, b) => a + b, 0) / qcApprovedScores.length)
+    : 0;
+
+  const completionRate = total ? Math.round((qc_approved / total) * 100) : 0;
+
+  return {
+    total,
+    pending,
+    in_progress,
+    overdue,
+    qc_approved,
+    completed,
+    avgQcScore,
+    completionRate,
+  };
+}
+
+
+
+function ClientAccordionItem({
+  clientGroup,
+}: {
+  clientGroup: {
+    client: { id: string; name: string; company: string };
+    tasks: TaskWithDetails[];
+  };
+}) {
+  const { client, tasks } = clientGroup;
+  const isUnassigned = client.id === "no-client";
+  const stats = getClientStats(tasks);
+
+  return (
+    <AccordionItem
+      value={client.id}
+      className="group rounded-2xl ring-1 ring-slate-200 dark:ring-slate-800 bg-white/80 dark:bg-slate-900/50 backdrop-blur-sm shadow-sm overflow-hidden"
+    >
+      {/* Remove your custom ChevronDown — shadcn adds one automatically */}
+      <AccordionTrigger
+        className="
+          px-5 py-4 hover:no-underline
+          data-[state=open]:bg-gradient-to-r data-[state=open]:from-indigo-50/70 data-[state=open]:to-purple-50/70
+          dark:data-[state=open]:from-indigo-900/20 dark:data-[state=open]:to-purple-900/20
+          [&>svg]:text-slate-500
+        "
+      >
+        <div className="flex w-full items-center justify-between gap-4">
+          {/* Left: Identity & meta */}
+          <div className="flex items-center gap-4 min-w-0">
+            <div
+              className={`
+                relative w-11 h-11 rounded-xl text-white font-semibold shadow
+                flex items-center justify-center overflow-hidden
+                ${isUnassigned
+                  ? "bg-gradient-to-br from-slate-500 to-slate-700"
+                  : "bg-gradient-to-br from-indigo-500 to-purple-600"}
+              `}
+            >
+              <span className="relative z-10">
+                {isUnassigned ? "?" : client.name.charAt(0).toUpperCase()}
+              </span>
+              <div className="absolute inset-0 opacity-20 bg-white" />
+            </div>
+
+            <div className="min-w-0">
+              <div
+                className={`text-base font-bold truncate ${
+                  isUnassigned
+                    ? "text-slate-800 dark:text-slate-200"
+                    : "bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent dark:from-indigo-400 dark:to-purple-400"
+                }`}
+              >
+                {client.name}
+              </div>
+
+              <div className="text-xs text-slate-600 dark:text-slate-400 truncate">
+                {client.company ? `${client.company} • ` : ""}
+                {stats.total} task{stats.total !== 1 ? "s" : ""} •{" "}
+                {stats.completionRate}% completion •{" "}
+                {stats.avgQcScore ? `${stats.avgQcScore} avg QC` : "No QC data"}
+              </div>
+
+              {/* Slim completion progress */}
+              <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
+                  style={{ width: `${stats.completionRate}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Right: status chips */}
+          <div className="hidden md:flex items-center gap-1.5 flex-wrap">
+            {stats.pending > 0 && (
+              <Badge className="px-2 py-0.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow">
+                {stats.pending} Pending
+              </Badge>
+            )}
+            {stats.in_progress > 0 && (
+              <Badge className="px-2 py-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow">
+                {stats.in_progress} Progress
+              </Badge>
+            )}
+            {stats.overdue > 0 && (
+              <Badge className="px-2 py-0.5 bg-gradient-to-r from-red-500 to-rose-500 text-white shadow">
+                {stats.overdue} Overdue
+              </Badge>
+            )}
+            {stats.qc_approved > 0 && (
+              <Badge className="px-2 py-0.5 bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow">
+                {stats.qc_approved} QC
+              </Badge>
+            )}
+          </div>
+        </div>
+      </AccordionTrigger>
+
+      <AccordionContent className="p-0 border-t border-slate-100 dark:border-slate-800">
+        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          {tasks.map((task, idx) => (
+            <PerformanceTaskItem
+              key={task.id}
+              task={task}
+              isLast={idx === tasks.length - 1}
+            />
+          ))}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
