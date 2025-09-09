@@ -529,7 +529,7 @@ function calculatePerformanceMetrics(tasks: any[]) {
   const cancelled = tasks.filter((t) => t.status === "cancelled").length;
   const qcApproved = tasks.filter((t) => t.status === "qc_approved").length;
 
-  const completionRate = total ? Math.round((completed / total) * 100) : 0;
+  const completionRate = total ? Math.round((qcApproved / total) * 100) : 0;
   const qcApprovalRate = total ? Math.round((qcApproved / total) * 100) : 0;
 
   // Performance ratings analysis
@@ -589,7 +589,7 @@ function AgentProfileCard({ agent }: { agent: any }) {
           <div className="flex-shrink-0">
             <Avatar className="h-32 w-32 border-4 border-white shadow-2xl ring-4 ring-indigo-100 dark:ring-indigo-800">
               <AvatarImage
-                src={agent.image || "/placeholder.svg"}
+                src={agent.image ?? undefined}
                 alt={`${agent.firstName ?? ""} ${agent.lastName ?? ""}`}
               />
               <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-3xl font-bold">
