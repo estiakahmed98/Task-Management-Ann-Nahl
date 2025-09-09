@@ -310,8 +310,8 @@ export async function PATCH(
         if (updatedTask.username)
           message += ` Username: ${updatedTask.username}`;
         if (updatedTask.email) message += ` Email: ${updatedTask.email}`;
-        if (updatedTask.password)
-          message += ` Password: ${updatedTask.password}`;
+        // if (updatedTask.password)
+        //   message += ` Password: ${updatedTask.password}`;
       }
 
       const notifType: NotificationType =

@@ -57,6 +57,8 @@ export async function POST(req: NextRequest) {
 
       // ⬇️ NEW field
       amId,
+      // ⬇️ Arbitrary JSON key/value pairs
+      otherField,
     } = body;
 
     // (Optional but recommended) enforce AM role server-side
@@ -105,6 +107,9 @@ export async function POST(req: NextRequest) {
 
         // ⬇️ NEW: link AM
         amId: amId || undefined,
+
+        // ⬇️ Persist arbitrary JSON if provided
+        otherField: otherField ?? undefined,
 
         socialMedias: {
           create: Array.isArray(socialLinks)
