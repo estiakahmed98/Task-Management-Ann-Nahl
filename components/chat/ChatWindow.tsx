@@ -11,6 +11,7 @@ import { BackgroundGradient } from "../ui/background-gradient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useRoster } from "@/hooks/useRoster";
+import { Search } from "lucide-react";
 
 function near(aIso: string, bIso: string, ms = 8000) {
   return Math.abs(new Date(aIso).getTime() - new Date(bIso).getTime()) <= ms;
@@ -425,6 +426,9 @@ export default function ChatWindow({
   // ---- Members dialog state
   const [membersOpen, setMembersOpen] = useState(false);
 
+  // ---- Search dialog state
+  const [searchOpen, setSearchOpen] = useState(false);
+
   function openForward(messageId: string) {
     setForwardMsgId(messageId);
     setForwardOpen(true);
@@ -502,6 +506,17 @@ export default function ChatWindow({
             : convDetail?.title || "Conversation"}
         </div>
         <div className="flex items-center gap-2">
+          {/* Search */}
+          <BackgroundGradient>
+            <button
+              className="px-2 py-1 text-xs rounded bg-transparent text-white inline-flex items-center gap-1"
+              onClick={() => setSearchOpen(true)}
+              title="Search messages"
+            >
+              <Search className="h-3.5 w-3.5" />
+              Search
+            </button>
+          </BackgroundGradient>
           {isDM ? (
             <div className="text-xs">
               {isOtherOnline ? (
@@ -539,15 +554,16 @@ export default function ChatWindow({
         )}
 
         {messages.map((m) => (
-          <MessageBubble
-            key={m.id}
-            msg={m}
-            meId={user?.id ?? undefined}
-            onForward={openForward}
-            showSenderName={!isDM}
-            participants={(convDetail?.participants || []).map((p: any) => p.user)}
-            onToggleReaction={(emoji: string) => handleToggleReaction(m.id, emoji)}
-          />
+          <div id={`msg-${m.id}`} key={m.id}>
+            <MessageBubble
+              msg={m}
+              meId={user?.id ?? undefined}
+              onForward={openForward}
+              showSenderName={!isDM}
+              participants={(convDetail?.participants || []).map((p: any) => p.user)}
+              onToggleReaction={(emoji: string) => handleToggleReaction(m.id, emoji)}
+            />
+          </div>
         ))}
 
         {!!typingText && (
@@ -605,6 +621,14 @@ export default function ChatWindow({
         conversationId={conversationId}
         convParticipants={convDetail?.participants || []}
         onChanged={() => mutateConv()}
+      />
+
+      {/* Search Modal */}
+      <SearchDialog
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        conversationId={conversationId}
+        onJump={(id: string) => goToMessage(id)}
       />
     </div>
   );
@@ -713,6 +737,148 @@ function MembersDialog({
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Close</Button>
           <Button onClick={addMembers} disabled={!selected.size}>Add Selected</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---- Search dialog component ----
+function SearchDialog({
+  open,
+  onClose,
+  conversationId,
+  onJump,
+}: {
+  open: boolean;
+  onClose: () => void;
+  conversationId: string;
+  onJump: (messageId: string) => void | Promise<void>;
+}) {
+  const [q, setQ] = useState("");
+  const [results, setResults] = useState<{
+    id: string;
+    content: string | null;
+    createdAt: string;
+    sender?: { id: string; name?: string | null; email?: string | null } | null;
+  }[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [debounceTimer, setDebounceTimer] = useState<any>(null);
+
+  async function runSearch(reset = true) {
+    if (!q.trim()) {
+      setResults([]);
+      setNextCursor(null);
+      return;
+    }
+    setLoading(true);
+    try {
+      const url = new URL(`/api/chat/conversations/${conversationId}/messages/search`, location.origin);
+      url.searchParams.set("q", q.trim());
+      url.searchParams.set("take", "25");
+      if (!reset && nextCursor) url.searchParams.set("cursor", nextCursor);
+      const res = await fetch(url.toString(), { cache: "no-store" });
+      const data = await res.json();
+      const items = (data?.results || []) as any[];
+      setResults((prev) => (reset ? items : [...prev, ...items]));
+      setNextCursor(data?.nextCursor ?? null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // auto-search on Enter
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") runSearch(true);
+  }
+
+  // live search (debounced)
+  useEffect(() => {
+    if (!open) return;
+    if (debounceTimer) clearTimeout(debounceTimer);
+    const t = setTimeout(() => {
+      if (q.trim()) runSearch(true);
+      else {
+        setResults([]);
+        setNextCursor(null);
+      }
+    }, 300);
+    setDebounceTimer(t);
+    return () => clearTimeout(t);
+  }, [q, open]);
+
+  function highlight(text: string | null | undefined, query: string) {
+    const str = text || "";
+    if (!query.trim()) return str;
+    const idx = str.toLowerCase().indexOf(query.toLowerCase());
+    if (idx === -1) return str;
+    const before = str.slice(0, idx);
+    const match = str.slice(idx, idx + query.length);
+    const after = str.slice(idx + query.length);
+    return (
+      <>
+        {before}
+        <span className="bg-yellow-200 text-black rounded px-0.5">{match}</span>
+        {after}
+      </>
+    );
+  }
+
+  async function jumpTo(id: string) {
+    await onJump(id);
+    onClose();
+  }
+
+  if (!open) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => (!v ? onClose() : null)}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Search messages</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <input
+            className="w-full border rounded px-3 py-2"
+            placeholder="Type keywords and press Enter…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={onKeyDown}
+          />
+
+          <div className="max-h-80 overflow-auto divide-y border rounded">
+            {results.map((r) => (
+              <button
+                key={r.id}
+                className="w-full text-left px-3 py-2 hover:bg-gray-50"
+                onClick={() => jumpTo(r.id)}
+                title={new Date(r.createdAt).toLocaleString()}
+              >
+                <div className="text-sm font-medium truncate">{highlight(r.content, q)}</div>
+                <div className="text-[11px] text-gray-500">
+                  {r.sender?.name || r.sender?.email || "User"} • {new Date(r.createdAt).toLocaleString()}
+                </div>
+              </button>
+            ))}
+            {!results.length && !loading && (
+              <div className="px-3 py-6 text-center text-sm text-gray-500">
+                {q.trim() ? "No results" : "Type a query to search"}
+              </div>
+            )}
+          </div>
+
+          {nextCursor && (
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={() => runSearch(false)} disabled={loading}>
+                {loading ? "Loading…" : "Load more"}
+              </Button>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button onClick={() => runSearch(true)} disabled={!q.trim() || loading}>Search</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
