@@ -1,9 +1,34 @@
 // app/components/client-tasks-view/TaskTimer.tsx
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Timer, Play, Pause, CheckCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Task, TimerState } from "../client-tasks-view/client-tasks-view";
+
+const PAUSE_REASONS = [
+  { id: 'break', label: 'Taking a break' },
+  { id: 'meeting', label: 'In a meeting' },
+  { id: 'technical_issue', label: 'Technical issues' },
+  { id: 'clarification_needed', label: 'Need clarification' },
+  { id: 'other', label: 'Other' },
+];
 
 export default function TaskTimer({
   task,
@@ -45,6 +70,44 @@ export default function TaskTimer({
   const elapsedSeconds = isActive
     ? Math.max(0, timerState.totalSeconds - timerState.remainingSeconds)
     : 0;
+
+  const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
+  const [selectedReason, setSelectedReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handlePauseClick = () => {
+    setIsPauseModalOpen(true);
+  };
+
+  const handlePauseConfirm = async () => {
+    if (!selectedReason) return;
+    
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`/api/tasks/${task.id}/pause`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reason: PAUSE_REASONS.find(r => r.id === selectedReason)?.label || selectedReason,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      if (response.ok) {
+        onPauseTimer(task.id);
+        setIsPauseModalOpen(false);
+        setSelectedReason('');
+      } else {
+        console.error('Failed to pause task with reason');
+      }
+    } catch (error) {
+      console.error('Error pausing task:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const isOvertime = remainingSeconds <= 0;
   const displayTime = Math.abs(remainingSeconds);
@@ -121,7 +184,7 @@ export default function TaskTimer({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onPauseTimer(task.id)}
+            onClick={handlePauseClick}
             className="h-8 w-8 p-0 hover:bg-orange-100 dark:hover:bg-orange-900/30"
             title="Pause timer"
           >
@@ -141,6 +204,56 @@ export default function TaskTimer({
           </Button>
         )}
       </div>
+
+      <Dialog open={isPauseModalOpen} onOpenChange={setIsPauseModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Pause Task</DialogTitle>
+            <DialogDescription>
+              Please select a reason for pausing this task.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="pause-reason" className="text-right">
+                Reason
+              </Label>
+              <Select 
+                value={selectedReason} 
+                onValueChange={setSelectedReason}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a reason" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAUSE_REASONS.map((reason) => (
+                    <SelectItem key={reason.id} value={reason.id}>
+                      {reason.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsPauseModalOpen(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handlePauseConfirm} 
+              disabled={!selectedReason || isSubmitting}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              {isSubmitting ? 'Pausing...' : 'Pause Task'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
