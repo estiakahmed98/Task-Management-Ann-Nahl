@@ -20,8 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  ArrowUpRight,
-  ArrowDownRight,
+  MoveUp,
+  MoveDown,
   BarChart3,
   CheckCircle2,
   Users,
@@ -30,8 +30,6 @@ import {
   Calendar,
   Target,
   Clock,
-  Download,
-  FileText,
   AlertTriangle,
   Bell,
   Activity,
@@ -39,7 +37,6 @@ import {
   Package as PackageIcon,
   MessageSquare,
   Timer,
-  Zap,
   ChevronDown,
   LineChart,
 } from "lucide-react";
@@ -521,7 +518,7 @@ export function AdminDashboard() {
                   {(dashboardData.tasks.byPriority || []).map((g) => {
                     const pct =
                       dashboardData.tasks.total > 0
-                        ? (g.count / dashboardData.tasks.total) * 100
+                        ? g.count / dashboardData.tasks.total + 100
                         : 0;
                     const color = PRIORITY_COLOR[g.priority] || "bg-slate-400";
                     return (
@@ -1283,7 +1280,7 @@ function MetricCard({
         <div className="flex items-center justify-between">
           <div
             className={cn(
-              "p-3 rounded-xl text-white shadow-md",
+              "p-3 rounded-xl text-white shadow-md flex items-center justify-center",
               "bg-gradient-to-r",
               gradient
             )}
@@ -1293,24 +1290,26 @@ function MetricCard({
           <Badge
             variant="outline"
             className={cn(
-              "font-medium group-hover:shadow-sm",
+              "font-medium flex items-center gap-2",
               trend === "up"
                 ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                 : "bg-rose-50 text-rose-700 border-rose-200"
             )}
           >
-            {change}{" "}
+            <span>{change}</span>
             {trend === "up" ? (
-              <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
+              <MoveUp className="h-4 w-4" />
             ) : (
-              <ArrowDownRight className="h-3.5 w-3.5 ml-1" />
+              <MoveDown className="h-4 w-4 transform rotate-0" />
             )}
           </Badge>
         </div>
+
         <div className="mt-5">
           <h3 className="text-3xl font-extrabold text-slate-900">{value}</h3>
           <p className="text-sm text-slate-600 mt-1 font-medium">{title}</p>
         </div>
+
         <div className="flex items-center justify-between mt-4">
           <p className="text-xs text-slate-500">{description}</p>
           {subMetric && (

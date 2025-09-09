@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  ArrowUpRight,
+  MoveUp,
   CheckCircle2,
   Users,
   Layers,
@@ -681,9 +681,7 @@ function MetricCard({
             }
           >
             {change}{" "}
-            {trend === "up" ? (
-              <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
-            ) : null}
+            {trend === "up" ? <MoveUp className="h-3.5 w-3.5 ml-1" /> : null}
           </Badge>
         </div>
         <div className="mt-5">
