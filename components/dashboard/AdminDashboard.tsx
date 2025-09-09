@@ -204,7 +204,7 @@ function takeLatest<T extends Record<string, any>>(
     .slice(0, n);
 }
 
-export function ProfessionalDashboard() {
+export function AdminDashboard() {
   const [timeRange, setTimeRange] = useState("month");
   const [dashboardData, setDashboardData] = useState<DashboardStats | null>(
     null

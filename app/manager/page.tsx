@@ -1,9 +1,9 @@
-import { ProfessionalDashboard } from "@/components/dashboard/professional-dashboard";
+import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 
 export default function OverviewPage() {
   return (
     <div>
-      <ProfessionalDashboard />
+      <AdminDashboard />
     </div>
   );
 }
