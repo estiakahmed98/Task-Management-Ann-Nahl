@@ -34,15 +34,6 @@ import {
   UserCircle2,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog"
 import { Client } from "@/types/client"
 import { toast } from "sonner"
 import { useUserSession } from "@/lib/hooks/use-user-session"

@@ -11,6 +11,9 @@ import { useDebounce } from "@/hooks/useDebounce";
 import ChatWindow from "@/components/chat/ChatWindow";
 import { Search } from "lucide-react";
 import { BackgroundGradient } from "@/components/ui/background-gradient";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 // helpers (same as before)
 function getOtherUser(c: any, myId?: string) {
@@ -102,6 +105,38 @@ export default function ChatPage() {
     setActiveId(conv.id);
   }
 
+  // Group creation modal state
+  const [groupOpen, setGroupOpen] = useState(false);
+  const [groupTitle, setGroupTitle] = useState("");
+  const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set());
+
+  function handleCreateGroup() {
+    setGroupOpen(true);
+  }
+
+  function toggleMember(id: string) {
+    setSelectedMembers((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function submitCreateGroup() {
+    const memberIds = Array.from(selectedMembers);
+    try {
+      const conv = await createConversation({ type: "group", title: groupTitle || undefined, memberIds });
+      setGroupOpen(false);
+      setGroupTitle("");
+      setSelectedMembers(new Set());
+      await refetchConvos();
+      setActiveId(conv.id);
+    } catch (e) {
+      // silently fail; API will guard permissions
+    }
+  }
+
   const [opening, setOpening] = useState<string | null>(null);
   async function handleOpenDM(userId: string) {
     try {
@@ -168,14 +203,27 @@ export default function ChatPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Conversations</h2>
-            <BackgroundGradient><button
-              type="button"
-              className="px-2 py-1 text-sm rounded bg-transparent text-white"
-              onClick={handleCreateDMManual}
-            >
-              + DM
-            </button></BackgroundGradient>
-
+            <div className="flex items-center gap-2">
+              <BackgroundGradient>
+                <button
+                  type="button"
+                  className="px-2 py-1 text-sm rounded bg-transparent text-white"
+                  onClick={handleCreateDMManual}
+                >
+                  + DM
+                </button>
+              </BackgroundGradient>
+              <BackgroundGradient>
+                <button
+                  type="button"
+                  className="px-2 py-1 text-sm rounded bg-transparent text-white"
+                  onClick={handleCreateGroup}
+                  title="Create a group chat"
+                >
+                  + Group
+                </button>
+              </BackgroundGradient>
+            </div>
           </div>
 
           {convLoading ? (
@@ -317,6 +365,50 @@ export default function ChatPage() {
           <ChatWindow conversationId={activeId} />
         )}
       </section>
+
+      {/* Group creation modal */}
+      <Dialog open={groupOpen} onOpenChange={setGroupOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Create Group</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-gray-600">Group title</label>
+              <Input
+                value={groupTitle}
+                onChange={(e) => setGroupTitle(e.target.value)}
+                placeholder="e.g. Design Team"
+              />
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-gray-700 mb-2">Select members</div>
+              <div className="max-h-64 overflow-auto border rounded p-2 space-y-1">
+                {Array.from(
+                  new Map(
+                    [...online, ...offline].map((u: any) => [u.id, u])
+                  ).values()
+                ).map((u: any) => (
+                  <label key={u.id} className="flex items-center gap-2 text-sm py-1 px-1 rounded hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={selectedMembers.has(u.id)}
+                      onChange={() => toggleMember(u.id)}
+                    />
+                    <span className="flex-1 truncate">{u.name || u.email}</span>
+                    <span className={`h-2 w-2 rounded-full ${online.some((o: any) => o.id === u.id) ? "bg-emerald-500" : "bg-gray-300"}`} />
+                  </label>
+                ))}
+              </div>
+              <div className="text-[11px] text-gray-500 mt-1">You will be added automatically.</div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGroupOpen(false)}>Cancel</Button>
+            <Button onClick={submitCreateGroup} disabled={selectedMembers.size === 0}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

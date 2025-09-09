@@ -8,6 +8,9 @@ import { useUserSession } from "@/lib/hooks/use-user-session";
 import MessageBubble from "./MessageBubble";
 import ForwardModal from "./ForwardModal";
 import { BackgroundGradient } from "../ui/background-gradient";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useRoster } from "@/hooks/useRoster";
 
 function near(aIso: string, bIso: string, ms = 8000) {
   return Math.abs(new Date(aIso).getTime() - new Date(bIso).getTime()) <= ms;
@@ -52,7 +55,7 @@ export default function ChatWindow({
   const [nextCursor, setNextCursor] = useState<string | null>(null);
 
   // Conversation detail
-  const { data: convDetail } = useSWR(
+  const { data: convDetail, mutate: mutateConv } = useSWR(
     `/api/chat/conversations/${conversationId}`,
     fetcher
   );
@@ -196,6 +199,14 @@ export default function ChatWindow({
       );
     };
 
+    // Reactions: live update aggregated reactions on a message
+    const onReactionUpdate = (d: { messageId: string; reactions: { emoji: string; count: number; userIds: string[] }[] }) => {
+      if (!d?.messageId) return;
+      setMessages((prev) =>
+        prev.map((m) => (m.id === d.messageId ? { ...m, reactions: d.reactions || [] } : m))
+      );
+    };
+
     // typing
     const onTyping = (d: { userId: string; name?: string }) => {
       setTypingMap((prev) => ({
@@ -312,6 +323,7 @@ export default function ChatWindow({
     channel.bind("message:new", onNew);
     channel.bind("typing", onTyping);
     channel.bind("receipt:update", onReceiptUpdate);
+    channel.bind("reaction:update", onReactionUpdate);
     channel.bind("conversation:read", onConvRead);
     channel.bind("pusher:subscription_succeeded", onSub);
     channel.bind("pusher:member_added", onAdd);
@@ -321,6 +333,7 @@ export default function ChatWindow({
       channel.unbind("message:new", onNew);
       channel.unbind("typing", onTyping);
       channel.unbind("receipt:update", onReceiptUpdate);
+      channel.unbind("reaction:update", onReactionUpdate);
       channel.unbind("conversation:read", onConvRead);
       channel.unbind("pusher:subscription_succeeded", onSub);
       channel.unbind("pusher:member_added", onAdd);
@@ -409,12 +422,73 @@ export default function ChatWindow({
   const [forwardOpen, setForwardOpen] = useState(false);
   const [forwardMsgId, setForwardMsgId] = useState<string | null>(null);
 
+  // ---- Members dialog state
+  const [membersOpen, setMembersOpen] = useState(false);
+
   function openForward(messageId: string) {
     setForwardMsgId(messageId);
     setForwardOpen(true);
   }
 
   const isDM = convDetail?.type === "dm";
+
+  // Optimistic reaction toggling
+  async function handleToggleReaction(messageId: string, emoji: string) {
+    const meId = user?.id;
+    if (!meId) return;
+    // compute optimistic next reactions
+    setMessages((prev) => {
+      return prev.map((m) => {
+        if (m.id !== messageId) return m;
+        const list = m.reactions ? [...m.reactions] : [];
+        const i = list.findIndex((r) => r.emoji === emoji);
+        if (i === -1) {
+          // add new emoji with me
+          list.push({ emoji, count: 1, userIds: [meId] });
+        } else {
+          const r = list[i];
+          const hasMe = r.userIds.includes(meId);
+          const nextUserIds = hasMe
+            ? r.userIds.filter((id) => id !== meId)
+            : [...r.userIds, meId];
+          const nextCount = Math.max(0, (hasMe ? r.count - 1 : r.count + 1));
+          const next = { ...r, userIds: nextUserIds, count: nextCount };
+          if (next.count === 0) list.splice(i, 1);
+          else list[i] = next;
+        }
+        return { ...m, reactions: list };
+      });
+    });
+
+    // send to server; pusher will reconcile authoritative aggregate
+    try {
+      await fetch(`/api/chat/messages/${messageId}/reactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emoji }),
+      });
+    } catch {
+      // on error, revert by toggling again optimistically (best-effort)
+      setMessages((prev) => {
+        return prev.map((m) => {
+          if (m.id !== messageId) return m;
+          const list = m.reactions ? [...m.reactions] : [];
+          const i = list.findIndex((r) => r.emoji === emoji);
+          if (i === -1) return m; // nothing to revert
+          const r = list[i];
+          const hasMe = r.userIds.includes(meId);
+          const nextUserIds = hasMe
+            ? r.userIds.filter((id) => id !== meId)
+            : [...r.userIds, meId];
+          const nextCount = Math.max(0, (hasMe ? r.count - 1 : r.count + 1));
+          const next = { ...r, userIds: nextUserIds, count: nextCount };
+          if (next.count === 0) list.splice(i, 1);
+          else list[i] = next;
+          return { ...m, reactions: list };
+        });
+      });
+    }
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -427,17 +501,31 @@ export default function ChatWindow({
               }`
             : convDetail?.title || "Conversation"}
         </div>
-        {isDM && (
-          <div className="text-xs">
-            {isOtherOnline ? (
-              <span className="text-emerald-600">● Online</span>
-            ) : (
-              <span className="text-gray-500">
-                {lastSeenText ? `last seen ${lastSeenText}` : "Offline"}
-              </span>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {isDM ? (
+            <div className="text-xs">
+              {isOtherOnline ? (
+                <span className="text-emerald-600">● Online</span>
+              ) : (
+                <span className="text-gray-500">
+                  {lastSeenText ? `last seen ${lastSeenText}` : "Offline"}
+                </span>
+              )}
+            </div>
+          ) : null}
+
+          {/* Members management for group/team */}
+          {convDetail?.type !== "dm" && (
+            <BackgroundGradient>
+              <button
+                className="px-2 py-1 text-xs rounded bg-transparent text-white"
+                onClick={() => setMembersOpen(true)}
+              >
+                Members
+              </button>
+            </BackgroundGradient>
+          )}
+        </div>
       </div>
 
       {/* Messages */}
@@ -458,6 +546,7 @@ export default function ChatWindow({
             onForward={openForward}
             showSenderName={!isDM}
             participants={(convDetail?.participants || []).map((p: any) => p.user)}
+            onToggleReaction={(emoji: string) => handleToggleReaction(m.id, emoji)}
           />
         ))}
 
@@ -508,6 +597,124 @@ export default function ChatWindow({
           setForwardMsgId(null);
         }}
       />
+
+      {/* Members Modal */}
+      <MembersDialog
+        open={membersOpen}
+        onClose={() => setMembersOpen(false)}
+        conversationId={conversationId}
+        convParticipants={convDetail?.participants || []}
+        onChanged={() => mutateConv()}
+      />
     </div>
+  );
+}
+
+// ---- Members dialog component ----
+function MembersDialog({
+  open,
+  onClose,
+  conversationId,
+  convParticipants,
+  onChanged,
+}: {
+  open: boolean;
+  onClose: () => void;
+  conversationId: string;
+  convParticipants: any[];
+  onChanged: () => void;
+}) {
+  const { online, offline } = useRoster();
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const existingIds = new Set(
+    (convParticipants || []).map((p: any) => p.user?.id).filter(Boolean)
+  );
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  }
+
+  async function addMembers() {
+    const userIds = Array.from(selected).filter((id) => !existingIds.has(id));
+    if (!userIds.length) return;
+    await fetch(`/api/chat/conversations/${conversationId}/participants`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userIds }),
+    }).catch(() => {});
+    setSelected(new Set());
+    onChanged();
+  }
+
+  async function removeMember(userId: string) {
+    await fetch(`/api/chat/conversations/${conversationId}/participants`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
+    }).catch(() => {});
+    onChanged();
+  }
+
+  const rosterMap = new Map<string, any>();
+  [...online, ...offline].forEach((u: any) => rosterMap.set(u.id, u));
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => (!v ? onClose() : null)}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Group members</DialogTitle>
+        </DialogHeader>
+
+        <div className="grid grid-cols-2 gap-4">
+          {/* Current members */}
+          <div>
+            <div className="text-xs font-semibold text-gray-700 mb-2">Current</div>
+            <div className="max-h-64 overflow-auto border rounded p-2 space-y-1">
+              {(convParticipants || []).map((p: any) => (
+                <div key={p.userId} className="flex items-center gap-2 text-sm py-1 px-1 rounded hover:bg-gray-50">
+                  <div className="flex-1 truncate">{p.user?.name || p.user?.email}</div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => removeMember(p.userId)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Add new */}
+          <div>
+            <div className="text-xs font-semibold text-gray-700 mb-2">Add members</div>
+            <div className="max-h-64 overflow-auto border rounded p-2 space-y-1">
+              {Array.from(rosterMap.values())
+                .filter((u: any) => !existingIds.has(u.id))
+                .map((u: any) => (
+                  <label key={u.id} className="flex items-center gap-2 text-sm py-1 px-1 rounded hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(u.id)}
+                      onChange={() => toggle(u.id)}
+                    />
+                    <span className="flex-1 truncate">{u.name || u.email}</span>
+                  </label>
+                ))}
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button onClick={addMembers} disabled={!selected.size}>Add Selected</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
