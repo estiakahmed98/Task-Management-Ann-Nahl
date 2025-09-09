@@ -119,13 +119,24 @@ export async function GET(req: NextRequest) {
 
     const client = await prisma.client.findUnique({
       where: { id: clientId },
-      select: { id: true },
+      select: {
+        id: true,
+        package: { select: { totalMonths: true } },
+      },
     });
+
     if (!client)
       return NextResponse.json(
         { message: "Client not found" },
         { status: 404 }
       );
+
+    // months = normalized package months (min 1; capped to avoid accidents)
+    const packageTotalMonthsRaw = Number(client.package?.totalMonths ?? 1);
+    const packageTotalMonths =
+      Number.isFinite(packageTotalMonthsRaw) && packageTotalMonthsRaw > 0
+        ? Math.min(Math.floor(packageTotalMonthsRaw), 120)
+        : 1;
 
     const templateId =
       templateIdRaw === "none" || templateIdRaw === "" ? null : templateIdRaw;
@@ -216,7 +227,8 @@ export async function GET(req: NextRequest) {
         status: src.status,
         priority: src.priority,
         assetType,
-        frequency: freq,
+        // 👇 multiply original frequency by package months
+        frequency: freq * packageTotalMonths,
         categoryName: resolveCategoryFromType(assetType),
       };
     });
@@ -233,6 +245,7 @@ export async function GET(req: NextRequest) {
       countsByStatus,
       allApproved,
       totalWillCreate,
+      packageTotalMonths, // 👈 added
       runtime: "nodejs",
     });
   } catch (err) {
@@ -263,13 +276,24 @@ export async function POST(req: NextRequest) {
 
     const client = await prisma.client.findUnique({
       where: { id: clientId },
-      select: { id: true },
+      select: {
+        id: true,
+        package: { select: { totalMonths: true } },
+      },
     });
+
     if (!client)
       return NextResponse.json(
         { message: "Client not found" },
         { status: 404 }
       );
+
+    // months = normalized package months (min 1; capped)
+    const monthsRaw = Number(client.package?.totalMonths ?? 1);
+    const months =
+      Number.isFinite(monthsRaw) && monthsRaw > 0
+        ? Math.min(Math.floor(monthsRaw), 120)
+        : 1;
 
     const templateId = templateIdRaw === "none" ? null : templateIdRaw;
     const assignment = await prisma.assignment.findFirst({
@@ -395,23 +419,29 @@ export async function POST(req: NextRequest) {
       [blogCat.name, blogCat.id],
     ]);
 
-    // Expand copies
+    // Expand copies: (per-asset frequency) × (package months)
     const expandedCopies: {
       src: (typeof sourceTasks)[number];
       name: string;
       catName: string;
     }[] = [];
+
     for (const src of sourceTasks) {
       const assetType = src.templateSiteAsset?.type;
       const assetId = src.templateSiteAsset?.id;
-      const required = assetId ? requiredByAssetId.get(assetId) : undefined;
+
+      // original frequency for this asset
       const freq = getFrequency({
-        required,
+        required: assetId ? requiredByAssetId.get(assetId) : undefined,
         defaultFreq: src.templateSiteAsset?.defaultPostingFrequency,
       });
+
       const catName = resolveCategoryFromType(assetType);
       const base = baseNameOf(src.name);
-      for (let i = 1; i <= freq; i++) {
+
+      // total copies = freq * months
+      const totalCopies = Math.max(1, freq * months);
+      for (let i = 1; i <= totalCopies; i++) {
         expandedCopies.push({ src, catName, name: `${base} -${i}` });
       }
     }

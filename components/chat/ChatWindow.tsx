@@ -457,6 +457,7 @@ export default function ChatWindow({
             meId={user?.id ?? undefined}
             onForward={openForward}
             showSenderName={!isDM}
+            participants={(convDetail?.participants || []).map((p: any) => p.user)}
           />
         ))}
 

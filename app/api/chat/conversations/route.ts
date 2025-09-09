@@ -129,6 +129,16 @@ export async function GET(req: Request) {
   const u = new URL(req.url);
   const take = Number(u.searchParams.get("take") || 30);
   const cursor = u.searchParams.get("cursor") || undefined;
+  const filterType = (u.searchParams.get("type") || undefined) as
+    | "dm"
+    | "group"
+    | "client"
+    | "team"
+    | "assignment"
+    | "task"
+    | "support"
+    | undefined;
+  const filterTeamId = u.searchParams.get("teamId") || undefined;
 
   const cps = await prisma.conversationParticipant.findMany({
     where: { userId: me.id },
@@ -147,7 +157,11 @@ export async function GET(req: Request) {
 
   const convIds = cps.map((c) => c.conversationId);
   const conversations = await prisma.conversation.findMany({
-    where: { id: { in: convIds } },
+    where: {
+      id: { in: convIds },
+      ...(filterType ? { type: filterType } : {}),
+      ...(filterTeamId ? { teamId: filterTeamId } : {}),
+    },
     include: {
       participants: {
         include: { user: { select: { id: true, name: true, image: true } } },
@@ -159,6 +173,7 @@ export async function GET(req: Request) {
   const lastReadBy: Record<string, Date | null> = {};
   cps.forEach((c) => (lastReadBy[c.conversationId] = c.lastReadAt ?? null));
 
+  // compute unread and last activity time
   const withUnread = await Promise.all(
     conversations.map(async (conv) => {
       const lastReadAt = lastReadBy[conv.id] ?? new Date(0);
@@ -170,9 +185,19 @@ export async function GET(req: Request) {
           deletedAt: null,
         },
       });
-      return { ...conv, unreadCount };
+      const lastMsgAt = conv.messages?.[0]?.createdAt || conv.updatedAt;
+      return { ...conv, unreadCount, _lastActivityAt: lastMsgAt } as any;
     })
   );
 
-  return NextResponse.json(withUnread);
+  // Sort by most recent activity desc
+  withUnread.sort((a: any, b: any) => {
+    const ta = new Date(a._lastActivityAt).getTime();
+    const tb = new Date(b._lastActivityAt).getTime();
+    return tb - ta;
+  });
+
+  // Strip helper field before returning
+  const result = withUnread.map(({ _lastActivityAt, ...rest }: any) => rest);
+  return NextResponse.json(result);
 }

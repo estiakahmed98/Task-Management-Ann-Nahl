@@ -77,3 +77,21 @@ export async function deleteConversationForAll(id: string) {
   if (!res.ok) throw new Error("Failed to delete conversation");
   return res.json();
 }
+
+// Open or create a team conversation
+export async function openTeam(teamId: string, title?: string): Promise<{ id: string }> {
+  const res = await fetch("/api/chat/team", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ teamId, title }),
+  });
+  if (!res.ok) {
+    let message = "Failed to open team chat";
+    try {
+      const data = await res.json();
+      message = data?.message || data?.error || message;
+    } catch {}
+    throw new Error(message);
+  }
+  return res.json();
+}
