@@ -1200,7 +1200,7 @@ export function ProfessionalDashboard() {
       </Tabs>
 
       {/* Extra KPI Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         <MetricCard
           title="Packages"
           value={numberFmt(dashboardData.overview.totalPackages)}
@@ -1231,18 +1231,7 @@ export function ProfessionalDashboard() {
           gradient="from-indigo-500 to-purple-500"
           subMetric="completion time"
         />
-        <MetricCard
-          title="System Health"
-          value="98.5%"
-          change={`${dashboardData.overview.unreadNotifications}`}
-          trend={
-            dashboardData.overview.unreadNotifications > 10 ? "down" : "up"
-          }
-          description="unread alerts"
-          icon={<Zap className="h-6 w-6" />}
-          gradient="from-green-500 to-emerald-500"
-          subMetric="uptime"
-        />
+        
       </div>
     </div>
   );
