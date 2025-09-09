@@ -16,6 +16,7 @@ export default function MessageBubble({
   onForward,
   showSenderName = false, // new: show name above bubble (useful for group)
   participants,
+  onToggleReaction,
 }: {
   meId?: string;
   msg: {
@@ -35,6 +36,7 @@ export default function MessageBubble({
   onForward?: (messageId: string) => void;
   showSenderName?: boolean;
   participants?: { id: string; name?: string | null; email?: string | null; image?: string | null }[];
+  onToggleReaction?: (emoji: string) => void | Promise<void>;
 }) {
   const mine = meId ? msg?.sender?.id === meId : false;
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -48,6 +50,10 @@ export default function MessageBubble({
 
   async function toggleReaction(emoji: string) {
     setPickerOpen(false);
+    if (onToggleReaction) {
+      await onToggleReaction(emoji);
+      return;
+    }
     try {
       await fetch(`/api/chat/messages/${msg.id}/reactions`, {
         method: "POST",
