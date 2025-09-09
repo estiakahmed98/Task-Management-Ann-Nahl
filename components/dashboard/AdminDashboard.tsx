@@ -41,6 +41,7 @@ import {
   Timer,
   Zap,
   ChevronDown,
+  LineChart,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -204,7 +205,7 @@ function takeLatest<T extends Record<string, any>>(
     .slice(0, n);
 }
 
-export function ProfessionalDashboard() {
+export function AdminDashboard() {
   const [timeRange, setTimeRange] = useState("month");
   const [dashboardData, setDashboardData] = useState<DashboardStats | null>(
     null
@@ -247,7 +248,8 @@ export function ProfessionalDashboard() {
     [dashboardData]
   );
   const recentNotifications = useMemo(
-    () => takeLatest(dashboardData?.recent?.notifications, "createdAt", 5) || [],
+    () =>
+      takeLatest(dashboardData?.recent?.notifications, "createdAt", 5) || [],
     [dashboardData]
   );
   const recentActivities = useMemo(
@@ -264,9 +266,9 @@ export function ProfessionalDashboard() {
   const taskCategories = useMemo(() => {
     // Get all unique categories from tasks
     const categoryMap = new Map<string, number>();
-    
+
     // Process tasks to count categories
-    dashboardData?.recent?.tasks?.forEach(task => {
+    dashboardData?.recent?.tasks?.forEach((task) => {
       if (task.categoryName) {
         categoryMap.set(
           task.categoryName,
@@ -277,39 +279,39 @@ export function ProfessionalDashboard() {
 
     // Convert to array and calculate percentages
     return Array.from(categoryMap.entries()).map(([name, count]) => {
-      const percentage = dashboardData?.tasks?.total 
-        ? (count / dashboardData.tasks.total * 100).toFixed(1)
-        : '0.0';
-        
+      const percentage = dashboardData?.tasks?.total
+        ? ((count / dashboardData.tasks.total) * 100).toFixed(1)
+        : "0.0";
+
       return {
         name,
         count,
         percentage,
-        color: getCategoryColor(name)
+        color: getCategoryColor(name),
       };
     });
-    
+
     // Helper function to get color based on category name
     function getCategoryColor(categoryName: string): string {
       const colors = [
-        'bg-blue-500',
-        'bg-green-500',
-        'bg-purple-500',
-        'bg-yellow-500',
-        'bg-pink-500',
-        'bg-indigo-500',
-        'bg-teal-500',
-        'bg-orange-500',
-        'bg-cyan-500',
-        'bg-rose-500',
+        "bg-blue-500",
+        "bg-green-500",
+        "bg-purple-500",
+        "bg-yellow-500",
+        "bg-pink-500",
+        "bg-indigo-500",
+        "bg-teal-500",
+        "bg-orange-500",
+        "bg-cyan-500",
+        "bg-rose-500",
       ];
-      
+
       // Simple hash function to get consistent color for same category
       let hash = 0;
       for (let i = 0; i < categoryName.length; i++) {
         hash = categoryName.charCodeAt(i) + ((hash << 5) - hash);
       }
-      
+
       const index = Math.abs(hash) % colors.length;
       return colors[index];
     }
@@ -351,29 +353,6 @@ export function ProfessionalDashboard() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full md:w-auto">
-          {/* <div className="flex gap-2">
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="gap-2 border-slate-300 bg-white/80 backdrop-blur"
-            >
-              <Link href="/admin/reports">
-                <Download className="h-4 w-4" />
-                Export
-              </Link>
-            </Button>
-            <Button
-              asChild
-              size="sm"
-              className="gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-md"
-            >
-              <Link href="/admin/reports/new">
-                <FileText className="h-4 w-4" />
-                Report
-              </Link>
-            </Button>
-          </div> */}
           <Select defaultValue={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger className="w-full sm:w-[180px] border-slate-300 bg-white/80 backdrop-blur">
               <SelectValue placeholder="Select time range" />
@@ -434,23 +413,47 @@ export function ProfessionalDashboard() {
 
       {/* Tabs */}
       <Tabs defaultValue="tasks" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6 bg-white/70 backdrop-blur border border-slate-200/60 rounded-xl p-1">
-          <TabsTrigger value="tasks" className="rounded-lg">
+        <TabsList className="grid w-full grid-cols-6 bg-gradient-to-br from-white/90 to-slate-50/90 backdrop-blur-md shadow-lg border border-white/20 rounded-2xl p-1.5 gap-2">
+          <TabsTrigger
+            value="tasks"
+            className="rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 hover:scale-105 font-medium"
+          >
+            <Layers className="w-4 h-4 mr-1.5" />
             Tasks
           </TabsTrigger>
-          <TabsTrigger value="clients" className="rounded-lg">
+          <TabsTrigger
+            value="clients"
+            className="rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 hover:scale-105 font-medium"
+          >
+            <Users className="w-4 h-4 mr-1.5" />
             Clients
           </TabsTrigger>
-          <TabsTrigger value="teams" className="rounded-lg">
+          <TabsTrigger
+            value="teams"
+            className="rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-violet-500 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 hover:scale-105 font-medium"
+          >
+            <Briefcase className="w-4 h-4 mr-1.5" />
             Teams
           </TabsTrigger>
-          <TabsTrigger value="performance" className="rounded-lg">
+          <TabsTrigger
+            value="performance"
+            className="rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 hover:scale-105 font-medium"
+          >
+            <LineChart className="w-4 h-4 mr-1.5" />
             Performance
           </TabsTrigger>
-          <TabsTrigger value="activity" className="rounded-lg">
+          <TabsTrigger
+            value="activity"
+            className="rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-pink-500 data-[state=active]:to-rose-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 hover:scale-105 font-medium"
+          >
+            <Activity className="w-4 h-4 mr-1.5" />
             Activity
           </TabsTrigger>
-          <TabsTrigger value="users" className="rounded-lg">
+          <TabsTrigger
+            value="users"
+            className="rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 hover:scale-105 font-medium"
+          >
+            <UserCheck className="w-4 h-4 mr-1.5" />
             Users
           </TabsTrigger>
         </TabsList>
@@ -558,12 +561,16 @@ export function ProfessionalDashboard() {
                 <Layers className="h-5 w-5 text-cyan-600" />
                 Task Categories
               </CardTitle>
-              <CardDescription>Distribution of tasks by category</CardDescription>
+              <CardDescription>
+                Distribution of tasks by category
+              </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="space-y-4">
                 {taskCategories.length === 0 ? (
-                  <div className="text-sm text-slate-500">No task categories found.</div>
+                  <div className="text-sm text-slate-500">
+                    No task categories found.
+                  </div>
                 ) : (
                   <div className="space-y-4">
                     {taskCategories.map((category) => {
@@ -572,8 +579,11 @@ export function ProfessionalDashboard() {
                         <div key={category.name} className="space-y-2">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span 
-                                className={cn("h-3 w-3 rounded-full", category.color)}
+                              <span
+                                className={cn(
+                                  "h-3 w-3 rounded-full",
+                                  category.color
+                                )}
                               />
                               <span className="text-sm font-medium text-slate-700">
                                 {category.name}
@@ -927,7 +937,7 @@ export function ProfessionalDashboard() {
                       </div>
                     );
                   })}
-                 </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -1231,7 +1241,6 @@ export function ProfessionalDashboard() {
           gradient="from-indigo-500 to-purple-500"
           subMetric="completion time"
         />
-        
       </div>
     </div>
   );
