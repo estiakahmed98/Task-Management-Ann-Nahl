@@ -53,6 +53,8 @@ export type FormValues = {
 
   // AM
   amId?: string | null
+  // Arbitrary JSON pairs to save in Client.otherField
+  otherField?: Array<{ title: string; data: string }>
 }
 
 type AMUser = { id: string; name: string | null; email: string | null }
@@ -157,6 +159,30 @@ export default function ClientEditModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  // ---- otherField (arbitrary JSON key/value pairs) ----
+  type KV = { title: string; data: string }
+  const normalizeOtherField = (raw: any): KV[] => {
+    if (!raw) return []
+    if (Array.isArray(raw)) {
+      return raw
+        .map((it) => ({
+          title: String((it && (it.title ?? it.key)) ?? ""),
+          data: String((it && (it.data ?? it.value)) ?? ""),
+        }))
+        .filter((it) => it.title || it.data)
+    }
+    if (typeof raw === "object") {
+      return Object.entries(raw).map(([k, v]) => ({ title: String(k), data: String(v as any) }))
+    }
+    return []
+  }
+  const [otherPairs, setOtherPairs] = useState<KV[]>(normalizeOtherField((clientData as any).otherField))
+
+  useEffect(() => {
+    if (open) setOtherPairs(normalizeOtherField((clientData as any).otherField))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
   const fetchPackages = async () => {
     try {
       setPackagesLoading(true)
@@ -220,6 +246,9 @@ export default function ClientEditModal({
         }, {} as Partial<FormValues>)
       } else {
         const { email, phone, password, recoveryEmail, imageDrivelink, ...rest } = values
+        const cleanedPairs = otherPairs
+          .map((p) => ({ title: p.title.trim(), data: p.data.trim() }))
+          .filter((p) => p.title || p.data)
         payload = {
           ...rest,
           progress:
@@ -228,6 +257,8 @@ export default function ClientEditModal({
           startDate: values.startDate || undefined,
           dueDate: values.dueDate || undefined,
           amId: values.amId && values.amId.trim() !== "" ? values.amId : null,
+          // attach arbitrary JSON
+          otherField: cleanedPairs,
         }
       }
 
@@ -442,6 +473,56 @@ export default function ClientEditModal({
                   <div>
                     <Label htmlFor="dueDate" className="pb-2">Due Date</Label>
                     <Input id="dueDate" type="date" className="border-2 border-gray-400" {...register("dueDate")} />
+                  </div>
+                </div>
+              </section>
+
+              {/* Other (Custom Title/Data Pairs) */}
+              <section>
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Other Information</h3>
+                <div className="space-y-3">
+                  {otherPairs.map((pair, idx) => (
+                    <div key={idx} className="grid grid-cols-1 md:grid-cols-5 gap-2 items-center">
+                      <div className="md:col-span-2">
+                        <Label className="pb-1">Title</Label>
+                        <Input
+                          value={pair.title}
+                          onChange={(e) =>
+                            setOtherPairs((prev) => prev.map((p, i) => (i === idx ? { ...p, title: e.target.value } : p)))
+                          }
+                          className="border-2 border-gray-400"
+                        />
+                      </div>
+                      <div className="md:col-span-3">
+                        <Label className="pb-1">Data</Label>
+                        <Input
+                          value={pair.data}
+                          onChange={(e) =>
+                            setOtherPairs((prev) => prev.map((p, i) => (i === idx ? { ...p, data: e.target.value } : p)))
+                          }
+                          className="border-2 border-gray-400"
+                        />
+                      </div>
+                      <div className="flex md:justify-end">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="text-red-600"
+                          onClick={() => setOtherPairs((prev) => prev.filter((_, i) => i !== idx))}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  <div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setOtherPairs((prev) => [...prev, { title: "", data: "" }])}
+                    >
+                      + Add Row
+                    </Button>
                   </div>
                 </div>
               </section>
