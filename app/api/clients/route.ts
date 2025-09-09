@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
     const {
       name,
       birthdate,
+      gender,
       company,
       designation,
       location,
@@ -81,6 +82,7 @@ export async function POST(req: NextRequest) {
       data: {
         name,
         birthdate: birthdate ? new Date(birthdate) : undefined,
+        gender,
         company,
         designation,
         location,

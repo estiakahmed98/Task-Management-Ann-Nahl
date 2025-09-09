@@ -2,6 +2,7 @@ export interface OnboardingFormData {
   // Personal Information
   name: string;
   birthdate?: string;
+  gender?: string;
   location?: string;
   company?: string;
   designation?: string;

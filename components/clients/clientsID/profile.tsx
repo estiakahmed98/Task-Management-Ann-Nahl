@@ -32,6 +32,7 @@ import {
   Loader2,
   Plus,
   UserCircle2,
+  Shield,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Client } from "@/types/client"
@@ -46,6 +47,7 @@ type ClientWithSocial = Client & {
   password?: string | null
   recoveryEmail?: string | null
   amId?: string | null
+  gender?: string | null
   accountManager?: {
     id: string
     name?: string | null
@@ -73,6 +75,7 @@ interface ProfileProps {
 type FormValues = {
   name: string
   birthdate?: string
+  gender?: string
   company?: string
   designation?: string
   location?: string
@@ -583,7 +586,7 @@ export function Profile({ clientData, currentUserRole }: ProfileProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium text-slate-500 dark:text-slate-400">Birth Date</label>
                 <div className="flex items-center mt-1">
@@ -598,6 +601,13 @@ export function Profile({ clientData, currentUserRole }: ProfileProps) {
                 <div className="flex items-center mt-1">
                   <MapPin className="h-4 w-4 text-slate-400 mr-2" />
                   <span className="text-slate-900 dark:text-slate-100">{clientData.location ?? ""}</span>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-500 dark:text-slate-400">Gender</label>
+                <div className="flex items-center mt-1">
+                  <Shield className="h-4 w-4 text-slate-400 mr-2" />
+                  <span className="text-slate-900 dark:text-slate-100">{clientData.gender ?? ""}</span>
                 </div>
               </div>
             </div>

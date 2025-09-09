@@ -28,6 +28,7 @@ export type FormValues = {
   company?: string
   designation?: string
   location?: string
+  gender?: string
 
   // contact/credentials
   email?: string | null
@@ -107,6 +108,7 @@ export default function ClientEditModal({
       company: clientData.company ?? "",
       designation: clientData.designation ?? "",
       location: clientData.location ?? "",
+      gender: (clientData as any).gender ?? "",
       email: clientData.email ?? "",
       phone: clientData.phone ?? "",
       password: clientData.password ?? "",
@@ -137,6 +139,7 @@ export default function ClientEditModal({
       company: clientData.company ?? "",
       designation: clientData.designation ?? "",
       location: clientData.location ?? "",
+      gender: (clientData as any).gender ?? "",
       email: clientData.email ?? "",
       phone: clientData.phone ?? "",
       password: clientData.password ?? "",
@@ -358,6 +361,20 @@ export default function ClientEditModal({
                     <Label htmlFor="birthdate" className="pb-2">Birth Date</Label>
                     <Input id="birthdate" className="border-2 border-gray-400" type="date" {...register("birthdate")} />
                   </div>
+                  
+                  <div>
+                    <Label htmlFor="gender" className="pb-2">Gender</Label>
+                    <select
+                      id="gender"
+                      className="w-full h-9 rounded-md border-2 border-gray-400 bg-background px-3 text-sm"
+                      {...register("gender")}
+                    >
+                      <option disabled value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                  </div>
+
                   <div>
                     <Label htmlFor="location" className="pb-2">Location</Label>
                     <Input id="location" className="border-2 border-gray-400" {...register("location")} />
@@ -393,7 +410,8 @@ export default function ClientEditModal({
                     <select
                       id="amId"
                       className="w-full h-9 rounded-md border border-gray-400 bg-background px-3 text-sm"
-                      disabled={amsLoading}
+                      disabled={amsLoading || roleName !== 'admin'}
+                      title={roleName !== 'admin' ? 'Only administrators can modify the Account Manager' : ''}
                       {...register("amId")}
                     >
                       <option value="">{amsLoading ? "Loading AMs..." : "— None —"}</option>
