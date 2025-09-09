@@ -1313,7 +1313,6 @@ function KpiCard({
   );
 }
 
-
 function getClientStats(tasks: TaskWithDetails[]) {
   const count = (s: TaskWithDetails["status"]) =>
     tasks.filter((t) => t.status === s).length;
@@ -1327,11 +1326,15 @@ function getClientStats(tasks: TaskWithDetails[]) {
 
   // ⬇️ Only qc_approved tasks contribute to QC average
   const qcApprovedScores = tasks
-    .filter((t) => t.status === "qc_approved" && typeof t.qcTotalScore === "number")
+    .filter(
+      (t) => t.status === "qc_approved" && typeof t.qcTotalScore === "number"
+    )
     .map((t) => t.qcTotalScore as number);
 
   const avgQcScore = qcApprovedScores.length
-    ? Math.round(qcApprovedScores.reduce((a, b) => a + b, 0) / qcApprovedScores.length)
+    ? Math.round(
+        qcApprovedScores.reduce((a, b) => a + b, 0) / qcApprovedScores.length
+      )
     : 0;
 
   const completionRate = total ? Math.round((qc_approved / total) * 100) : 0;
@@ -1347,8 +1350,6 @@ function getClientStats(tasks: TaskWithDetails[]) {
     completionRate,
   };
 }
-
-
 
 function ClientAccordionItem({
   clientGroup,
@@ -1367,26 +1368,35 @@ function ClientAccordionItem({
       value={client.id}
       className="group rounded-2xl ring-1 ring-slate-200 dark:ring-slate-800 bg-white/80 dark:bg-slate-900/50 backdrop-blur-sm shadow-sm overflow-hidden"
     >
-      {/* Remove your custom ChevronDown — shadcn adds one automatically */}
       <AccordionTrigger
         className="
-          px-5 py-4 hover:no-underline
-          data-[state=open]:bg-gradient-to-r data-[state=open]:from-indigo-50/70 data-[state=open]:to-purple-50/70
-          dark:data-[state=open]:from-indigo-900/20 dark:data-[state=open]:to-purple-900/20
-          [&>svg]:text-slate-500
-        "
+    relative px-5 py-4 hover:no-underline
+    pr-12 md:pr-14
+    data-[state=open]:bg-gradient-to-r data-[state=open]:from-indigo-50/70 data-[state=open]:to-purple-50/70
+    dark:data-[state=open]:from-indigo-900/20 dark:data-[state=open]:to-purple-900/20
+
+    /* Built-in chevron: keep at right, make bigger, center vertically */
+    [&>svg]:absolute [&>svg]:right-4 md:[&>svg]:right-5
+    [&>svg]:top-1/2 [&>svg]:-translate-y-1/2
+    [&>svg]:h-6 [&>svg]:w-6
+    [&>svg]:text-slate-500 [&>svg]:opacity-85
+    [&>svg]:pointer-events-none
+    data-[state=open]:[&>svg]:rotate-180
+  "
       >
         <div className="flex w-full items-center justify-between gap-4">
           {/* Left: Identity & meta */}
           <div className="flex items-center gap-4 min-w-0">
             <div
               className={`
-                relative w-11 h-11 rounded-xl text-white font-semibold shadow
-                flex items-center justify-center overflow-hidden
-                ${isUnassigned
-                  ? "bg-gradient-to-br from-slate-500 to-slate-700"
-                  : "bg-gradient-to-br from-indigo-500 to-purple-600"}
-              `}
+          relative w-11 h-11 rounded-xl text-white font-semibold shadow
+          flex items-center justify-center overflow-hidden
+          ${
+            isUnassigned
+              ? "bg-gradient-to-br from-slate-500 to-slate-700"
+              : "bg-gradient-to-br from-indigo-500 to-purple-600"
+          }
+        `}
             >
               <span className="relative z-10">
                 {isUnassigned ? "?" : client.name.charAt(0).toUpperCase()}
@@ -1462,4 +1472,3 @@ function ClientAccordionItem({
     </AccordionItem>
   );
 }
-
