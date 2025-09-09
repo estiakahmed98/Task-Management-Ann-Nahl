@@ -1,615 +1,472 @@
-"use client";
+// components/clients/client-edit-modal.tsx
+"use client"
 
-import type React from "react";
-import { useState } from "react";
-import {
-  CheckCircle,
-  X,
-  User,
-  Mail,
-  Calendar,
-  MapPin,
-  Phone,
-  Building,
-  Globe,
-  Briefcase,
-  Tag,
-  Package,
-  TrendingUp,
-  Activity,
-  AlertCircle,
-  Save,
-} from "lucide-react";
+import { useEffect, useState } from "react"
+import { useForm } from "react-hook-form"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import { useUserSession } from "@/lib/hooks/use-user-session"
 
-const Dialog = ({
+import type { Client } from "@/types/client"
+
+type ClientWithSocial = Client & {
+  email?: string | null
+  phone?: string | null
+  password?: string | null
+  recoveryEmail?: string | null
+  amId?: string | null
+}
+
+export type FormValues = {
+  name: string
+  birthdate?: string
+  company?: string
+  designation?: string
+  location?: string
+
+  // contact/credentials
+  email?: string | null
+  phone?: string | null
+  password?: string | null
+  recoveryEmail?: string | null
+
+  // websites & media
+  website?: string
+  website2?: string
+  website3?: string
+  companywebsite?: string
+  companyaddress?: string
+  biography?: string
+  imageDrivelink?: string
+  avatar?: string
+
+  progress?: number
+  status?: string
+  packageId?: string
+  startDate?: string
+  dueDate?: string
+
+  // AM
+  amId?: string | null
+}
+
+type AMUser = { id: string; name: string | null; email: string | null }
+type PackageOption = { id: string; name: string }
+
+export interface ClientEditModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  clientData: ClientWithSocial
+  currentUserRole?: string
+  /** Called after a successful save */
+  onSaved?: () => void
+}
+
+function toDateInput(v?: string | null) {
+  if (!v) return ""
+  const d = new Date(v)
+  if (Number.isNaN(d.getTime())) return ""
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+
+export default function ClientEditModal({
   open,
   onOpenChange,
-  children,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  children: React.ReactNode;
-}) => {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="fixed inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
-        onClick={() => onOpenChange(false)}
-      />
-      <div className="relative z-50 w-full max-w-6xl max-h-[95vh] mx-4">
-        {children}
-      </div>
-    </div>
-  );
-};
-
-const DialogContent = ({ children }: { children: React.ReactNode }) => (
-  <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden transform transition-all duration-300">
-    {children}
-  </div>
-);
-
-const DialogHeader = ({
-  children,
-  onClose,
-}: {
-  children: React.ReactNode;
-  onClose?: () => void;
-}) => (
-  <div className="relative px-8 py-4 bg-gradient-to-r from-blue-100 via-purple-100 to-indigo-100">
-    <div className="absolute inset-0 bg-gradient-to-r from-blue-50/90 via-purple-50/90 to-indigo-50/90" />
-    <div className="relative">
-      {children}
-      {onClose && (
-        <button
-          onClick={onClose}
-          className="absolute -top-2 -right-2 p-2 rounded-full bg-white/60 hover:bg-white/80 transition-colors text-gray-600"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      )}
-    </div>
-  </div>
-);
-
-const DialogTitle = ({ children }: { children: React.ReactNode }) => (
-  <h2 className="text-3xl font-bold text-gray-800 mb-3 flex items-center gap-3">
-    <div className="p-2 bg-white/60 rounded-xl">
-      <User className="h-6 w-6" />
-    </div>
-    {children}
-  </h2>
-);
-
-const DialogDescription = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-gray-600 text-lg">{children}</p>
-);
-
-const Input = ({ label, icon: Icon, error, className = "", ...props }: any) => (
-  <div className="space-y-2">
-    {label && (
-      <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-        {Icon && <Icon className="h-4 w-4" />}
-        {label}
-      </label>
-    )}
-    <input
-      className={`
-        w-full px-4 py-3 rounded-xl border border-gray-200 
-        focus:ring-2 focus:ring-purple-500 focus:border-transparent
-        transition-all duration-200 bg-white
-        placeholder:text-gray-400
-        hover:border-gray-300 hover:shadow-sm
-        ${error ? "border-red-300 focus:ring-red-500" : ""}
-        ${className}
-      `}
-      {...props}
-    />
-    {error && (
-      <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
-        <AlertCircle className="h-3 w-3" />
-        {error}
-      </p>
-    )}
-  </div>
-);
-
-const Button = ({
-  variant = "primary",
-  loading = false,
-  children,
-  className = "",
-  disabled,
-  ...props
-}: any) => {
-  const variants = {
-    primary:
-      "bg-gradient-to-r from-blue-400 to-purple-400 hover:from-blue-500 hover:to-purple-500 text-white shadow-lg hover:shadow-xl",
-    outline:
-      "border-2 border-gray-200 bg-white hover:bg-gray-50 text-gray-700 hover:border-gray-300",
-  };
-
-  return (
-    <button
-      className={`
-        inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 
-        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
-        disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3
-        ${variants[variant]} ${className}
-      `}
-      disabled={disabled || loading}
-      {...props}
-    >
-      {loading && (
-        <svg
-          className="animate-spin -ml-1 mr-3 h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          />
-        </svg>
-      )}
-      {children}
-    </button>
-  );
-};
-
-const Select = ({
-  value,
-  onValueChange,
-  options,
-  placeholder,
-  label,
-  icon: Icon,
-}: any) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectedOption = options.find((option: any) => option.value === value);
-
-  return (
-    <div className="relative space-y-2">
-      {label && (
-        <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-          {Icon && <Icon className="h-4 w-4" />}
-          {label}
-        </label>
-      )}
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-left focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-300 hover:shadow-sm flex items-center justify-between"
-      >
-        <span className={selectedOption ? "text-gray-900" : "text-gray-400"}>
-          {selectedOption?.label || placeholder}
-        </span>
-        <svg
-          className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
-          }`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </button>
-
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-auto">
-          {options.map((option: any) => (
-            <button
-              key={option.value}
-              type="button"
-              className="w-full px-4 py-3 text-left hover:bg-gray-50 focus:bg-gray-50 transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl"
-              onClick={() => {
-                onValueChange(option.value);
-                setIsOpen(false);
-              }}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-interface Client {
-  id: string;
-  name: string;
-  email?: string;
-  birthdate?: string;
-  company?: string;
-  designation?: string;
-  location?: string;
-  phone?: string;
-  companywebsite?: string;
-  companyaddress?: string;
-  status?: string;
-  category?: string;
-  startDate?: string | null;
-  dueDate?: string | null;
-  packageId?: string;
-  progress?: number;
-}
-
-interface ClientEditModalProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  client: Client;
-  setClient: (client: Client) => void;
-  refreshClients: () => Promise<void>;
-}
-
-export function ClientEditModal({
-  isOpen,
-  onOpenChange,
-  client,
-  setClient,
-  refreshClients,
+  clientData,
+  currentUserRole,
+  onSaved,
 }: ClientEditModalProps) {
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter()
+  const { user } = useUserSession()
 
-  const formatDateForInput = (dateString?: string | null) => {
-    if (!dateString) return "";
+  const roleName =
+    (currentUserRole ?? (user as any)?.role?.name ?? (user as any)?.role ?? "").toString().toLowerCase()
+  const isAgent = roleName === "agent"
+
+  // loading & options
+  const [packages, setPackages] = useState<PackageOption[]>([])
+  const [packagesLoading, setPackagesLoading] = useState(false)
+
+  const [ams, setAms] = useState<AMUser[]>([])
+  const [amsLoading, setAmsLoading] = useState(false)
+  const [amsError, setAmsError] = useState<string | null>(null)
+
+  const [isSaving, setIsSaving] = useState(false)
+
+  const { register, handleSubmit, reset } = useForm<FormValues>({
+    defaultValues: {
+      name: clientData.name ?? "",
+      birthdate: toDateInput(clientData.birthdate as any),
+      company: clientData.company ?? "",
+      designation: clientData.designation ?? "",
+      location: clientData.location ?? "",
+      email: clientData.email ?? "",
+      phone: clientData.phone ?? "",
+      password: clientData.password ?? "",
+      recoveryEmail: clientData.recoveryEmail ?? "",
+      website: clientData.website ?? "",
+      website2: clientData.website2 ?? "",
+      website3: clientData.website3 ?? "",
+      companywebsite: clientData.companywebsite ?? "",
+      companyaddress: clientData.companyaddress ?? "",
+      biography: (clientData as any).biography ?? "",
+      imageDrivelink: (clientData as any).imageDrivelink ?? "",
+      avatar: (clientData as any).avatar ?? "",
+      progress: clientData.progress ?? 0,
+      status: (clientData.status as string) ?? "inactive",
+      packageId: (clientData.packageId as string) ?? "",
+      startDate: toDateInput(clientData.startDate as any),
+      dueDate: toDateInput(clientData.dueDate as any),
+      amId: clientData.amId ?? null,
+    },
+  })
+
+  // rehydrate form whenever the modal is opened (so stale edits don't linger)
+  useEffect(() => {
+    if (!open) return
+    reset({
+      name: clientData.name ?? "",
+      birthdate: toDateInput(clientData.birthdate as any),
+      company: clientData.company ?? "",
+      designation: clientData.designation ?? "",
+      location: clientData.location ?? "",
+      email: clientData.email ?? "",
+      phone: clientData.phone ?? "",
+      password: clientData.password ?? "",
+      recoveryEmail: clientData.recoveryEmail ?? "",
+      website: clientData.website ?? "",
+      website2: clientData.website2 ?? "",
+      website3: clientData.website3 ?? "",
+      companywebsite: clientData.companywebsite ?? "",
+      companyaddress: clientData.companyaddress ?? "",
+      biography: (clientData as any).biography ?? "",
+      imageDrivelink: (clientData as any).imageDrivelink ?? "",
+      avatar: (clientData as any).avatar ?? "",
+      progress: clientData.progress ?? 0,
+      status: (clientData.status as string) ?? "inactive",
+      packageId: (clientData.packageId as string) ?? "",
+      startDate: toDateInput(clientData.startDate as any),
+      dueDate: toDateInput(clientData.dueDate as any),
+      amId: clientData.amId ?? null,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  const fetchPackages = async () => {
     try {
-      return new Date(dateString).toISOString().split("T")[0];
-    } catch {
-      return "";
+      setPackagesLoading(true)
+      const res = await fetch("/api/packages", { cache: "no-store" })
+      if (!res.ok) throw new Error(`Failed to load packages: ${res.status}`)
+      const data = await res.json().catch(() => [])
+      const list = Array.isArray(data) ? data : Array.isArray(data?.packages) ? data.packages : []
+      const options: PackageOption[] = list
+        .map((p: any) => ({ id: String(p.id ?? ""), name: String(p.name ?? "Unnamed") }))
+        .filter((p: PackageOption) => p.id)
+      setPackages(options)
+    } catch (e) {
+      console.error(e)
+      setPackages([])
+    } finally {
+      setPackagesLoading(false)
     }
-  };
+  }
 
-  const statusOptions = [
-    { value: "active", label: "🟢 Active" },
-    { value: "inactive", label: "🔴 Inactive" },
-    { value: "pending", label: "🟡 Pending" },
-    { value: "completed", label: "✅ Completed" },
-    { value: "on-hold", label: "⏸️ On Hold" },
-  ];
-
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSaving(true);
-
-    // Basic validation
-    if (!client.name.trim()) {
-      setError("Client name is required");
-      setSaving(false);
-      return;
-    }
-
+  const fetchAMs = async () => {
     try {
-      const response = await fetch(`/api/clients/${client.id}`, {
+      setAmsLoading(true)
+      setAmsError(null)
+      const res = await fetch("/api/users?role=am&limit=100", { cache: "no-store" })
+      const json = await res.json()
+      const raw = (json?.users ?? json?.data ?? []) as any[]
+      const list = raw
+        .filter((u) => u?.role?.name === "am")
+        .map((u) => ({ id: String(u.id), name: u.name ?? null, email: u.email ?? null }))
+      setAms(list)
+    } catch (e) {
+      console.error(e)
+      setAms([])
+      setAmsError("Failed to load AMs")
+    } finally {
+      setAmsLoading(false)
+    }
+  }
+
+  // Load packages & AMs when the modal opens (non-agents only, per your original logic)
+  useEffect(() => {
+    if (open && !isAgent) {
+      fetchPackages()
+      fetchAMs()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, isAgent])
+
+  const onSubmit = async (values: FormValues) => {
+    try {
+      setIsSaving(true)
+
+      let payload: Partial<FormValues>
+
+      if (isAgent) {
+        const allowed: (keyof FormValues)[] = ["email", "phone", "password", "recoveryEmail", "imageDrivelink"]
+        payload = allowed.reduce((acc, key) => {
+          const val = (values as any)[key]
+          if (val !== undefined) (acc as any)[key] = val
+          return acc
+        }, {} as Partial<FormValues>)
+      } else {
+        const { email, phone, password, recoveryEmail, imageDrivelink, ...rest } = values
+        payload = {
+          ...rest,
+          progress:
+            values.progress === undefined || values.progress === null ? undefined : Number(values.progress),
+          birthdate: values.birthdate || undefined,
+          startDate: values.startDate || undefined,
+          dueDate: values.dueDate || undefined,
+          amId: values.amId && values.amId.trim() !== "" ? values.amId : null,
+        }
+      }
+
+      const res = await fetch(`/api/clients/${clientData.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(client),
-      });
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err?.message || `Failed with ${res.status}`)
+      }
 
-      if (!response.ok) throw new Error("Failed to update client");
-
-      const updatedClient: Client = await response.json();
-      setClient(updatedClient);
-
-      // Show success notification
-      console.log("Client updated successfully");
-
-      await refreshClients();
-      onOpenChange(false);
-    } catch (error) {
-      console.error("Error updating client:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to update client"
-      );
+      toast.success("Client updated")
+      onOpenChange(false)
+      onSaved?.()
+      router.refresh()
+    } catch (e: any) {
+      console.error(e)
+      toast.error(e?.message || "Failed to update client")
     } finally {
-      setSaving(false);
+      setIsSaving(false)
     }
-  };
-
-  const handleCancel = () => {
-    onOpenChange(false);
-    setError(null);
-  };
+  }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader onClose={() => onOpenChange(false)}>
-          <DialogTitle>✨ Edit Client Profile</DialogTitle>
-          <DialogDescription>
-            Update client information and project details with our comprehensive
-            form
-          </DialogDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-[90vw] h-[90vh] overflow-y-auto bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900">
+        <DialogHeader>
+          <DialogTitle>Edit Client Profile</DialogTitle>
         </DialogHeader>
 
-        <div className="max-h-[65vh] overflow-y-auto">
-          {error && (
-            <div className="mx-8 mt-6 p-4 bg-red-25 border border-red-100 rounded-xl flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
-              <p className="text-red-600 text-sm">{error}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleFormSubmit} className="p-4 space-y-8">
-            {/* Personal Information Section */}
-            <div className="bg-gradient-to-br from-blue-25 to-indigo-25 rounded-2xl p-6 border border-blue-50">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-lg">
-                  <User className="h-5 w-5 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-800">
-                  Personal Information
+        <form id="edit-client-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {isAgent ? (
+            <>
+              {/* AGENT-ONLY: Contact & Credentials */}
+              <section>
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
+                  Contact & Credentials
                 </h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                  label="Full Name"
-                  icon={User}
-                  value={client.name}
-                  onChange={(e: any) =>
-                    setClient({ ...client, name: e.target.value })
-                  }
-                  placeholder="Enter full name"
-                  required
-                />
-
-                <Input
-                  label="Email Address"
-                  icon={Mail}
-                  type="email"
-                  value={client.email || ""}
-                  onChange={(e: any) =>
-                    setClient({ ...client, email: e.target.value })
-                  }
-                  placeholder="Enter email address"
-                />
-
-                <Input
-                  label="Birth Date"
-                  icon={Calendar}
-                  type="date"
-                  value={formatDateForInput(client.birthdate)}
-                  onChange={(e: any) =>
-                    setClient({ ...client, birthdate: e.target.value })
-                  }
-                />
-
-                <Input
-                  label="Phone Number"
-                  icon={Phone}
-                  value={client.phone || ""}
-                  onChange={(e: any) =>
-                    setClient({ ...client, phone: e.target.value })
-                  }
-                  placeholder="Enter phone number"
-                />
-
-                <div className="md:col-span-2">
-                  <Input
-                    label="Location"
-                    icon={MapPin}
-                    value={client.location || ""}
-                    onChange={(e: any) =>
-                      setClient({ ...client, location: e.target.value })
-                    }
-                    placeholder="Enter location"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Company Information Section */}
-            <div className="bg-gradient-to-br from-emerald-25 to-teal-25 rounded-2xl p-6 border border-emerald-50">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-lg">
-                  <Building className="h-5 w-5 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-800">
-                  Company Information
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                  label="Company Name"
-                  icon={Building}
-                  value={client.company || ""}
-                  onChange={(e: any) =>
-                    setClient({ ...client, company: e.target.value })
-                  }
-                  placeholder="Enter company name"
-                />
-
-                <Input
-                  label="Job Title"
-                  icon={Briefcase}
-                  value={client.designation || ""}
-                  onChange={(e: any) =>
-                    setClient({ ...client, designation: e.target.value })
-                  }
-                  placeholder="Enter job title"
-                />
-
-                <Input
-                  label="Company Website"
-                  icon={Globe}
-                  type="url"
-                  value={client.companywebsite || ""}
-                  onChange={(e: any) =>
-                    setClient({ ...client, companywebsite: e.target.value })
-                  }
-                  placeholder="https://company.com"
-                />
-
-                <Input
-                  label="Category"
-                  icon={Tag}
-                  value={client.category || ""}
-                  onChange={(e: any) =>
-                    setClient({ ...client, category: e.target.value })
-                  }
-                  placeholder="Enter category"
-                />
-
-                <div className="md:col-span-2">
-                  <Input
-                    label="Company Address"
-                    icon={MapPin}
-                    value={client.companyaddress || ""}
-                    onChange={(e: any) =>
-                      setClient({ ...client, companyaddress: e.target.value })
-                    }
-                    placeholder="Enter company address"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Project Information Section */}
-            <div className="bg-gradient-to-br from-purple-25 to-pink-25 rounded-2xl p-6 border border-purple-50">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-lg">
-                  <Activity className="h-5 w-5 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-800">
-                  Project Information
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                  label="Start Date"
-                  icon={Calendar}
-                  type="date"
-                  value={formatDateForInput(client.startDate)}
-                  onChange={(e: any) =>
-                    setClient({
-                      ...client,
-                      startDate: e.target.value
-                        ? new Date(e.target.value).toISOString()
-                        : null,
-                    })
-                  }
-                />
-
-                <Input
-                  label="Due Date"
-                  icon={Calendar}
-                  type="date"
-                  value={formatDateForInput(client.dueDate)}
-                  onChange={(e: any) =>
-                    setClient({
-                      ...client,
-                      dueDate: e.target.value
-                        ? new Date(e.target.value).toISOString()
-                        : null,
-                    })
-                  }
-                />
-
-                <Input
-                  label="Package ID"
-                  icon={Package}
-                  value={client.packageId || ""}
-                  onChange={(e: any) =>
-                    setClient({ ...client, packageId: e.target.value })
-                  }
-                  placeholder="Enter package ID"
-                />
-
-                <Select
-                  value={client.status || ""}
-                  onValueChange={(value: string) =>
-                    setClient({ ...client, status: value })
-                  }
-                  options={statusOptions}
-                  label="Project Status"
-                  icon={Activity}
-                  placeholder="Select status"
-                />
-
-                <div className="md:col-span-2">
-                  <div className="space-y-3">
-                    <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4" />
-                      Progress Percentage
-                    </label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={client.progress || 0}
-                      onChange={(e: any) =>
-                        setClient({
-                          ...client,
-                          progress: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      placeholder="Enter progress percentage"
-                    />
-                    <div className="w-full bg-gray-200 rounded-full h-4">
-                      <div
-                        className="bg-gradient-to-r from-blue-400 to-purple-400 h-4 rounded-full transition-all duration-500 ease-out flex items-center justify-end pr-2"
-                        style={{ width: `${client.progress || 0}%` }}
-                      >
-                        {(client.progress || 0) > 10 && (
-                          <span className="text-white text-xs font-semibold">
-                            {client.progress || 0}%
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-600 text-center font-medium">
-                      {client.progress || 0}% Complete
-                    </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="email" className="pb-2">Email</Label>
+                    <Input id="email" type="email" className="border-2 border-gray-400" {...register("email")} />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone" className="pb-2">Phone</Label>
+                    <Input id="phone" className="border-2 border-gray-400" {...register("phone")} />
+                  </div>
+                  <div>
+                    <Label htmlFor="password" className="pb-2">Password</Label>
+                    <Input id="password" type="text" className="border-2 border-gray-400" {...register("password")} />
+                  </div>
+                  <div>
+                    <Label htmlFor="recoveryEmail" className="pb-2">Recovery Email</Label>
+                    <Input id="recoveryEmail" type="email" className="border-2 border-gray-400" {...register("recoveryEmail")} />
                   </div>
                 </div>
-              </div>
-            </div>
-          </form>
-        </div>
+              </section>
 
-        {/* Footer */}
-        <div className="px-8 py-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+              {/* AGENT-ONLY: Media (Image Drive Link only) */}
+              <section>
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Media</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <Label htmlFor="imageDrivelink" className="pb-2">Image Drive Link</Label>
+                    <Input id="imageDrivelink" className="border-2 border-gray-400" {...register("imageDrivelink")} />
+                  </div>
+                </div>
+              </section>
+            </>
+          ) : (
+            <>
+              {/* FULL FORM for non-agents — Basic */}
+              <section>
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Basic</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name" className="pb-2">Full Name</Label>
+                    <Input id="name" className="border-2 border-gray-400" {...register("name", { required: true })} />
+                  </div>
+                  <div>
+                    <Label htmlFor="status" className="pb-2">Status</Label>
+                    <select
+                      id="status"
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                      {...register("status")}
+                    >
+                      <option value="active">active</option>
+                      <option value="in_progress">in_progress</option>
+                      <option value="pending">pending</option>
+                      <option value="paused">paused</option>
+                      <option value="inactive">inactive</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="birthdate" className="pb-2">Birth Date</Label>
+                    <Input id="birthdate" className="border-2 border-gray-400" type="date" {...register("birthdate")} />
+                  </div>
+                  <div>
+                    <Label htmlFor="location" className="pb-2">Location</Label>
+                    <Input id="location" className="border-2 border-gray-400" {...register("location")} />
+                  </div>
+                </div>
+              </section>
+
+              {/* Professional */}
+              <section>
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Professional</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="company" className="pb-2">Company</Label>
+                    <Input id="company" className="border-2 border-gray-400" {...register("company")} />
+                  </div>
+                  <div>
+                    <Label htmlFor="designation" className="pb-2">Designation</Label>
+                    <Input id="designation" className="border-2 border-gray-400" {...register("designation")} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="companyaddress" className="pb-2">Company Address</Label>
+                    <Input id="companyaddress" className="border-2 border-gray-400" {...register("companyaddress")} />
+                  </div>
+                </div>
+              </section>
+
+              {/* Account Manager */}
+              <section>
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Account Manager</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-1">
+                    <Label htmlFor="amId" className="pb-2">Assign AM</Label>
+                    <select
+                      id="amId"
+                      className="w-full h-9 rounded-md border border-gray-400 bg-background px-3 text-sm"
+                      disabled={amsLoading}
+                      {...register("amId")}
+                    >
+                      <option value="">{amsLoading ? "Loading AMs..." : "— None —"}</option>
+                      {ams.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name}
+                        </option>
+                      ))}
+                    </select>
+                    {amsError && <p className="text-sm text-red-600 mt-1">{amsError}</p>}
+                  </div>
+                </div>
+              </section>
+
+              {/* Websites */}
+              <section>
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Websites</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="website" className="pb-2">Website</Label>
+                    <Input id="website" className="border-2 border-gray-400" {...register("website")} />
+                  </div>
+                  <div>
+                    <Label htmlFor="website2" className="pb-2">Website 2</Label>
+                    <Input id="website2" className="border-2 border-gray-400" {...register("website2")} />
+                  </div>
+                  <div>
+                    <Label htmlFor="website3" className="pb-2">Website 3</Label>
+                    <Input id="website3" className="border-2 border-gray-400" {...register("website3")} />
+                  </div>
+                  <div>
+                    <Label htmlFor="companywebsite" className="pb-2">Company Website</Label>
+                    <Input id="companywebsite" className="border-2 border-gray-400" {...register("companywebsite")} />
+                  </div>
+                </div>
+              </section>
+
+              {/* Media / Bio */}
+              <section>
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Media & Bio</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="avatar" className="pb-2">Avatar URL</Label>
+                    <Input id="avatar" className="border-2 border-gray-400" {...register("avatar")} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="biography" className="pb-2">Biography</Label>
+                    <Textarea id="biography" rows={4} className="border-2 border-gray-400" {...register("biography")} />
+                  </div>
+                </div>
+              </section>
+
+              {/* Package & Dates */}
+              <section>
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Package & Dates</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="packageId" className="pb-2">Package</Label>
+                    <select
+                      id="packageId"
+                      className="w-full h-9 rounded-md border border-gray-400 bg-background px-3 text-sm"
+                      disabled={packagesLoading}
+                      {...register("packageId")}
+                    >
+                      <option value="">{packagesLoading ? "Loading packages..." : "Select a package"}</option>
+                      {packages.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="startDate" className="pb-2">Start Date</Label>
+                    <Input id="startDate" type="date" className="border-2 border-gray-400" {...register("startDate")} />
+                  </div>
+                  <div>
+                    <Label htmlFor="dueDate" className="pb-2">Due Date</Label>
+                    <Input id="dueDate" type="date" className="border-2 border-gray-400" {...register("dueDate")} />
+                  </div>
+                </div>
+              </section>
+            </>
+          )}
+        </form>
+
+        <DialogFooter>
           <Button
-            type="button"
-            variant="outline"
-            onClick={handleCancel}
-            disabled={saving}
+            variant="ghost"
+            className="bg-green-600 hover:bg-green-700 hover:text-white text-white"
+            onClick={() => onOpenChange(false)}
           >
-            <X className="h-4 w-4 mr-2" />
             Cancel
           </Button>
           <Button
-            onClick={handleFormSubmit}
-            disabled={saving || !client.name.trim()}
-            loading={saving}
+            form="edit-client-form"
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-700 hover:text-white text-white"
+            disabled={isSaving}
           >
-            <Save className="h-4 w-4 mr-2" />
-            {saving ? "Saving Changes..." : "Save Changes"}
+            {isSaving ? "Saving..." : "Save Changes"}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

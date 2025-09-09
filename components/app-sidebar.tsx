@@ -74,7 +74,6 @@ const iconMap: Record<string, React.ReactNode> = {
   // Tasks
   Tasks: <ClipboardList className="h-4 w-4" />,
   "All Tasks": <ListChecks className="h-4 w-4" />,
-  "Task Categories": <ClipboardCheck className="h-4 w-4" />,
 
   // Agents
   Agents: <UserCog className="h-4 w-4" />,
@@ -128,7 +127,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
   );
   const { user } = useUserSession();
   const router = useRouter();
-  const role = (user?.role as "admin" | "agent" | "qc" | "am") ?? "user";
+  const role = (user?.role as "admin" | "manager" | "agent" | "qc" | "am") ?? "user";
 
   // Chat unread badge
   const { data: unreadData } = useSWR<{ count: number }>(
@@ -174,12 +173,14 @@ export function AppSidebar({ className }: AppSidebarProps) {
         url:
           role === "admin"
             ? "/admin"
+            : role === "manager"
+            ? "/manager"
             : role === "agent"
             ? "/agent"
             : role === "qc"
             ? "/qc"
             : "/am",
-        roles: ["admin", "agent", "qc", "am"],
+        roles: ["admin", "agent", "qc", "am", "manager"],
       },
 
       // Chat
@@ -187,48 +188,41 @@ export function AppSidebar({ className }: AppSidebarProps) {
       { title: "Chat", url: "/qc/chat", roles: ["qc"] },
       { title: "Chat", url: "/agent/chat", roles: ["agent"] },
       { title: "Chat", url: "/am/chat", roles: ["am"] },
+      { title: "Chat", url: "/manager/chat", roles: ["manager"] },
 
       // Admin/AM Clients
       {
         title: "Clients",
-        roles: ["admin"],
+        roles: ["admin", "manager", "am"],
         children: [
-          { title: "All Clients", url: "/admin/clients", roles: ["admin"] },
+          { title: "All Clients", url: role === "admin" ? "/admin/clients" : role === "manager" ? "/manager/clients" : "/am/clients", roles: ["admin", "manager", "am"] },
           {
             title: "Add Client",
-            url: "/admin/clients/onboarding",
-            roles: ["admin"],
+            url: role === "admin" ? "/admin/clients/onboarding" : role === "manager" ? "/manager/clients/onboarding" : "/am/clients/onboarding",
+            roles: ["admin", "manager", "am"],
           },
-        ],
-      },
-      {
-        title: "Clients",
-        roles: ["am"],
-        children: [
-          { title: "All Clients", url: "/am/clients", roles: ["am"] },
-          { title: "Add Client", url: "/am/clients/onboarding", roles: ["am"] },
         ],
       },
 
       // Packages & Templates
       {
         title: "Packages",
-        roles: ["admin"],
+        roles: ["admin", "manager"],
         children: [
-          { title: "All Package", url: "/admin/packages", roles: ["admin"] },
-          { title: "Template", url: "/admin/templates", roles: ["admin"] },
+          { title: "All Package", url: role === "admin" ? "/admin/packages" : "/manager/packages", roles: ["admin", "manager"] },
+          { title: "Template", url: role === "admin" ? "/admin/templates" : "/manager/templates", roles: ["admin", "manager"] },
         ],
       },
 
       // Distribution
       {
         title: "Distribution",
-        roles: ["admin"],
+        roles: ["admin", "manager"],
         children: [
           {
             title: "Clients to Agents",
-            url: "/admin/distribution/client-agent",
-            roles: ["admin"],
+            url: role === "admin" ? "/admin/distribution/client-agent" : "/manager/distribution/client-agent",
+            roles: ["admin", "manager"],
           },
         ],
       },
@@ -236,14 +230,9 @@ export function AppSidebar({ className }: AppSidebarProps) {
       // Tasks for Admin
       {
         title: "Tasks",
-        roles: ["admin"],
+        roles: ["admin", "manager"],
         children: [
-          { title: "All Tasks", url: "/admin/tasks", roles: ["admin"] },
-          {
-            title: "Task Categories",
-            url: "/admin/tasks/tasks-categories",
-            roles: ["admin"],
-          },
+          { title: "All Tasks", url: role === "admin" ? "/admin/tasks" : "/manager/tasks", roles: ["admin", "manager"] },
         ],
       },
 
@@ -261,21 +250,21 @@ export function AppSidebar({ className }: AppSidebarProps) {
       // Agents
       {
         title: "Agents",
-        roles: ["admin"],
+        roles: ["admin", "manager"],
         children: [
-          { title: "All Agents", url: "/admin/agents", roles: ["admin"] },
-          { title: "Add Agent", url: "/admin/agents/create", roles: ["admin"] },
+          { title: "All Agents", url: role === "admin" ? "/admin/agents" : "/manager/agents", roles: ["admin", "manager"] },
+          { title: "Add Agent", url: role === "admin" ? "/admin/agents/create" : "/manager/agents/create", roles: ["admin", "manager"] },
         ],
       },
 
       // Standalone admin links
-      { title: "Team Management", url: "/admin/teams", roles: ["admin"] },
+      { title: "Team Management", url: role === "admin" ? "/admin/teams" : "/manager/teams", roles: ["admin", "manager"] },
       {
         title: "QC",
-        roles: ["admin"],
+        roles: ["admin", "manager"],
         children: [
-          { title: "QC Dashboard", url: "/admin/qc/qc-dashboard", roles: ["admin"] },
-          { title: "QC Review", url: "/admin/qc/qc-review", roles: ["admin"] },
+          { title: "QC Dashboard", url: role === "admin" ? "/admin/qc/qc-dashboard" : "/manager/qc/qc-dashboard", roles: ["admin", "manager"] },
+          { title: "QC Review", url: role === "admin" ? "/admin/qc/qc-review" : "/manager/qc/qc-review", roles: ["admin", "manager"] },
         ],
       },
       {
@@ -283,11 +272,11 @@ export function AppSidebar({ className }: AppSidebarProps) {
         url: "/admin/role-permissions",
         roles: ["admin"],
       },
-      { title: "User Management", url: "/admin/user", roles: ["admin"] },
-      { title: "Activity Logs", url: "/admin/activity", roles: ["admin"] },
+      { title: "User Management", url: role === "admin" ? "/admin/user" : "/manager/user", roles: ["admin", "manager"] },
+      { title: "Activity Logs", url: role === "admin" ? "/admin/activity" : "/manager/activity", roles: ["admin", "manager"] },
 
       // Notifications
-      { title: "Notifications", url: "/admin/notifications", roles: ["admin"] },
+      { title: "Notifications", url: role === "admin" ? "/admin/notifications" : "/manager/notifications", roles: ["admin", "manager"] },
       { title: "Notifications", url: "/qc/notifications", roles: ["qc"] },
       { title: "Notifications", url: "/agent/notifications", roles: ["agent"] },
       { title: "Notifications", url: "/am/notifications", roles: ["am"] },
