@@ -829,7 +829,7 @@ export default function TeamsPage() {
               </h1>
               <p className="text-gray-600 dark:text-gray-400 text-lg">Create, manage, and organize your teams</p>
             </div>
-            <Link href="/admin/teams/create">
+            <Link href="/manager/teams/create">
               <Button className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-6 py-3 text-base">
                 <Plus className="h-5 w-5" />
                 Create New Team
