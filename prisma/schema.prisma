@@ -218,6 +218,7 @@ model Package {
   id          String     @id @default(cuid())
   name        String?    @unique
   description String?
+  totalMonths Int?
   clients     Client[]
   templates   Template[]
 

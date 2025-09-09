@@ -41,6 +41,8 @@ interface Package {
   description?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  // optional totalMonths so UI can display duration when available
+  totalMonths?: number;
   _count?: {
     clients: number;
     templates: number;
@@ -368,6 +370,12 @@ export function PackageCards() {
                         </h3>
                         <p className="text-xs text-gray-500 mt-1">
                           ID: {pkg.id.slice(0, 8)}...
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Duration:{" "}
+                          {pkg.totalMonths
+                            ? `${pkg.totalMonths} months`
+                            : "N/A"}
                         </p>
                       </div>
                     </div>
