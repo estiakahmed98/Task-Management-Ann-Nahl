@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useConversations } from "@/hooks/useConversations";
 import { useMessages } from "@/hooks/useMessages";
-import { createConversation, markRead, openDM } from "@/lib/chatClient";
+import { createConversation, markRead, openDM, openTeam } from "@/lib/chatClient";
 import { useUserSession } from "@/lib/hooks/use-user-session";
 import { useRoster } from "@/hooks/useRoster";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -45,6 +45,23 @@ function timeAgo(iso?: string | null) {
 
 export default function ChatPage() {
   const { user: me } = useUserSession();
+
+  // Team chat state
+  const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState<string>("");
+
+  // Fetch teams (for admin view)
+  useEffect(() => {
+    fetch("/api/teams")
+      .then((r) => r.json())
+      .then((rows) => {
+        const list = (rows || []).map((t: any) => ({ id: t.id, name: t.name }));
+        setTeams(list);
+        if (!selectedTeamId && list.length) setSelectedTeamId(list[0].id);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const {
     conversations,
@@ -97,10 +114,56 @@ export default function ChatPage() {
     }
   }
 
+  // Open team conversation
+  const [openingTeam, setOpeningTeam] = useState(false);
+  async function handleOpenTeam() {
+    if (!selectedTeamId) return;
+    try {
+      setOpeningTeam(true);
+      const { id } = await openTeam(selectedTeamId);
+      await refetchConvos();
+      setActiveId(id);
+    } finally {
+      setOpeningTeam(false);
+    }
+  }
+
   return (
     <div className="flex h-[calc(100vh-64px)]">
       {/* Sidebar */}
       <aside className="w-80 border-r border-gray-200 p-3 flex flex-col gap-4">
+        {/* Team Chat Controls */}
+        <div className="space-y-2">
+          <div className="text-xs font-semibold text-gray-700">Team Chat</div>
+          <div className="flex gap-2">
+            <select
+              className="flex-1 border rounded px-2 py-1 text-sm"
+              value={selectedTeamId}
+              onChange={(e) => setSelectedTeamId(e.target.value)}
+            >
+              {teams.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+            <BackgroundGradient>
+              <button
+                type="button"
+                onClick={handleOpenTeam}
+                disabled={!selectedTeamId || openingTeam}
+                className="px-2 py-1 text-sm rounded bg-transparent text-white disabled:opacity-50"
+                title="Open team conversation"
+              >
+                Open
+              </button>
+            </BackgroundGradient>
+          </div>
+          <div className="text-[11px] text-gray-500">
+            Shows conversations filtered by selected team.
+          </div>
+        </div>
+
         {/* Conversations */}
         <div>
           <div className="flex items-center justify-between mb-3">

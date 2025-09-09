@@ -15,6 +15,7 @@ export default function MessageBubble({
   msg,
   onForward,
   showSenderName = false, // new: show name above bubble (useful for group)
+  participants,
 }: {
   meId?: string;
   msg: {
@@ -33,6 +34,7 @@ export default function MessageBubble({
   };
   onForward?: (messageId: string) => void;
   showSenderName?: boolean;
+  participants?: { id: string; name?: string | null; email?: string | null; image?: string | null }[];
 }) {
   const mine = meId ? msg?.sender?.id === meId : false;
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -94,6 +96,17 @@ export default function MessageBubble({
   const forwardedByName =
     fwdMeta?.forwardedByName || (mine ? "You" : displayName); // sender is the forwarder
   const originalSenderName = fwdMeta?.originalSenderName || null;
+
+  // Compute readers for group/team: which participants (excluding me) have read this message
+  const seenUsers = useMemo(() => {
+    const readerIds = new Set(
+      (msg.receipts ?? [])
+        .filter((r) => !!r.readAt && (!meId || r.userId !== meId))
+        .map((r) => r.userId)
+    );
+    const list = (participants || []).filter((u) => readerIds.has(u.id));
+    return list;
+  }, [msg.receipts, participants, meId]);
 
   return (
     <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
@@ -192,6 +205,17 @@ export default function MessageBubble({
                 </>
               )}
             </div>
+
+            {/* Seen-by list for team/group chats (showSenderName is generally true there) */}
+            {showSenderName && seenUsers.length > 0 && (
+              <div className={`mt-1 flex items-center gap-1 ${mine ? "text-white/70" : "text-gray-500"} text-[10px]`}>
+                <Eye className="h-3 w-3" />
+                <span className="truncate">
+                  Seen by {seenUsers.slice(0, 3).map((u) => u.name || u.email || "User").join(", ")}
+                  {seenUsers.length > 3 ? ` +${seenUsers.length - 3}` : ""}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Reaction bar + Forward button */}
