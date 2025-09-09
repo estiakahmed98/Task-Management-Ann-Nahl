@@ -175,6 +175,8 @@ export async function PUT(
       password,
       recoveryEmail,
       amId,
+      // ⬇️ Arbitrary JSON key/value pairs
+      otherField,
     } = body
 
     // amId server-side validation (role must be 'am') — allow null to clear
@@ -184,7 +186,7 @@ export async function PUT(
     // আপডেট (progress বাদ)
     const updated = await prisma.client.update({
       where: { id },
-      data: {
+      data: ({
         name,
         birthdate: birthdate ? new Date(birthdate) : undefined,
         company,
@@ -212,7 +214,10 @@ export async function PUT(
 
         // AM রিলেশন আপডেট
         amId: amIdValue, // null হলে unlink হবে
-      },
+
+        // Persist arbitrary JSON if provided
+        otherField: otherField ?? undefined,
+      }) as any,
       include: {
         socialMedias: true,
         package: true,

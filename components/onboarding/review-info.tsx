@@ -110,32 +110,35 @@ export function ReviewInfo({ formData, onPrevious }: any) {
         packageId: formData.packageId,
         startDate: formData.startDate,
         dueDate: formData.dueDate,
-  
+
         // AM (new)
         amId: formData.amId || null,
-  
+
         // socials
         socialLinks: formData.socialLinks || [],
+
+        // other arbitrary pairs
+        otherField: (formData.otherField || []).map((r: any) => ({ title: String(r.title || ""), data: String(r.data || "") })),
       };
-  
+
       const clientRes = await fetch("/api/clients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(clientData),
       });
-  
+
       const clientResult = await clientRes.json();
-  
+
       if (!clientRes.ok) {
         toast.error(clientResult.error || "Failed to create client.");
         return;
       }
-  
+
       const createdClientId: string =
         clientResult?.id ?? clientResult?.client?.id ?? clientResult?.data?.id;
-  
+
       toast.success("Client created successfully!");
-  
+
       // auto-assign template (unchanged)
       if (formData.templateId && createdClientId) {
         try {
@@ -146,13 +149,13 @@ export function ReviewInfo({ formData, onPrevious }: any) {
             assignedAt: new Date().toISOString(),
             status: "active",
           };
-  
+
           const assignmentRes = await fetch("/api/assignments", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(assignment),
           });
-  
+
           if (assignmentRes.ok) {
             toast.success(`Template "${templateName || formData.templateId}" assigned successfully!`);
           } else {
@@ -162,7 +165,7 @@ export function ReviewInfo({ formData, onPrevious }: any) {
           toast.warning("Client created but template assignment failed. You can assign it manually later.");
         }
       }
-  
+
       setIsSubmitted(true);
     } catch (err) {
       console.error(err);
@@ -171,7 +174,6 @@ export function ReviewInfo({ formData, onPrevious }: any) {
       setIsSaving(false);
     }
   };
-  
 
   // Preview: build a local preview URL if we have a File
   const avatarPreviewUrl = useMemo(() => {
@@ -277,19 +279,20 @@ export function ReviewInfo({ formData, onPrevious }: any) {
       </div>
 
       <div className="grid gap-6">
-        {sections.map(
+        {sections.filter(Boolean).map(
           (section, index) =>
-            section.items.length > 0 && (
+            (section as any).items.length > 0 && (
               <Card key={index} className="overflow-hidden border-0 shadow-lg">
-                <CardHeader className={`bg-gradient-to-r ${section.color} text-white`}>
+                <CardHeader className={`bg-gradient-to-r ${(section as any).color} text-white`}>
                   <CardTitle className="flex items-center gap-3 text-xl">
+                    {/** @ts-ignore */}
                     <section.icon className="w-6 h-6" />
-                    {section.title}
+                    {(section as any).title}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {section.items.map((item, itemIndex) => (
+                    {(section as any).items.map((item: any, itemIndex: number) => (
                       <div key={itemIndex} className="flex flex-col">
                         <span className="text-sm font-medium text-gray-500 mb-1">{item.label}</span>
                         <span className="text-gray-900 font-medium break-words">{item.value}</span>

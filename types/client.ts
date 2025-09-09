@@ -28,6 +28,8 @@ export type Client = {
     dueDate: string | null
     createdAt: string
     updatedAt: string
+    // Arbitrary JSON stored on the client (e.g., custom title/data pairs)
+    otherField?: any
     socialLinks: {
       id: string
       platform: string

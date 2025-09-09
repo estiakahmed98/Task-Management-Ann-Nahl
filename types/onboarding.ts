@@ -37,6 +37,9 @@ export interface OnboardingFormData {
     url: string;
   }>;
   
+  // Arbitrary additional info (will be saved to Client.otherField as JSON)
+  otherField?: Array<{ title: string; data: string }>;
+  
   // Package & Template
   packageId?: string;
   templateId?: string; // ✅ Added templateId field
