@@ -77,6 +77,37 @@ export function useTaskTimers({
 
   const getTaskById = useCallback((id: string) => tasks.find((t) => t.id === id), [tasks])
 
+  // --- Activity logger ---
+  const logTaskActivity = useCallback(
+    async (
+      taskId: string,
+      action:
+        | "task_timer_start"
+        | "task_timer_resume"
+        | "task_timer_pause"
+        | "task_timer_stop"
+        | "task_timer_overdue"
+        | "task_timer_switch",
+      details?: any,
+    ) => {
+      try {
+        await fetch("/api/activity", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            entityType: "Task",
+            entityId: taskId,
+            action,
+            details,
+          }),
+        })
+      } catch (e) {
+        console.warn("Failed to log activity", action, e)
+      }
+    },
+    [],
+  )
+
   const saveTimerState = useCallback((activeTimer: TimerEntry | null, timersMap: Record<string, TimerEntry>) => {
     try {
       const dataToSave: PersistedTimerData = {
@@ -236,7 +267,12 @@ export function useTaskTimers({
         if (newRem <= 0) {
           // Transition to overdue exactly once
           const justOverdue = Math.abs(newRem)
-          toast.warning(`Timer went OVERDUE for "${getTaskById(prev.taskId)?.name || "Unknown Task"}"`)
+          toast.warning(`Timer went OVERDUE for "${getTaskById(prev.taskId)?.name || "Unknown Task"}`)
+
+          // Log overdue transition
+          logTaskActivity(prev.taskId, "task_timer_overdue", {
+            at: new Date().toISOString(),
+          })
 
           // DO NOT clear global lock — keep it locked while running
           return {
@@ -314,6 +350,10 @@ export function useTaskTimers({
           [taskId]: entry,
         }))
         setActive(entry)
+        logTaskActivity(taskId, "task_timer_resume", {
+          mode: "overdue",
+          at: new Date().toISOString(),
+        })
       } else {
         const startingRemain =
           existing?.remainingSeconds !== undefined && existing.remainingSeconds > 0
@@ -338,6 +378,11 @@ export function useTaskTimers({
           [taskId]: entry,
         }))
         setActive(entry)
+        logTaskActivity(taskId, existing ? "task_timer_resume" : "task_timer_start", {
+          remainingSeconds: startingRemain,
+          totalSeconds,
+          at: new Date().toISOString(),
+        })
       }
 
       try {
@@ -400,6 +445,11 @@ export function useTaskTimers({
           ...m,
           [taskId]: pausedEntry,
         }))
+        logTaskActivity(taskId, "task_timer_pause", {
+          mode: "overdue",
+          overdueSeconds: pausedEntry.overdueSeconds,
+          at: new Date().toISOString(),
+        })
       } else {
         const newRem = Math.max(0, active.remainingAtStart - elapsed)
         const pausedEntry: TimerEntry = {
@@ -419,6 +469,10 @@ export function useTaskTimers({
           ...m,
           [taskId]: pausedEntry,
         }))
+        logTaskActivity(taskId, "task_timer_pause", {
+          remainingSeconds: newRem,
+          at: new Date().toISOString(),
+        })
       }
 
       try {
@@ -453,6 +507,15 @@ export function useTaskTimers({
           toast.info(`Timer stopped manually`)
         }
 
+        // Log stop
+        logTaskActivity(prev.taskId, "task_timer_stop", {
+          reason,
+          wasOverdue: !!prev.isOverdue,
+          overdueSeconds: prev.overdueSeconds ?? 0,
+          remainingSeconds: prev.remainingSeconds,
+          at: new Date().toISOString(),
+        })
+
         return null // active cleared -> timerState হবে null
       })
 
@@ -463,7 +526,7 @@ export function useTaskTimers({
         console.error("Failed to clear global timer lock:", error)
       }
     },
-    [clearTimerState],
+    [clearTimerState, logTaskActivity],
   )
 
   // Switch dialog handlers
@@ -507,6 +570,11 @@ export function useTaskTimers({
           ...m,
           [active.taskId]: pausedEntry,
         }))
+        logTaskActivity(active.taskId, "task_timer_switch", {
+          toTaskId: pendingTaskId,
+          remainingSeconds: newRem,
+          at: new Date().toISOString(),
+        })
       }
     }
 

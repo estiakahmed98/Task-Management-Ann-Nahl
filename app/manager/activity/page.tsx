@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { pusherClient } from "@/lib/pusher/client"
 
 type ActionType = "create" | "update" | "delete"
 type Log = {
@@ -87,6 +88,28 @@ export default function ActivityPage() {
 
   useEffect(() => {
     fetchLogs(1)
+  }, [fetchLogs])
+
+  // Realtime: subscribe to activity events
+  useEffect(() => {
+    const channel = pusherClient.subscribe("activity")
+    const onNew = (payload: any) => {
+      setLogs((prev) => [{
+        id: payload?.id || `rt_${Date.now()}`,
+        entityType: payload?.entityType || "",
+        entityId: payload?.entityId || "",
+        action: payload?.action || "update",
+        timestamp: payload?.timestamp || new Date().toISOString(),
+        details: payload?.details ?? null,
+      }, ...prev])
+      // refresh page 1 shortly after so user info joins
+      setTimeout(() => fetchLogs(1), 1200)
+    }
+    channel.bind("activity:new", onNew)
+    return () => {
+      channel.unbind("activity:new", onNew)
+      pusherClient.unsubscribe("activity")
+    }
   }, [fetchLogs])
 
   const handlePageChange = (page: number) => {
@@ -195,15 +218,16 @@ export default function ActivityPage() {
                     </td>
                     <td className="p-3">
                       <span
-                        className={`px-2 py-1 rounded text-xs ${
-                          log.action === "create"
-                            ? "bg-green-100 text-green-700"
-                            : log.action === "update"
-                              ? "bg-blue-100 text-blue-700"
-                              : log.action === "delete"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-gray-100 text-gray-700"
-                        }`}
+                        className={`px-2 py-1 rounded text-xs ${(() => {
+                          const a = String(log.action || "").toLowerCase()
+                          if (a === "create" || a.includes("assigned")) return "bg-emerald-100 text-emerald-700"
+                          if (a === "update" || a.includes("status") || a.includes("resume") || a.includes("pause")) return "bg-blue-100 text-blue-700"
+                          if (a === "delete" || a.includes("cancel")) return "bg-red-100 text-red-700"
+                          if (a.includes("overdue")) return "bg-orange-100 text-orange-700"
+                          if (a.startsWith("task_timer")) return "bg-purple-100 text-purple-700"
+                          if (a.includes("qc_approved")) return "bg-teal-100 text-teal-700"
+                          return "bg-gray-100 text-gray-700"
+                        })()}`}
                       >
                         {log.action}
                       </span>

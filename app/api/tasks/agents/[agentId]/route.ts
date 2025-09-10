@@ -2,6 +2,7 @@
 
 import { type NextRequest, NextResponse } from "next/server";
 import { PrismaClient, NotificationType } from "@prisma/client";
+import { pusherServer } from "@/lib/pusher/server";
 
 import dns from "node:dns/promises";
 import net from "node:net";
@@ -190,7 +191,7 @@ export async function PATCH(
     // Verify task ownership
     const task = await prisma.task.findFirst({
       where: { id: taskId, assignedToId: agentId },
-      select: { id: true, idealDurationMinutes: true },
+      select: { id: true, idealDurationMinutes: true, status: true },
     });
 
     if (!task) {
@@ -259,6 +260,42 @@ export async function PATCH(
         },
       },
     });
+
+    // Activity log for status update
+    try {
+      const log = await prisma.activityLog.create({
+        data: {
+          id: `log_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+          entityType: "Task",
+          entityId: updatedTask.id,
+          userId: agentId,
+          action: "task_status_update",
+          details: {
+            previousStatus: task.status,
+            newStatus: updatedTask.status,
+            performanceRating: typeof performanceRating !== "undefined" ? performanceRating : undefined,
+            actualDurationMinutes: typeof actualDurationMinutes === "number" ? actualDurationMinutes : undefined,
+            completionLink: updatedTask.completionLink || undefined,
+            username: updatedTask.username || undefined,
+            email: updatedTask.email || undefined,
+            updatedAt: new Date().toISOString(),
+          },
+        },
+      });
+      // Realtime broadcast for activity
+      try {
+        await pusherServer.trigger("activity", "activity:new", {
+          id: log.id,
+          entityType: log.entityType,
+          entityId: log.entityId,
+          action: log.action,
+          details: log.details,
+          timestamp: (log as any).timestamp ?? new Date().toISOString(),
+        });
+      } catch {}
+    } catch (e) {
+      console.warn("Failed to write activityLog for task status update", e);
+    }
 
     // ✅ Notify Admins (সব status এ)
     const admins = await prisma.user.findMany({
