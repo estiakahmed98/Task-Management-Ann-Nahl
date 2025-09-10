@@ -113,6 +113,7 @@ export const config = {
     "/manager/:path*",
     "/qc/:path*",
     "/am/:path*",
+    "/am_ceo/:path*",
     "/client/:path*",
     "/data_entry/:path*",
     // APIs

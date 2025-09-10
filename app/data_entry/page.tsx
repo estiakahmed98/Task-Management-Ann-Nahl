@@ -1,10 +1,9 @@
-//app/data_entry/data_entry/page.tsx
 
-export default function Page() {
+
+export default function DataEntryPage() {
   return (
-    <div>
-      {/* <DataEntryDashboard /> */}
-      <h1 className="text-2xl font-bold">Data Entry</h1>
+    <div className="flex justify-center text-2xl font-bold text-gray-600">
+      Data Entry Dashboard
     </div>
   );
 }

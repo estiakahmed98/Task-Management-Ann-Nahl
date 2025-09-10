@@ -1,69 +1,46 @@
 "use client"
-
-import { useState, useCallback, useEffect, useMemo } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
-import { ClientOverviewHeader } from "@/components/clients/client-overview-header"
+
 import { ClientStatusSummary } from "@/components/clients/client-status-summary"
 import { ClientGrid } from "@/components/clients/client-grid"
 import { ClientList } from "@/components/clients/client-list"
 import type { Client } from "@/types/client"
-import { useSession } from "@/lib/auth-client"
+import { AmCeoClientOverviewHeader } from "@/components/clients/am-ceo-client-overview-header"
 
 export default function ClientsPage() {
   const router = useRouter()
-  const { data: session } = useSession()
-
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [packageFilter, setPackageFilter] = useState("all")
   const [amFilter, setAmFilter] = useState("all")
-
   const [packages, setPackages] = useState<{ id: string; name: string }[]>([])
+  // Details now shown on dedicated route: /admin/clients/[clientId]
 
-  const currentUserId = (session as any)?.user?.id as string | undefined
-  const currentUserRole =
-    ((session as any)?.user?.role?.name as string | undefined) ??
-    ((session as any)?.user?.role as string | undefined)
-  const isAM = (currentUserRole ?? "").toLowerCase() === "am"
-
-  // If user is an AM, force amFilter to their id (so list is scoped immediately)
-  useEffect(() => {
-    if (isAM && currentUserId && amFilter !== currentUserId) {
-      setAmFilter(currentUserId)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAM, currentUserId])
-
-  // --- Fetch clients (optionally server-side filter by AM for efficiency) ---
+  // Fetch all clients
   const fetchClients = useCallback(async () => {
     try {
-      setLoading(true)
-      const url = new URL("/api/clients", window.location.origin)
-      // If AM, fetch only their clients from the API directly
-      if (isAM && currentUserId) url.searchParams.set("amId", currentUserId)
-
-      const response = await fetch(url.toString(), { cache: "no-store" })
+      const response = await fetch("/api/clients")
       if (!response.ok) throw new Error("Failed to fetch clients")
-      const { clients: clientsData } = await response.json()
-      setClients(Array.isArray(clientsData) ? clientsData : [])
+      const data: Client[] = await response.json()
+      setClients(data)
+      setLoading(false)
     } catch (error) {
       console.error("Error fetching clients:", error)
       toast.error("Failed to load clients data.")
-    } finally {
       setLoading(false)
     }
-  }, [isAM, currentUserId])
+  }, [])
 
-  // --- Fetch packages (for names in filter) ---
+  // Fetch packages for names
   const fetchPackages = useCallback(async () => {
     try {
-      const resp = await fetch("/api/packages", { cache: "no-store" })
+      const resp = await fetch("/api/packages")
       if (!resp.ok) throw new Error("Failed to fetch packages")
       const raw = await resp.json()
       const list = Array.isArray(raw) ? raw : (raw?.data ?? [])
@@ -73,7 +50,7 @@ export default function ClientsPage() {
       }))
       setPackages(mapped)
     } catch (e) {
-      // fallback from current clients state
+      // fallback: derive from clients if API fails
       const derived = Array.from(
         clients.reduce((map, c) => {
           if (c.packageId) map.set(c.packageId, { id: c.packageId, name: c.package?.name ?? c.packageId })
@@ -84,6 +61,8 @@ export default function ClientsPage() {
     }
   }, [clients])
 
+  // Details are handled via navigation now
+
   useEffect(() => {
     fetchClients()
   }, [fetchClients])
@@ -92,57 +71,48 @@ export default function ClientsPage() {
     fetchPackages()
   }, [fetchPackages])
 
-  // Navigate to details
   const handleViewClientDetails = (client: Client) => {
-    router.push(`/data_entry/clients/${client.id}`)
+    router.push(`/am_ceo/clients/${client.id}`)
   }
 
   const handleAddNewClient = () => {
-    router.push("/data_entry/clients/onboarding")
+    router.push("clients/onboarding")
   }
 
-  // Build account manager options from data we have
-  const accountManagers = useMemo(
-    () =>
-      Array.from(
-        clients.reduce((map, c) => {
-          const id = c.amId ?? c.accountManager?.id
-          if (!id) return map
-          const nm = c.accountManager?.name ?? null
-          const email = c.accountManager?.email ?? null
-          const label = nm ? (email ? `${nm} (${email})` : nm) : id
-          if (!map.has(id)) map.set(id, { id, label })
-          return map
-        }, new Map<string, { id: string; label: string }>())
-      ).map(([, v]) => v),
-    [clients]
-  )
-
-  // Client-side filtering (in addition to server-side when AM)
   const filteredClients = clients.filter((client) => {
-    if (statusFilter !== "all" && (client.status ?? "").toLowerCase() !== statusFilter.toLowerCase()) return false
+    if (statusFilter !== "all" && client.status !== statusFilter) return false
     if (packageFilter !== "all" && client.packageId !== packageFilter) return false
-
-    // If AM is logged in, force scope even if header hasn't set it yet (safety)
-    const effectiveAmFilter = isAM && currentUserId ? currentUserId : amFilter
-    if (effectiveAmFilter !== "all" && (client.amId ?? client.accountManager?.id) !== effectiveAmFilter) return false
-
+    if (amFilter !== "all" && (client.amId ?? client.accountManager?.id) !== amFilter) return false
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
-      const hit =
-        client.name?.toLowerCase().includes(q) ||
+      return (
+        client.name.toLowerCase().includes(q) ||
         client.company?.toLowerCase().includes(q) ||
         client.designation?.toLowerCase().includes(q) ||
         client.email?.toLowerCase().includes(q)
-      if (!hit) return false
+      )
     }
     return true
   })
 
+  // packages come from API/state to ensure names are accurate
+
+  // Build account managers list
+  const accountManagers = Array.from(
+    clients.reduce((map, c) => {
+      const id = c.amId ?? c.accountManager?.id
+      if (!id) return map
+      const nm = c.accountManager?.name ?? null
+      const label = nm || id
+      if (!map.has(id)) map.set(id, { id, label })
+      return map
+    }, new Map<string, { id: string; label: string }>())
+  ).map(([, v]) => v)
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     )
   }
@@ -151,19 +121,17 @@ export default function ClientsPage() {
     <div className="py-8 px-4 md:px-6">
       {/* Header + Summary */}
       <div className="bg-white p-6 rounded-xl shadow-lg mb-8 border border-gray-100">
-        <ClientOverviewHeader
+        <AmCeoClientOverviewHeader
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           statusFilter={statusFilter}
           setStatusFilter={setStatusFilter}
           packageFilter={packageFilter}
           setPackageFilter={setPackageFilter}
-          packages={packages}                         // [{ id, name }]
+          packages={packages}
           amFilter={amFilter}
           setAmFilter={setAmFilter}
-          accountManagers={accountManagers}           // [{ id, label }]
-          currentUserId={currentUserId}
-          currentUserRole={currentUserRole}           // e.g. "am"
+          accountManagers={accountManagers}
           viewMode={viewMode}
           setViewMode={setViewMode}
           onAddNewClient={handleAddNewClient}
@@ -178,9 +146,15 @@ export default function ClientsPage() {
           <p className="text-sm">Try adjusting your search or filters.</p>
         </div>
       ) : viewMode === "grid" ? (
-        <ClientGrid clients={filteredClients} onViewDetails={handleViewClientDetails} />
+        <ClientGrid
+          clients={filteredClients}
+          onViewDetails={handleViewClientDetails}
+        />
       ) : (
-        <ClientList clients={filteredClients} onViewDetails={handleViewClientDetails} />
+        <ClientList
+          clients={filteredClients}
+          onViewDetails={handleViewClientDetails}
+        />
       )}
     </div>
   )

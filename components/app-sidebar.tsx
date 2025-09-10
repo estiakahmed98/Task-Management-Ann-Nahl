@@ -54,6 +54,7 @@ type Role =
   | "agent"
   | "qc"
   | "am"
+  | "am_ceo"
   | "data_entry"
   | "client"
   | "user";
@@ -107,6 +108,7 @@ const basePath: Record<Role, string> = {
   agent: "/agent",
   qc: "/qc",
   am: "/am",
+  am_ceo: "/am_ceo",
   data_entry: "/data_entry",
   client: "/client",
   user: "/client", // sensible default
@@ -128,18 +130,18 @@ function buildNav(role: Role): NavItem[] {
     {
       title: "Dashboard",
       url: p(role, role === "client" ? "" : ""),
-      roles: ["admin", "agent", "qc", "am", "manager", "data_entry", "client"],
+      roles: ["admin", "agent", "qc", "am","am_ceo", "manager", "data_entry", "client"],
     },
     {
       title: "Chat",
       url: p(role, "/chat"),
-      roles: ["admin", "qc", "agent", "am", "manager", "data_entry", "client"],
+      roles: ["admin", "qc", "agent", "am", "am_ceo","manager", "data_entry", "client"],
     },
 
     // Clients (admin, manager, am, data_entry)
     {
       title: "Clients",
-      roles: ["admin", "manager", "am", "data_entry"],
+      roles: ["admin", "manager", "am","data_entry"],
       children: [
         {
           title: "All Clients",
@@ -149,10 +151,28 @@ function buildNav(role: Role): NavItem[] {
         {
           title: "Add Client",
           url: p(role, "/clients/onboarding"),
-          roles: ["admin", "manager", "am", "data_entry"],
+          roles: ["admin", "manager", "am","data_entry"],
         },
       ],
     },
+    // AM Clients (am_ceo)
+    {
+      title: "AM Clients",
+      roles: ["am_ceo"],
+      children: [
+        {
+          title: "All AM Clients",
+          url: p(role, "/clients"),
+          roles: ["am_ceo"],
+        },
+      ],
+    },
+
+
+
+       
+
+
 
     // Packages & Templates (admin, manager)
     {
@@ -265,7 +285,7 @@ function buildNav(role: Role): NavItem[] {
     {
       title: "Notifications",
       url: p(role, "/notifications"),
-      roles: ["admin", "manager", "qc", "agent", "am", "data_entry", "client"],
+      roles: ["admin", "manager", "qc", "agent", "am", "am_ceo","data_entry", "client"],
     },
   ];
 }

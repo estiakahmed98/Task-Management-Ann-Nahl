@@ -6,6 +6,7 @@ import {
   FileText,
   Eye,
   Package,
+  ListChecks,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getInitialsFromName, nameToColor } from "@/utils/avatar"
@@ -157,12 +158,15 @@ export function ClientCard({ clientId, onViewDetails }: ClientCardProps) {
   const segment = role && /^[a-z0-9_-]+$/.test(role) ? role : "admin"
 
   const handleViewDetails = () => {
-    // Prefer internal routing; still call prop callback if provided (optional side-effect)
-    try {
-      router.push(`/${segment}/clients/${clientId}`)
-    } finally {
-      onViewDetails?.()
+    if (onViewDetails) {
+      onViewDetails()
+    } else {
+      router.push(`/data_entry/clients/${clientId}`)
     }
+  }
+
+  const handleViewTasks = () => {
+    router.push(`/data_entry/clients/${clientId}/tasks`)
   }
 
   return (
@@ -282,7 +286,7 @@ export function ClientCard({ clientId, onViewDetails }: ClientCardProps) {
       </CardContent>
 
       {/* Footer */}
-      <CardFooter className="border-t border-gray-100 p-4 bg-gray-50">
+      <CardFooter className="border-t border-gray-100 gap-4 p-4 bg-gray-50">
         <div className="flex gap-2 w-full">
           <Button
             className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-md rounded-lg px-5 py-2.5 transition-all duration-300"
@@ -290,6 +294,15 @@ export function ClientCard({ clientId, onViewDetails }: ClientCardProps) {
           >
             <Eye className="h-4 w-4 mr-2" />
             View Details
+          </Button>
+        </div>
+        <div className="flex gap-2 w-full">
+          <Button
+            className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white shadow-md rounded-lg px-5 py-2.5 transition-all duration-300"
+            onClick={handleViewTasks}
+          >
+            <ListChecks className="h-4 w-4 mr-2" />
+            View Tasks
           </Button>
         </div>
       </CardFooter>
