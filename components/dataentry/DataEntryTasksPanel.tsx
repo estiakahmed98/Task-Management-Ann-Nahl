@@ -108,7 +108,7 @@ const assetLabel: Record<AllowedAssetType, string> = {
 };
 
 /* ========= component ========= */
-export default function PostingTasksPanel({
+export default function DataEntryTasksPanel({
   clientId,
   templateId,
   initialOnlyType = "all",
