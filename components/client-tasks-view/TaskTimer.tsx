@@ -23,11 +23,14 @@ import {
 import type { Task, TimerState } from "../client-tasks-view/client-tasks-view";
 
 const PAUSE_REASONS = [
-  { id: 'break', label: 'Taking a break' },
-  { id: 'meeting', label: 'In a meeting' },
-  { id: 'technical_issue', label: 'Technical issues' },
-  { id: 'clarification_needed', label: 'Need clarification' },
-  { id: 'other', label: 'Other' },
+  { id: "rest", label: "Rest Break" },
+  { id: "meal", label: "Meal Break" },
+  { id: "health", label: "Health Break" },
+  { id: "bathroom", label: "Bathroom Break" },
+  { id: "stress", label: "Stress Relief" },
+  { id: "personal", label: "Personal Emergency" },
+  { id: "productivity", label: "Productivity Break" },
+  { id: "others", label: "Others" },
 ];
 
 export default function TaskTimer({
@@ -72,7 +75,7 @@ export default function TaskTimer({
     : 0;
 
   const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
-  const [selectedReason, setSelectedReason] = useState('');
+  const [selectedReason, setSelectedReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handlePauseClick = () => {
@@ -81,16 +84,18 @@ export default function TaskTimer({
 
   const handlePauseConfirm = async () => {
     if (!selectedReason) return;
-    
+
     setIsSubmitting(true);
     try {
       const response = await fetch(`/api/tasks/${task.id}/pause`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          reason: PAUSE_REASONS.find(r => r.id === selectedReason)?.label || selectedReason,
+          reason:
+            PAUSE_REASONS.find((r) => r.id === selectedReason)?.label ||
+            selectedReason,
           timestamp: new Date().toISOString(),
         }),
       });
@@ -98,12 +103,12 @@ export default function TaskTimer({
       if (response.ok) {
         onPauseTimer(task.id);
         setIsPauseModalOpen(false);
-        setSelectedReason('');
+        setSelectedReason("");
       } else {
-        console.error('Failed to pause task with reason');
+        console.error("Failed to pause task with reason");
       }
     } catch (error) {
-      console.error('Error pausing task:', error);
+      console.error("Error pausing task:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -206,50 +211,86 @@ export default function TaskTimer({
       </div>
 
       <Dialog open={isPauseModalOpen} onOpenChange={setIsPauseModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Pause Task</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="sm:max-w-[520px] p-0 overflow-hidden rounded-2xl border border-slate-200/70 dark:border-slate-800/60 shadow-2xl">
+          {/* Header */}
+          <DialogHeader className="px-6 py-5 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-orange-900/20 dark:to-amber-900/10 border-b border-amber-100/70 dark:border-amber-900/40">
+            <DialogTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">
+              Pause Task
+            </DialogTitle>
+            <DialogDescription className="text-sm text-slate-600 dark:text-slate-300">
               Please select a reason for pausing this task.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="pause-reason" className="text-right">
-                Reason
-              </Label>
-              <Select 
-                value={selectedReason} 
-                onValueChange={setSelectedReason}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a reason" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAUSE_REASONS.map((reason) => (
-                    <SelectItem key={reason.id} value={reason.id}>
-                      {reason.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+
+          {/* Body */}
+          <div className="px-6 py-5">
+            <div className="grid gap-4">
+              <div className="grid grid-cols-12 items-center gap-3">
+                <Label
+                  htmlFor="pause-reason"
+                  className="col-span-4 md:col-span-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-300"
+                >
+                  Reason
+                </Label>
+
+                <div className="col-span-8 md:col-span-9">
+                  <Select
+                    value={selectedReason}
+                    onValueChange={setSelectedReason}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger
+                      id="pause-reason"
+                      className="w-full h-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/50
+                           focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-0"
+                    >
+                      <SelectValue placeholder="Select a reason" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-slate-200 dark:border-slate-700 shadow-lg">
+                      {PAUSE_REASONS.map((reason) => (
+                        <SelectItem
+                          key={reason.id}
+                          value={reason.id}
+                          className="cursor-pointer"
+                        >
+                          {reason.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
+
+          {/* Footer */}
+          <DialogFooter className="px-6 py-4 bg-slate-50/70 dark:bg-slate-900/40 border-t border-slate-200/70 dark:border-slate-800/60">
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setIsPauseModalOpen(false)}
               disabled={isSubmitting}
+              className="rounded-xl border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handlePauseConfirm} 
+
+            <Button
+              type="button"
+              onClick={handlePauseConfirm}
               disabled={!selectedReason || isSubmitting}
-              className="bg-orange-600 hover:bg-orange-700"
+              className="rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-600
+                   text-white shadow disabled:opacity-60"
             >
-              {isSubmitting ? 'Pausing...' : 'Pause Task'}
+              {/* If you imported Loader2, use this block; otherwise keep just the text */}
+              {isSubmitting ? (
+                <>
+                  {/* <Loader2 className="mr-2 h-4 w-4 animate-spin" /> */}
+                  Pausing...
+                </>
+              ) : (
+                "Pause Task"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
