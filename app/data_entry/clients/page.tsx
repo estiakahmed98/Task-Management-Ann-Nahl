@@ -50,8 +50,8 @@ export default function ClientsPage() {
 
       const response = await fetch(url.toString(), { cache: "no-store" })
       if (!response.ok) throw new Error("Failed to fetch clients")
-      const data: Client[] = await response.json()
-      setClients(data)
+      const { clients: clientsData } = await response.json()
+      setClients(Array.isArray(clientsData) ? clientsData : [])
     } catch (error) {
       console.error("Error fetching clients:", error)
       toast.error("Failed to load clients data.")

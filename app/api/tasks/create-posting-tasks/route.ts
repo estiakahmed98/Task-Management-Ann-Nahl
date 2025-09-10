@@ -1,4 +1,4 @@
-// ✅ Prisma needs Node runtime on Vercel
+// app/api/tasks/create-posting-tasks/route.ts
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -66,6 +66,8 @@ function countByStatus(tasks: { status: TaskStatus }[]) {
     cancelled: 0,
     reassigned: 0,
     qc_approved: 0,
+    paused: 0,
+    data_entered: 0,
   };
   for (const t of tasks) base[t.status] += 1;
   return base;

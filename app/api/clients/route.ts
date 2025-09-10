@@ -2,26 +2,51 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-// GET /api/clients - Get all clients
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const packageId = searchParams.get("packageId");
-  const amId = searchParams.get("amId");
-
-  const clients = await prisma.client.findMany({
-    where: {
-      packageId: packageId || undefined,
-      amId: amId || undefined,
-    },
-    include: {
-      socialMedias: true,
-      accountManager: { select: { id: true, name: true, email: true } }, // helpful
-    },
-  });
-
-  return NextResponse.json(clients);
+function asPositiveInt(v: string | null, def: number, cap: number) {
+  const n = Number(v ?? "");
+  if (Number.isFinite(n) && n > 0) return Math.min(Math.floor(n), cap);
+  return def;
 }
 
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const q = (searchParams.get("q") || "").trim();
+    const status = searchParams.get("status") || undefined; // e.g. active|inactive|all
+    const limit = asPositiveInt(searchParams.get("limit"), 50, 200);
+
+    const where: any = {};
+    if (status && status !== "all") where.status = status;
+    if (q) {
+      where.OR = [
+        { name: { contains: q, mode: "insensitive" } },
+        { company: { contains: q, mode: "insensitive" } },
+      ];
+    }
+
+    const clients = await prisma.client.findMany({
+      where,
+      orderBy: [{ name: "asc" }],
+      take: limit,
+      select: {
+        id: true,
+        name: true,
+        company: true,
+        avatar: true,
+        status: true,
+        package: { select: { id: true, name: true } },
+      },
+    });
+
+    return NextResponse.json({ clients, meta: { limit, q, status: status ?? null } });
+  } catch (err: any) {
+    console.error("GET /api/clients error:", err);
+    return NextResponse.json(
+      { message: "Internal Server Error", error: String(err?.message ?? err) },
+      { status: 500 }
+    );
+  }
+}
 // POST /api/clients - Create new client
 export async function POST(req: NextRequest) {
   try {
