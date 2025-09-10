@@ -47,6 +47,7 @@ export default function AgentLayout({
   children: React.ReactNode;
 }) {
   const { user, loading } = useUserSession();
+  
   const pathname = usePathname();
   const breadcrumbInfo = getBreadcrumbInfo(pathname);
 
