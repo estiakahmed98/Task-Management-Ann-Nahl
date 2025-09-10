@@ -88,6 +88,7 @@ export default function TaskList({
   getStatusBadge,
   getPriorityBadge,
   formatTimerDisplay,
+  pausedTimer,
 }: {
   agentId: string; // ✅ NEW
   clientName: string;
@@ -118,6 +119,7 @@ export default function TaskList({
   getStatusBadge: (status: string) => React.ReactElement;
   getPriorityBadge: (priority: string) => React.ReactElement;
   formatTimerDisplay: (seconds: number) => string;
+  pausedTimer: TimerState | null; // 👈 new
 }) {
   // 🔒 completed / qc_approved = read-only
   const isLocked = (t: Task) =>
@@ -696,6 +698,7 @@ export default function TaskList({
                   <TaskTimer
                     task={task}
                     timerState={timerState}
+                    pausedTimer={pausedTimer} // 👈 new
                     onStartTimer={isLocked(task) ? () => {} : handleStartTimer}
                     onPauseTimer={isLocked(task) ? () => {} : handlePauseTimer}
                     onResetTimer={isLocked(task) ? () => {} : handleResetTimer}
@@ -989,6 +992,7 @@ export default function TaskList({
                   <TaskTimer
                     task={task}
                     timerState={timerState}
+                    pausedTimer={pausedTimer} // 👈 new
                     onStartTimer={isLocked(task) ? () => {} : handleStartTimer}
                     onPauseTimer={isLocked(task) ? () => {} : handlePauseTimer}
                     onResetTimer={isLocked(task) ? () => {} : handleResetTimer}

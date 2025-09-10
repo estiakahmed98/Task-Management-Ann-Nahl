@@ -36,6 +36,7 @@ const PAUSE_REASONS = [
 export default function TaskTimer({
   task,
   timerState,
+  pausedTimer, // 👈 new
   onStartTimer,
   onPauseTimer,
   onRequestComplete,
@@ -43,6 +44,7 @@ export default function TaskTimer({
 }: {
   task: Task;
   timerState: TimerState | null;
+  pausedTimer: TimerState | null; // 👈 new
   onStartTimer: (taskId: string) => void;
   onPauseTimer: (taskId: string) => void;
   onRequestComplete: (task: Task) => void;
@@ -60,18 +62,41 @@ export default function TaskTimer({
   const isActive = timerState?.taskId === task.id;
   const isRunning = isActive && timerState?.isRunning;
 
-  const remainingSeconds = isActive
-    ? timerState.remainingSeconds
-    : task.idealDurationMinutes * 60;
+  // 👇 recognize paused snapshot even when not active
+  const isPausedHere =
+    !isActive && pausedTimer?.taskId === task.id && !pausedTimer?.isRunning;
 
-  const progress = isActive
-    ? ((timerState.totalSeconds - timerState.remainingSeconds) /
-        timerState.totalSeconds) *
-      100
-    : 0;
+  const total = (task.idealDurationMinutes ?? 0) * 60;
+
+  const remainingSeconds = isActive
+    ? timerState!.remainingSeconds
+    : isPausedHere
+    ? pausedTimer!.remainingSeconds
+    : total;
+
+  const progress =
+    ((isActive
+      ? (timerState!.totalSeconds || total) - timerState!.remainingSeconds
+      : isPausedHere
+      ? (pausedTimer!.totalSeconds || total) - pausedTimer!.remainingSeconds
+      : 0) /
+      (isActive
+        ? timerState!.totalSeconds || total
+        : isPausedHere
+        ? pausedTimer!.totalSeconds || total
+        : total)) *
+    100;
 
   const elapsedSeconds = isActive
-    ? Math.max(0, timerState.totalSeconds - timerState.remainingSeconds)
+    ? Math.max(
+        0,
+        (timerState!.totalSeconds || total) - timerState!.remainingSeconds
+      )
+    : isPausedHere
+    ? Math.max(
+        0,
+        (pausedTimer!.totalSeconds || total) - pausedTimer!.remainingSeconds
+      )
     : 0;
 
   const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
@@ -169,6 +194,12 @@ export default function TaskTimer({
             Duration: {task.actualDurationMinutes} min
           </div>
         )}
+
+        {isPausedHere && !isRunning && (
+          <div className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+            PAUSED
+          </div>
+        )}
       </div>
 
       <div className="flex space-x-1">
@@ -179,7 +210,10 @@ export default function TaskTimer({
             onClick={() => onStartTimer(task.id)}
             className="h-8 w-8 p-0 hover:bg-green-100 dark:hover:bg-green-900/30"
             disabled={
-              task.status === "completed" || task.status === "cancelled"
+              task.status === "completed" ||
+              task.status === "cancelled" ||
+              // 🚫 another task running
+              (timerState?.isRunning && timerState.taskId !== task.id)
             }
             title="Start timer"
           >

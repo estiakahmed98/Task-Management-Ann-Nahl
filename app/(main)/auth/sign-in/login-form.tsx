@@ -26,6 +26,7 @@ export function LoginForm() {
       else if (role === "manager") router.replace("/manager");
       else if (role === "qc") router.replace("/qc");
       else if (role === "am") router.replace("/am");
+      else if (role === "am_ceo") router.replace("/am_ceo");
       else if (role === "client") router.replace("/client");
       else if (role === "data_entry") router.replace("/data_entry");
       else router.push("/");
