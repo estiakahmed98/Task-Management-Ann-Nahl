@@ -41,6 +41,11 @@ export interface Task {
   assignedAgent?: string
   createdAt?: string
   updatedAt?: string
+  pauseReasons?: Array<{
+    reason: string
+    timestamp: string
+    durationInSeconds: number
+  }>
 }
 
 export interface TaskStats {

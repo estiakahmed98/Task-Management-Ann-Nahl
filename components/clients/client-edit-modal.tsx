@@ -11,6 +11,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useUserSession } from "@/lib/hooks/use-user-session"
+import { Card, CardContent } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { Calendar, User, Mail, Phone, Lock, Globe, Building, MapPin, BookOpen, Image, Package, Clock } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 import type { Client } from "@/types/client"
 
@@ -101,7 +106,7 @@ export default function ClientEditModal({
 
   const [isSaving, setIsSaving] = useState(false)
 
-  const { register, handleSubmit, reset } = useForm<FormValues>({
+  const { register, handleSubmit, reset, setValue, watch } = useForm<FormValues>({
     defaultValues: {
       name: clientData.name ?? "",
       birthdate: toDateInput(clientData.birthdate as any),
@@ -129,6 +134,10 @@ export default function ClientEditModal({
       amId: clientData.amId ?? null,
     },
   })
+
+  // Watch form values
+  const statusValue = watch("status")
+  const genderValue = watch("gender")
 
   // rehydrate form whenever the modal is opened (so stale edits don't linger)
   useEffect(() => {
@@ -287,271 +296,353 @@ export default function ClientEditModal({
     }
   }
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active": return "bg-emerald-100 text-emerald-700 border-emerald-200"
+      case "in_progress": return "bg-blue-100 text-blue-700 border-blue-200"
+      case "pending": return "bg-amber-100 text-amber-700 border-amber-200"
+      case "paused": return "bg-violet-100 text-violet-700 border-violet-200"
+      case "inactive": return "bg-slate-100 text-slate-700 border-slate-200"
+      default: return "bg-slate-100 text-slate-700 border-slate-200"
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[90vw] h-[90vh] overflow-y-auto bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900">
-        <DialogHeader>
-          <DialogTitle>Edit Client Profile</DialogTitle>
+      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-50 to-blue-50 rounded-2xl border-0 shadow-xl">
+        <DialogHeader className="bg-gradient-to-r from-blue-50/70 to-indigo-50/70 py-4 px-6 rounded-t-2xl border-b border-slate-200/70">
+          <DialogTitle className="text-xl font-semibold text-slate-800 flex items-center gap-2">
+            <User className="h-5 w-5 text-blue-600" />
+            Edit Client Profile
+          </DialogTitle>
         </DialogHeader>
 
-        <form id="edit-client-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form id="edit-client-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-6">
           {isAgent ? (
             <>
               {/* AGENT-ONLY: Contact & Credentials */}
-              <section>
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
-                  Contact & Credentials
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="email" className="pb-2">Email</Label>
-                    <Input id="email" type="email" className="border-2 border-gray-400" {...register("email")} />
+              <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-gradient-to-br from-white to-blue-50/60">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <Mail className="h-5 w-5 text-blue-600" />
+                    Contact & Credentials
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="email" className="text-sm font-medium text-slate-700 mb-2 block">Email</Label>
+                      <Input id="email" type="email" className="border-slate-300 focus:border-blue-500" {...register("email")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone" className="text-sm font-medium text-slate-700 mb-2 block">Phone</Label>
+                      <Input id="phone" className="border-slate-300 focus:border-blue-500" {...register("phone")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="password" className="text-sm font-medium text-slate-700 mb-2 block">Password</Label>
+                      <Input id="password" type="text" className="border-slate-300 focus:border-blue-500" {...register("password")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="recoveryEmail" className="text-sm font-medium text-slate-700 mb-2 block">Recovery Email</Label>
+                      <Input id="recoveryEmail" type="email" className="border-slate-300 focus:border-blue-500" {...register("recoveryEmail")} />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="phone" className="pb-2">Phone</Label>
-                    <Input id="phone" className="border-2 border-gray-400" {...register("phone")} />
-                  </div>
-                  <div>
-                    <Label htmlFor="password" className="pb-2">Password</Label>
-                    <Input id="password" type="text" className="border-2 border-gray-400" {...register("password")} />
-                  </div>
-                  <div>
-                    <Label htmlFor="recoveryEmail" className="pb-2">Recovery Email</Label>
-                    <Input id="recoveryEmail" type="email" className="border-2 border-gray-400" {...register("recoveryEmail")} />
-                  </div>
-                </div>
-              </section>
+                </CardContent>
+              </Card>
 
               {/* AGENT-ONLY: Media (Image Drive Link only) */}
-              <section>
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Media</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <Label htmlFor="imageDrivelink" className="pb-2">Image Drive Link</Label>
-                    <Input id="imageDrivelink" className="border-2 border-gray-400" {...register("imageDrivelink")} />
+              <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-gradient-to-br from-white to-purple-50/60">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <Image className="h-5 w-5 text-purple-600" />
+                    Media
+                  </h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <Label htmlFor="imageDrivelink" className="text-sm font-medium text-slate-700 mb-2 block">Image Drive Link</Label>
+                      <Input id="imageDrivelink" className="border-slate-300 focus:border-purple-500" {...register("imageDrivelink")} />
+                    </div>
                   </div>
-                </div>
-              </section>
+                </CardContent>
+              </Card>
             </>
           ) : (
             <>
               {/* FULL FORM for non-agents — Basic */}
-              <section>
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Basic</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name" className="pb-2">Full Name</Label>
-                    <Input id="name" className="border-2 border-gray-400" {...register("name", { required: true })} />
-                  </div>
-                  <div>
-                    <Label htmlFor="status" className="pb-2">Status</Label>
-                    <select
-                      id="status"
-                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-                      {...register("status")}
-                    >
-                      <option value="active">active</option>
-                      <option value="in_progress">in_progress</option>
-                      <option value="pending">pending</option>
-                      <option value="paused">paused</option>
-                      <option value="inactive">inactive</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="birthdate" className="pb-2">Birth Date</Label>
-                    <Input id="birthdate" className="border-2 border-gray-400" type="date" {...register("birthdate")} />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="gender" className="pb-2">Gender</Label>
-                    <select
-                      id="gender"
-                      className="w-full h-9 rounded-md border-2 border-gray-400 bg-background px-3 text-sm"
-                      {...register("gender")}
-                    >
-                      <option disabled value="">Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                    </select>
-                  </div>
+              <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-gradient-to-br from-white to-blue-50/60">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <User className="h-5 w-5 text-blue-600" />
+                    Basic Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <Label htmlFor="name" className="text-sm font-medium text-slate-700 mb-2 block">Full Name</Label>
+                      <Input id="name" className="border-slate-300 focus:border-blue-500" {...register("name", { required: true })} />
+                    </div>
+                    <div className="flex gap-2">
+                      <div>
+                      <Label htmlFor="status" className="text-sm font-medium text-slate-700 mb-2 block">Status</Label>
+                      <Select
+                        value={statusValue}
+                        onValueChange={(value) => setValue("status", value)}
+                      >
+                        <SelectTrigger className="border-slate-300 focus:border-blue-500">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="in_progress">In Progress</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="paused">Paused</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      </div>
+                      <div className="mt-6">
+                      {statusValue && (
+                        <Badge variant="outline" className={cn("mt-2 font-medium", getStatusColor(statusValue))}>
+                          {statusValue.toUpperCase()}
+                        </Badge>
+                      )}
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="birthdate" className="text-sm font-medium text-slate-700 mb-2 block">Birth Date</Label>
+                      <Input id="birthdate" type="date" className="border-slate-300 focus:border-blue-500" {...register("birthdate")} />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="gender" className="text-sm font-medium text-slate-700 mb-2 block">Gender</Label>
+                      <Select
+                        value={genderValue}
+                        onValueChange={(value) => setValue("gender", value)}
+                      >
+                        <SelectTrigger className="border-slate-300 focus:border-blue-500">
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Male">Male</SelectItem>
+                          <SelectItem value="Female">Female</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <div>
-                    <Label htmlFor="location" className="pb-2">Location</Label>
-                    <Input id="location" className="border-2 border-gray-400" {...register("location")} />
+                    <div>
+                      <Label htmlFor="location" className="text-sm font-medium text-slate-700 mb-2 block">Location</Label>
+                      <Input id="location" className="border-slate-300 focus:border-blue-500" {...register("location")} />
+                    </div>
                   </div>
-                </div>
-              </section>
+                </CardContent>
+              </Card>
 
               {/* Professional */}
-              <section>
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Professional</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="company" className="pb-2">Company</Label>
-                    <Input id="company" className="border-2 border-gray-400" {...register("company")} />
+              <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-gradient-to-br from-white to-emerald-50/60">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <Building className="h-5 w-5 text-emerald-600" />
+                    Professional Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="company" className="text-sm font-medium text-slate-700 mb-2 block">Company</Label>
+                      <Input id="company" className="border-slate-300 focus:border-emerald-500" {...register("company")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="designation" className="text-sm font-medium text-slate-700 mb-2 block">Designation</Label>
+                      <Input id="designation" className="border-slate-300 focus:border-emerald-500" {...register("designation")} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="companyaddress" className="text-sm font-medium text-slate-700 mb-2 block">Company Address</Label>
+                      <Input id="companyaddress" className="border-slate-300 focus:border-emerald-500" {...register("companyaddress")} />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="designation" className="pb-2">Designation</Label>
-                    <Input id="designation" className="border-2 border-gray-400" {...register("designation")} />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="companyaddress" className="pb-2">Company Address</Label>
-                    <Input id="companyaddress" className="border-2 border-gray-400" {...register("companyaddress")} />
-                  </div>
-                </div>
-              </section>
+                </CardContent>
+              </Card>
 
               {/* Account Manager */}
-              <section>
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Account Manager</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-1">
-                    <Label htmlFor="amId" className="pb-2">Assign AM</Label>
-                    <select
-                      id="amId"
-                      className="w-full h-9 rounded-md border border-gray-400 bg-background px-3 text-sm"
-                      disabled={amsLoading || roleName !== 'admin'}
-                      title={roleName !== 'admin' ? 'Only administrators can modify the Account Manager' : ''}
-                      {...register("amId")}
-                    >
-                      <option value="">{amsLoading ? "Loading AMs..." : "— None —"}</option>
-                      {ams.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.name}
-                        </option>
-                      ))}
-                    </select>
-                    {amsError && <p className="text-sm text-red-600 mt-1">{amsError}</p>}
+              <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-gradient-to-br from-white to-amber-50/60">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <User className="h-5 w-5 text-amber-600" />
+                    Account Manager
+                  </h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <Label htmlFor="amId" className="text-sm font-medium text-slate-700 mb-2 block">Assign AM</Label>
+                      <Select
+                        disabled={amsLoading || roleName !== 'admin'}
+                        onValueChange={(value) => setValue("amId", value)}
+                        value={watch("amId") || undefined}
+                      >
+                        <SelectTrigger className="border-slate-300 focus:border-amber-500">
+                          <SelectValue placeholder={amsLoading ? "Loading AMs..." : "— None —"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ams.map((u) => (
+                            <SelectItem key={u.id} value={u.id}>
+                              {u.name} ({u.email})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {amsError && <p className="text-sm text-red-600 mt-1">{amsError}</p>}
+                      {roleName !== 'admin' && (
+                        <p className="text-sm text-slate-500 mt-1">Only administrators can modify the Account Manager</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </section>
+                </CardContent>
+              </Card>
 
               {/* Websites */}
-              <section>
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Websites</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="website" className="pb-2">Website</Label>
-                    <Input id="website" className="border-2 border-gray-400" {...register("website")} />
+              <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-gradient-to-br from-white to-violet-50/60">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <Globe className="h-5 w-5 text-violet-600" />
+                    Websites
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="website" className="text-sm font-medium text-slate-700 mb-2 block">Website</Label>
+                      <Input id="website" className="border-slate-300 focus:border-violet-500" {...register("website")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="website2" className="text-sm font-medium text-slate-700 mb-2 block">Website 2</Label>
+                      <Input id="website2" className="border-slate-300 focus:border-violet-500" {...register("website2")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="website3" className="text-sm font-medium text-slate-700 mb-2 block">Website 3</Label>
+                      <Input id="website3" className="border-slate-300 focus:border-violet-500" {...register("website3")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="companywebsite" className="text-sm font-medium text-slate-700 mb-2 block">Company Website</Label>
+                      <Input id="companywebsite" className="border-slate-300 focus:border-violet-500" {...register("companywebsite")} />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="website2" className="pb-2">Website 2</Label>
-                    <Input id="website2" className="border-2 border-gray-400" {...register("website2")} />
-                  </div>
-                  <div>
-                    <Label htmlFor="website3" className="pb-2">Website 3</Label>
-                    <Input id="website3" className="border-2 border-gray-400" {...register("website3")} />
-                  </div>
-                  <div>
-                    <Label htmlFor="companywebsite" className="pb-2">Company Website</Label>
-                    <Input id="companywebsite" className="border-2 border-gray-400" {...register("companywebsite")} />
-                  </div>
-                </div>
-              </section>
+                </CardContent>
+              </Card>
 
               {/* Media / Bio */}
-              <section>
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Media & Bio</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="avatar" className="pb-2">Avatar URL</Label>
-                    <Input id="avatar" className="border-2 border-gray-400" {...register("avatar")} />
+              <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-gradient-to-br from-white to-rose-50/60">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-rose-600" />
+                    Media & Bio
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="avatar" className="text-sm font-medium text-slate-700 mb-2 block">Avatar URL</Label>
+                      <Input id="avatar" className="border-slate-300 focus:border-rose-500" {...register("avatar")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="imageDrivelink" className="text-sm font-medium text-slate-700 mb-2 block">Drive Link</Label>
+                      <Input id="imageDrivelink" className="border-slate-300 focus:border-rose-500" {...register("imageDrivelink")} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="biography" className="text-sm font-medium text-slate-700 mb-2 block">Biography</Label>
+                      <Textarea id="biography" rows={4} className="border-slate-300 focus:border-rose-500" {...register("biography")} />
+                    </div>
                   </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="biography" className="pb-2">Biography</Label>
-                    <Textarea id="biography" rows={4} className="border-2 border-gray-400" {...register("biography")} />
-                  </div>
-                </div>
-              </section>
+                </CardContent>
+              </Card>
 
               {/* Package & Dates */}
-              <section>
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Package & Dates</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="packageId" className="pb-2">Package</Label>
-                    <select
-                      id="packageId"
-                      className="w-full h-9 rounded-md border border-gray-400 bg-background px-3 text-sm"
-                      disabled={packagesLoading}
-                      {...register("packageId")}
-                    >
-                      <option value="">{packagesLoading ? "Loading packages..." : "Select a package"}</option>
-                      {packages.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
+              <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-gradient-to-br from-white to-cyan-50/60">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <Package className="h-5 w-5 text-cyan-600" />
+                    Package & Dates
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="packageId" className="text-sm font-medium text-slate-700 mb-2 block">Package</Label>
+                      <Select
+                        disabled={packagesLoading}
+                        onValueChange={(value) => setValue("packageId", value)}
+                        value={watch("packageId") || undefined}
+                      >
+                        <SelectTrigger className="border-slate-300 focus:border-cyan-500">
+                          <SelectValue placeholder={packagesLoading ? "Loading packages..." : "Select a package"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {packages.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="startDate" className="text-sm font-medium text-slate-700 mb-2 block">Start Date</Label>
+                      <Input id="startDate" type="date" className="border-slate-300 focus:border-cyan-500" {...register("startDate")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="dueDate" className="text-sm font-medium text-slate-700 mb-2 block">Due Date</Label>
+                      <Input id="dueDate" type="date" className="border-slate-300 focus:border-cyan-500" {...register("dueDate")} />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="startDate" className="pb-2">Start Date</Label>
-                    <Input id="startDate" type="date" className="border-2 border-gray-400" {...register("startDate")} />
-                  </div>
-                  <div>
-                    <Label htmlFor="dueDate" className="pb-2">Due Date</Label>
-                    <Input id="dueDate" type="date" className="border-2 border-gray-400" {...register("dueDate")} />
-                  </div>
-                </div>
-              </section>
+                </CardContent>
+              </Card>
 
               {/* Other (Custom Title/Data Pairs) */}
-              <section>
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Other Information</h3>
-                <div className="space-y-3">
-                  {otherPairs.map((pair, idx) => (
-                    <div key={idx} className="grid grid-cols-1 md:grid-cols-5 gap-2 items-center">
-                      <div className="md:col-span-2">
-                        <Label className="pb-1">Title</Label>
-                        <Input
-                          value={pair.title}
-                          onChange={(e) =>
-                            setOtherPairs((prev) => prev.map((p, i) => (i === idx ? { ...p, title: e.target.value } : p)))
-                          }
-                          className="border-2 border-gray-400"
-                        />
-                      </div>
-                      <div className="md:col-span-3">
-                        <Label className="pb-1">Data</Label>
-                        <Input
-                          value={pair.data}
-                          onChange={(e) =>
-                            setOtherPairs((prev) => prev.map((p, i) => (i === idx ? { ...p, data: e.target.value } : p)))
-                          }
-                          className="border-2 border-gray-400"
-                        />
-                      </div>
-                      <div className="flex md:justify-end">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="text-red-600"
+              <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-gradient-to-br from-white to-slate-50/60">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-slate-600" />
+                    Other Information
+                  </h3>
+                  <div className="space-y-3">
+                    {otherPairs.map((pair, idx) => (
+                      <div key={idx} className="grid grid-cols-1 md:grid-cols-10 gap-2 items-center">
+                        <div className="md:col-span-2">
+                          <Label className="text-sm font-medium text-slate-700 mb-1 block">Title</Label>
+                          <Textarea
+                            value={pair.title}
+                            onChange={(e) =>
+                              setOtherPairs((prev) => prev.map((p, i) => (i === idx ? { ...p, title: e.target.value } : p)))
+                            }
+                            className="border-slate-300"
+                          />
+                        </div>
+                        <div className="md:col-span-7">
+                          <Label className="text-sm font-medium text-slate-700 mb-1 block">Data</Label>
+                          <Textarea
+                            value={pair.data}
+                            onChange={(e) =>
+                              setOtherPairs((prev) => prev.map((p, i) => (i === idx ? { ...p, data: e.target.value } : p)))
+                            }
+                            className="border-slate-300"
+                          />
+                        </div>
+                        <div
+                          className="bg-red-500 flex items-center justify-center p-1 rounded cursor-pointer hover:bg-red-600 text-white mt-6"
                           onClick={() => setOtherPairs((prev) => prev.filter((_, i) => i !== idx))}
                         >
                           Remove
-                        </Button>
+                        </div>
                       </div>
+                    ))}
+                    <div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="border-slate-300 bg-green-500 hover:bg-green-600 text-white hover:text-white"
+                        onClick={() => setOtherPairs((prev) => [...prev, { title: "", data: "" }])}
+                      >
+                        + Add Row
+                      </Button>
                     </div>
-                  ))}
-                  <div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setOtherPairs((prev) => [...prev, { title: "", data: "" }])}
-                    >
-                      + Add Row
-                    </Button>
                   </div>
-                </div>
-              </section>
+                </CardContent>
+              </Card>
             </>
           )}
         </form>
 
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 bg-gradient-to-r from-slate-50/70 to-blue-50/70 border-t border-slate-200/70 rounded-b-2xl">
           <Button
-            variant="ghost"
-            className="bg-green-600 hover:bg-green-700 hover:text-white text-white"
+            variant="outline"
+            className="border-slate-300 text-slate-700 hover:bg-slate-100"
             onClick={() => onOpenChange(false)}
           >
             Cancel
@@ -559,7 +650,7 @@ export default function ClientEditModal({
           <Button
             form="edit-client-form"
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 hover:text-white text-white"
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
             disabled={isSaving}
           >
             {isSaving ? "Saving..." : "Save Changes"}

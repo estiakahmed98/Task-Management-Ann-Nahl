@@ -23,6 +23,7 @@ enum TaskPriority {
 enum TaskStatus {
   pending
   in_progress
+  paused
   completed
   overdue
   cancelled
@@ -419,6 +420,7 @@ model Task {
 
   qcReview              Json?
   qcTotalScore          Int?             @default(0)
+  pauseReasons          Json?            @default("[]")
 
   assignment            Assignment?        @relation(fields: [assignmentId], references: [id])
   client                Client?            @relation(fields: [clientId], references: [id])
