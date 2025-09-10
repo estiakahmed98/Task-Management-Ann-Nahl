@@ -126,6 +126,13 @@ interface Agent {
   role: string;
 }
 
+// ===== Storage keys =====
+const RUN_KEY = "runningTaskTimer"; // only the actively running timer
+const PAUSE_KEY = "pausedTaskTimer"; // at most one paused task
+const LOCK_KEY = "globalTimerLock"; // navigation lock
+
+type StoredTimer = TimerState & { savedAt?: number; agentId?: string };
+
 /* =========================
    Utils
 ========================= */
@@ -274,6 +281,33 @@ export function ClientTasksView({
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [pausedTimer, setPausedTimer] = useState<TimerState | null>(null); // new
+
+  const loadPausedFromStorage = useCallback(() => {
+    try {
+      const raw = localStorage.getItem("pausedTaskTimer"); // PAUSE_KEY
+      if (raw) {
+        const p = JSON.parse(raw) as TimerState & {
+          savedAt?: number;
+          agentId?: string;
+        };
+        // normalize to a TimerState; force not running
+        setPausedTimer({
+          taskId: p.taskId,
+          remainingSeconds: Math.max(0, p.remainingSeconds ?? 0),
+          isRunning: false,
+          totalSeconds: p.totalSeconds,
+          isGloballyLocked: false,
+          lockedByAgent: p.lockedByAgent,
+          startedAt: p.startedAt || Date.now(),
+        });
+      } else {
+        setPausedTimer(null);
+      }
+    } catch {
+      setPausedTimer(null);
+    }
+  }, []);
 
   const fetchClientTasks = useCallback(async () => {
     setLoading(true);
@@ -411,82 +445,142 @@ export function ClientTasksView({
   const saveTimerToStorage = useCallback(
     (timer: TimerState | null) => {
       try {
-        if (timer) {
-          const timerData = { ...timer, savedAt: Date.now(), agentId };
-          localStorage.setItem("taskTimer", JSON.stringify(timerData));
-          const lockState = {
-            isLocked: timer.isRunning,
-            taskId: timer.isRunning ? timer.taskId : null,
-            agentId: timer.isRunning ? agentId : null,
-            taskName: timer.isRunning
-              ? tasks.find((t) => t.id === timer.taskId)?.name || null
-              : null,
-          };
-          localStorage.setItem("globalTimerLock", JSON.stringify(lockState));
-          setGlobalTimerLock(lockState as GlobalTimerLock);
-        } else {
-          localStorage.removeItem("taskTimer");
-          localStorage.removeItem("globalTimerLock");
-          setGlobalTimerLock({
+        // CLEAR running + unlock; keep paused as-is (so it can be resumed later)
+        if (timer === null) {
+          localStorage.removeItem(RUN_KEY);
+
+          const unlock: GlobalTimerLock = {
             isLocked: false,
             taskId: null,
             agentId: null,
             taskName: null,
-          });
+          };
+          localStorage.setItem(LOCK_KEY, JSON.stringify(unlock));
+          setGlobalTimerLock(unlock);
+
+          // Legacy back-compat keys
+          localStorage.removeItem("taskTimer");
+          localStorage.removeItem("globalTimerLock");
+          return;
         }
+
+        const now = Date.now();
+
+        if (timer.isRunning) {
+          // RUNNING → persist as running + lock navigation
+          const runningData: StoredTimer = { ...timer, savedAt: now, agentId };
+          localStorage.setItem(RUN_KEY, JSON.stringify(runningData));
+
+          // If same task was paused earlier, clear paused record
+          try {
+            const pausedRaw = localStorage.getItem(PAUSE_KEY);
+            if (pausedRaw) {
+              const paused: StoredTimer = JSON.parse(pausedRaw);
+              if (paused.taskId === timer.taskId) {
+                localStorage.removeItem(PAUSE_KEY);
+              }
+            }
+          } catch {}
+
+          const lockState: GlobalTimerLock = {
+            isLocked: true,
+            taskId: timer.taskId,
+            agentId,
+            taskName: tasks.find((t) => t.id === timer.taskId)?.name || null,
+          };
+          localStorage.setItem(LOCK_KEY, JSON.stringify(lockState));
+          setGlobalTimerLock(lockState);
+
+          // Legacy keys (keep old loaders working)
+          localStorage.setItem("taskTimer", JSON.stringify(runningData));
+          localStorage.setItem("globalTimerLock", JSON.stringify(lockState));
+          return;
+        }
+
+        // PAUSED → single source of truth; overwrite ensures only ONE paused
+        const pausedData: StoredTimer = { ...timer, savedAt: now, agentId };
+        localStorage.setItem(PAUSE_KEY, JSON.stringify(pausedData));
+
+        // Clear running + unlock
+        localStorage.removeItem(RUN_KEY);
+        const unlock: GlobalTimerLock = {
+          isLocked: false,
+          taskId: null,
+          agentId: null,
+          taskName: null,
+        };
+        localStorage.setItem(LOCK_KEY, JSON.stringify(unlock));
+        setGlobalTimerLock(unlock);
+
+        // Legacy keys (back-compat)
+        localStorage.setItem("taskTimer", JSON.stringify(pausedData));
+        localStorage.setItem("globalTimerLock", JSON.stringify(unlock));
       } catch (e) {
         console.error("Failed to save timer to storage:", e);
       }
     },
-    [agentId, tasks]
+    [agentId, tasks, setGlobalTimerLock]
   );
 
   const loadTimerFromStorage = useCallback(() => {
     try {
-      const saved = localStorage.getItem("taskTimer");
-      const lockSaved = localStorage.getItem("globalTimerLock");
-      if (saved) {
-        const timerData = JSON.parse(saved);
-        let adjustedRemainingSeconds = timerData.remainingSeconds;
+      // Prefer the new running key; fall back to legacy "taskTimer"
+      const raw =
+        localStorage.getItem(RUN_KEY) ?? localStorage.getItem("taskTimer");
+      const lockRaw =
+        localStorage.getItem(LOCK_KEY) ??
+        localStorage.getItem("globalTimerLock");
+
+      if (raw) {
+        const timerData = JSON.parse(raw) as StoredTimer;
+
+        let remaining = timerData.remainingSeconds;
         if (timerData.isRunning) {
-          const elapsedSeconds = Math.floor(
+          const elapsed = Math.floor(
             (Date.now() - (timerData.savedAt || Date.now())) / 1000
           );
-          adjustedRemainingSeconds = Math.max(
-            0,
-            timerData.remainingSeconds - elapsedSeconds
-          );
+          remaining = Math.max(0, remaining - elapsed);
         }
-        const timer: TimerState = {
+
+        const restored: TimerState = {
           taskId: timerData.taskId,
-          remainingSeconds: adjustedRemainingSeconds,
-          isRunning: timerData.isRunning,
+          remainingSeconds: remaining,
+          isRunning: !!timerData.isRunning,
           totalSeconds: timerData.totalSeconds,
-          isGloballyLocked: timerData.isGloballyLocked,
+          isGloballyLocked: !!timerData.isGloballyLocked,
           lockedByAgent: timerData.lockedByAgent,
           startedAt: timerData.startedAt || Date.now(),
         };
-        setTimerState(timer);
-        if (lockSaved)
-          setGlobalTimerLock(JSON.parse(lockSaved) as GlobalTimerLock);
 
-        const task = tasks.find((t) => t.id === timer.taskId);
+        setTimerState(restored);
+
+        if (lockRaw) {
+          const lock = JSON.parse(lockRaw) as GlobalTimerLock;
+          setGlobalTimerLock(lock);
+        }
+
+        const task = tasks.find((t) => t.id === restored.taskId);
         toast.info(
-          timer.isRunning
-            ? `Timer restored for "${
+          restored.isRunning
+            ? `Timer restored for "${task?.name || "Unknown Task"}".`
+            : `Paused timer data available for "${
                 task?.name || "Unknown Task"
-              }". Continuing from where you left off.`
-            : `Paused timer restored for "${
-                task?.name || "Unknown Task"
-              }". Click play to continue.`
+              }".`
         );
-        return timer;
+        return restored;
       }
     } catch (e) {
-      console.error("Failed to load timer from storage:", e);
+      console.error("Failed to load timer:", e);
     }
     return null;
   }, [tasks]);
+
+  useEffect(() => {
+    if (tasks.length > 0) {
+      loadTimerFromStorage();
+      loadPausedFromStorage(); // 👈 add this
+    }
+  }, [tasks, loadTimerFromStorage, loadPausedFromStorage]);
 
   const isTaskDisabled = useCallback((_taskId: string) => false, []);
 
@@ -497,44 +591,103 @@ export function ClientTasksView({
     async (taskId: string) => {
       const task = tasks.find((t) => t.id === taskId);
       if (!task?.idealDurationMinutes) return;
+
+      // ❗ Block starting a different task while one is running
+      if (globalTimerLock.isLocked && timerState?.taskId !== taskId) {
+        toast.error("Please Pause the current running task!!!");
+        return;
+      }
+
       try {
         await handleUpdateTask(taskId, { status: "in_progress" });
-        const existingTimer = timerState?.taskId === taskId ? timerState : null;
-        const totalSeconds = task.idealDurationMinutes * 60;
-        const remainingSeconds =
-          existingTimer?.remainingSeconds ?? totalSeconds;
+
+        const totalSeconds = (task.idealDurationMinutes ?? 0) * 60;
+
+        // Resume from PAUSE_KEY if this task was paused
+        let remainingSeconds: number | undefined;
+        try {
+          const pausedRaw = localStorage.getItem(PAUSE_KEY);
+          if (pausedRaw) {
+            const paused: StoredTimer = JSON.parse(pausedRaw);
+            if (paused.taskId === taskId) {
+              remainingSeconds = Math.max(0, paused.remainingSeconds);
+              // clear paused snapshot once we resume
+              localStorage.removeItem(PAUSE_KEY);
+              setPausedTimer(null); // 👈 NEW: clear UI paused state for this task
+            }
+          }
+        } catch {}
+
+        if (remainingSeconds == null) {
+          // stick to current in-memory remaining if same task, else full duration
+          remainingSeconds =
+            timerState?.taskId === taskId
+              ? timerState.remainingSeconds
+              : totalSeconds;
+        }
 
         const newTimer: TimerState = {
           taskId,
           remainingSeconds,
           isRunning: true,
-          totalSeconds,
+          totalSeconds: totalSeconds > 0 ? totalSeconds : remainingSeconds,
           isGloballyLocked: true,
           lockedByAgent: agentId,
           startedAt: Date.now(),
         };
+
         setTimerState(newTimer);
         saveTimerToStorage(newTimer);
+
         toast.success(
-          `Timer started for "${task.name}". Back to clients navigation is now disabled.`
+          `Timer ${
+            remainingSeconds !== totalSeconds ? "resumed" : "started"
+          } for "${task.name}".`
         );
       } catch {
         toast.error("Failed to start timer");
       }
     },
-    [tasks, timerState, saveTimerToStorage, handleUpdateTask, agentId]
+    [
+      tasks,
+      timerState,
+      globalTimerLock.isLocked,
+      saveTimerToStorage,
+      handleUpdateTask,
+      agentId,
+      setPausedTimer, // 👈 include if you have eslint exhaustive-deps on
+    ]
   );
 
   const handlePauseTimer = useCallback(
     (taskId: string) => {
+      if (!timerState || timerState.taskId !== taskId) return;
+
+      // ❗ Only ONE paused task allowed at a time
+      try {
+        const existing = localStorage.getItem(PAUSE_KEY);
+        if (existing) {
+          const paused: StoredTimer = JSON.parse(existing);
+          if (paused.taskId !== taskId) {
+            toast.error(
+              "Another task is already paused. Resume or complete it before pausing this task."
+            );
+            return;
+          }
+        }
+      } catch {}
+
       if (timerState?.taskId === taskId) {
         const updatedTimer = {
           ...timerState,
           isRunning: false,
           isGloballyLocked: false,
         };
+
         setTimerState(updatedTimer);
-        saveTimerToStorage(updatedTimer);
+        setPausedTimer(updatedTimer); // 👈 add this
+        saveTimerToStorage(updatedTimer); // writes paused snapshot to storage
+
         const task = tasks.find((t) => t.id === taskId);
         toast.info(
           `Timer paused for "${task?.name}". All tasks are now unlocked.`
@@ -549,7 +702,20 @@ export function ClientTasksView({
       if (timerState?.taskId === taskId) {
         const task = tasks.find((t) => t.id === taskId);
         if (!task?.idealDurationMinutes) return;
+
         const totalSeconds = task.idealDurationMinutes * 60;
+
+        // Clear any paused snapshot for this task
+        try {
+          const pausedRaw = localStorage.getItem(PAUSE_KEY);
+          if (pausedRaw) {
+            const paused: StoredTimer = JSON.parse(pausedRaw);
+            if (paused.taskId === taskId) {
+              localStorage.removeItem(PAUSE_KEY);
+            }
+          }
+        } catch {}
+
         const updatedTimer: TimerState = {
           taskId,
           remainingSeconds: totalSeconds,
@@ -557,11 +723,19 @@ export function ClientTasksView({
           totalSeconds,
           isGloballyLocked: false,
         };
+
         setTimerState(updatedTimer);
+        // not running → we want everything unlocked and no running snapshot
         saveTimerToStorage(null);
-        toast.info(
-          `Timer reset for "${task?.name}". All tasks are now unlocked.`
-        );
+
+        if (pausedTimer?.taskId === taskId) {
+          setPausedTimer(null); // 👈 add this
+          try {
+            localStorage.removeItem("pausedTaskTimer");
+          } catch {}
+        }
+
+        toast.info(`Timer reset for "${task?.name}".`);
       }
     },
     [timerState, tasks, saveTimerToStorage]
@@ -838,11 +1012,10 @@ export function ClientTasksView({
                     duration: 4000,
                   });
                 })
-                .catch(() => {
-                  console.error("[v0] Failed to update task status to overdue");
-                });
+                .catch(() => console.error("Failed to set overdue"));
             }
           }
+
           if (newRemainingSeconds % 5 === 0 || newRemainingSeconds === 0) {
             saveTimerToStorage(updatedTimer);
           }
@@ -1103,6 +1276,7 @@ export function ClientTasksView({
             onTaskComplete={handleTaskCompletion}
             getPriorityBadge={getPriorityBadge}
             formatTimerDisplay={formatTimerDisplay}
+            pausedTimer={pausedTimer}
           />
         </div>
 
