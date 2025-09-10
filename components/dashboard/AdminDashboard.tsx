@@ -943,7 +943,7 @@ export function AdminDashboard() {
               <CardHeader className="border-b border-slate-200/70 py-5 bg-gradient-to-r from-cyan-50/70 to-blue-50/70">
                 <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
                   <Timer className="h-5 w-5 text-cyan-600" />
-                  Time Metrics
+                  Task Completion Metrics
                 </CardTitle>
                 <CardDescription>Completion and cadence</CardDescription>
               </CardHeader>
