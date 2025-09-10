@@ -232,7 +232,7 @@ export function TemplateViewModal({
             className="h-full flex flex-col"
           >
             <div className="px-6 border-b bg-white">
-              <TabsList className="grid w-full grid-cols-4 bg-gray-100">
+              <TabsList className="grid w-full grid-cols-2 bg-gray-100">
                 <TabsTrigger
                   value="overview"
                   className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
@@ -247,27 +247,13 @@ export function TemplateViewModal({
                   <Globe className="w-4 h-4 mr-2" />
                   Sites & Assets
                 </TabsTrigger>
-                <TabsTrigger
-                  value="team"
-                  className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  Team Members
-                </TabsTrigger>
-                <TabsTrigger
-                  value="analytics"
-                  className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
-                >
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  Analytics
-                </TabsTrigger>
               </TabsList>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">
               <TabsContent value="overview" className="mt-0 space-y-6">
                 {/* Statistics Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
                   <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100">
                     <CardContent className="p-4 text-center">
                       <div className="p-2 bg-blue-200 rounded-full w-fit mx-auto mb-2">
@@ -604,204 +590,6 @@ export function TemplateViewModal({
                           No additional assets configured
                         </p>
                       )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="team" className="mt-0 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Users className="w-5 h-5 text-blue-600" />
-                      Team Members
-                      <Badge variant="outline" className="ml-auto">
-                        {template.templateTeamMembers?.length || 0} members
-                      </Badge>
-                    </CardTitle>
-                    <CardDescription>
-                      People assigned to work on this template
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {template.templateTeamMembers &&
-                    template.templateTeamMembers.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {template.templateTeamMembers.map((member) => (
-                          <div
-                            key={`${member.agentId}-${
-                              member.teamId || "noteam"
-                            }`}
-                            className="p-4 border rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 hover:from-blue-50 hover:to-blue-100 transition-all duration-200"
-                          >
-                            <div className="flex items-start gap-3">
-                              <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
-                                <AvatarImage
-                                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${member.agent.email}`}
-                                />
-                                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
-                                  {getInitials(member.agent.name)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between mb-1">
-                                  <h4 className="font-semibold text-gray-900">
-                                    {member.agent.name || "Unnamed User"}
-                                  </h4>
-                                  {member.role && (
-                                    <Badge className="bg-blue-100 text-blue-700 text-xs">
-                                      {member.role}
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-sm text-gray-600 mb-2">
-                                  {member.agent.email}
-                                </p>
-
-                                <div className="flex flex-wrap items-center gap-2">
-                                  {member.team && (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs bg-green-50 text-green-700 border-green-200"
-                                    >
-                                      <Users className="w-3 h-3 mr-1" />
-                                      {member.team.name}
-                                    </Badge>
-                                  )}
-                                  {member.assignedDate && (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs bg-gray-50 text-gray-600 border-gray-200"
-                                    >
-                                      <Calendar className="w-3 h-3 mr-1" />
-                                      {new Date(
-                                        member.assignedDate
-                                      ).toLocaleDateString()}
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <div className="p-4 bg-gray-100 rounded-full w-fit mx-auto mb-4">
-                          <Users className="w-8 h-8 text-gray-400" />
-                        </div>
-                        <p className="text-gray-500">
-                          No team members assigned to this template
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="analytics" className="mt-0 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5 text-green-600" />
-                        Usage Statistics
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                        <span className="text-sm font-medium text-blue-900">
-                          Total Assignments
-                        </span>
-                        <span className="text-2xl font-bold text-blue-600">
-                          {template._count?.assignments || 0}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                        <span className="text-sm font-medium text-green-900">
-                          Active Sites
-                        </span>
-                        <span className="text-2xl font-bold text-green-600">
-                          {template.sitesAssets?.length || 0}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                        <span className="text-sm font-medium text-purple-900">
-                          Team Size
-                        </span>
-                        <span className="text-2xl font-bold text-purple-600">
-                          {template.templateTeamMembers?.length || 0}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Star className="w-5 h-5 text-yellow-600" />
-                        Template Health
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Configuration Completeness</span>
-                          <span className="font-medium">
-                            {template.sitesAssets &&
-                            template.sitesAssets.length > 0
-                              ? "85%"
-                              : "25%"}
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-300"
-                            style={{
-                              width:
-                                template.sitesAssets &&
-                                template.sitesAssets.length > 0
-                                  ? "85%"
-                                  : "25%",
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Team Assignment</span>
-                          <span className="font-medium">
-                            {template.templateTeamMembers &&
-                            template.templateTeamMembers.length > 0
-                              ? "100%"
-                              : "0%"}
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
-                            style={{
-                              width:
-                                template.templateTeamMembers &&
-                                template.templateTeamMembers.length > 0
-                                  ? "100%"
-                                  : "0%",
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      <div className="pt-4 space-y-2">
-                        <div className="flex items-center gap-2 text-sm text-green-600">
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Template is {template.status || "active"}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-blue-600">
-                          <Eye className="w-4 h-4" />
-                          <span>Ready for assignments</span>
-                        </div>
-                      </div>
                     </CardContent>
                   </Card>
                 </div>
