@@ -27,6 +27,7 @@ export function LoginForm() {
       else if (role === "qc") router.replace("/qc");
       else if (role === "am") router.replace("/am");
       else if (role === "client") router.replace("/client");
+      else if (role === "data_entry") router.replace("/data_entry");
       else router.push("/");
     }, 100);
     return () => clearTimeout(timeout);

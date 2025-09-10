@@ -18,5 +18,6 @@ export const config = {
     "/qc/:path*",
     "/am/:path*",
     "/client/:path*",
+    "/data_entry/:path*",
   ],
 };

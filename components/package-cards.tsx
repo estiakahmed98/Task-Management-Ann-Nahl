@@ -162,7 +162,9 @@ export function PackageCards() {
   };
 
   const handleSeeTemplates = (pkg: Package) => {
-    router.push(`/admin/packages/id-${pkg.id}/templates`);
+    const role = user?.role?.toLowerCase();
+    const basePath = role === 'admin' ? 'admin' : role === 'manager' ? 'manager' : 'data_entry';
+    router.push(`/${basePath}/packages/id-${pkg.id}/templates`);
   };
 
   const handleViewDetails = (packageId: string) => {

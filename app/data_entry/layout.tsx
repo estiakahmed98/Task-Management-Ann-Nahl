@@ -1,4 +1,4 @@
-// app/manager/layout.tsx
+//app/qc/layout.tsx
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -14,7 +14,7 @@ import { Toaster } from "sonner";
 import DynamicBreadcrumb from "@/components/DynamicBreadcrumb";
 import ImpersonationBanner from "@/components/auth/ImpersonationBanner";
 
-export default async function ManagerLayout({
+export default async function DataEntryLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -28,7 +28,7 @@ export default async function ManagerLayout({
 
   const user = token ? await getUserFromSession(token) : null;
 
-  if (!user || user.role?.name !== "manager") {
+  if (!user || user.role?.name !== "data_entry") {
     redirect("/");
   }
   return (
