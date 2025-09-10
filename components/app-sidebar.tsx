@@ -157,18 +157,18 @@ function buildNav(role: Role): NavItem[] {
     // Packages & Templates (admin, manager)
     {
       title: "Packages",
-      roles: ["admin", "manager"],
+      roles: ["admin", "manager", "data_entry"],
       children: [
         {
           title: "All Package",
           url: p(role, "/packages"),
-          roles: ["admin", "manager"],
+          roles: ["admin", "manager", "data_entry"],
         },
-        {
-          title: "Template",
-          url: p(role, "/templates"),
-          roles: ["admin", "manager"],
-        },
+        // {
+        //   title: "Template",
+        //   url: p(role, "/templates"),
+        //   roles: ["admin", "manager"],
+        // },
       ],
     },
 

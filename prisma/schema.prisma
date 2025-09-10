@@ -29,6 +29,7 @@ enum TaskStatus {
   cancelled
   reassigned 
   qc_approved
+  data_entered
 }
 
 enum PerformanceRating {
