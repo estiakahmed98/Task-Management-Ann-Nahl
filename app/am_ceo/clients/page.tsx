@@ -72,7 +72,7 @@ export default function ClientsPage() {
   }, [fetchPackages])
 
   const handleViewClientDetails = (client: Client) => {
-    router.push(`/admin/clients/${client.id}`)
+    router.push(`/am_ceo/clients/${client.id}`)
   }
 
   const handleAddNewClient = () => {
