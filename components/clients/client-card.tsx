@@ -13,9 +13,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { toast } from "sonner"
-import { useSession } from "@/lib/auth-client"
 
 import type { Client, TaskStatusCounts } from "@/types/client"
+import { useUserSession } from "@/lib/hooks/use-user-session"
 
 interface ClientCardProps {
   clientId: string
@@ -26,7 +26,7 @@ export function ClientCard({ clientId, onViewDetails }: ClientCardProps) {
   const [client, setClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const { data: session } = useSession()
+  const { user: session } = useUserSession()
 
   // Fetch full client details from API
   useEffect(() => {

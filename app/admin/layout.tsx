@@ -7,28 +7,23 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { getUserFromSession } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Toaster } from "sonner";
 import DynamicBreadcrumb from "@/components/DynamicBreadcrumb";
 import ImpersonationBanner from "@/components/auth/ImpersonationBanner";
+import { getAuthUser } from "@/lib/getAuthUser";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const cookieHeader = (await headers()).get("cookie");
-  const token =
-    cookieHeader
-      ?.split(";")
-      .find((c) => c.trim().startsWith("session-token="))
-      ?.split("=")[1] ?? null;
 
-  const user = token ? await getUserFromSession(token) : null;
+  const user = await getAuthUser();
+  
 
-  if (!user || user.role?.name !== "admin") {
+  if (!user || user?.role?.name !== "admin") {
     redirect("/");
   }
   return (
