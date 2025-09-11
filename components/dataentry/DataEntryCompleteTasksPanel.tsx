@@ -27,6 +27,7 @@ export type DETask = {
   category?: { id: string; name: string } | null;
   assignedTo?: { id: string; name?: string | null; email?: string | null } | null;
   dueDate?: string | null;
+  completedAt?: string | null;
 };
 
 export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: string }) {
@@ -43,7 +44,7 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [doneBy, setDoneBy] = useState<string>("");
-  const [completedAt, setCompletedAt] = useState<Date | undefined>(new Date());
+  const [completedAt, setCompletedAt] = useState<Date | undefined>(undefined);
   const [openDate, setOpenDate] = useState(false);
 
   const load = async () => {
@@ -87,12 +88,18 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
     setUsername("");
     setPassword("");
     setDoneBy("");
-    setCompletedAt(new Date());
+    setCompletedAt(undefined);
   };
 
   const openComplete = (t: DETask) => {
     setSelected(t);
     setLink(t.completionLink || "");
+    if (t.completedAt) {
+      const d = new Date(t.completedAt);
+      if (!isNaN(d.getTime())) setCompletedAt(d);
+    } else {
+      setCompletedAt(undefined);
+    }
   };
 
   const submit = async () => {
@@ -101,7 +108,11 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
       toast.error("Completion link is required");
       return;
     }
-    if (completedAt && completedAt.getTime() > Date.now()) {
+    if (!completedAt) {
+      toast.error("Please select a completion date");
+      return;
+    }
+    if (completedAt.getTime() > Date.now()) {
       toast.error("Completed date cannot be in the future");
       return;
     }
@@ -124,18 +135,16 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
       if (!r1.ok) throw new Error(j1?.message || j1?.error || "Failed to complete task");
 
       // 2) set completedAt (chosen date)
-      if (completedAt) {
-        const r2 = await fetch(`/api/tasks/${selected.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: "completed",
-            completedAt: completedAt ? completedAt.toISOString() : undefined,
-          }),
-        });
-        const j2 = await r2.json();
-        if (!r2.ok) throw new Error(j2?.error || "Failed to set completed date");
-      }
+      const r2 = await fetch(`/api/tasks/${selected.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "completed",
+          completedAt: completedAt.toISOString(),
+        }),
+      });
+      const j2 = await r2.json();
+      if (!r2.ok) throw new Error(j2?.error || "Failed to set completed date");
 
       // 2.5) reassign to the selected 'doneBy' agent (if provided) so the task ownership reflects who actually did it
       if (doneBy && clientId) {
