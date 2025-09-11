@@ -84,8 +84,8 @@ export default function ClientsPage() {
   }, [fetchPackages]);
 
   const handleViewClientDetails = (client: Client) => {
-    router.push(`/admin/clients/${client.id}`);
-  };
+  router.push(`/admin/clients/${encodeURIComponent(String(client.id))}`);
+};
 
   const handleAddNewClient = () => {
     router.push("clients/onboarding");
