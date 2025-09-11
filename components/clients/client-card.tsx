@@ -296,15 +296,17 @@ export function ClientCard({ clientId, onViewDetails }: ClientCardProps) {
             View Details
           </Button>
         </div>
-        <div className="flex gap-2 w-full">
-          <Button
-            className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white shadow-md rounded-lg px-5 py-2.5 transition-all duration-300"
-            onClick={handleViewTasks}
-          >
-            <ListChecks className="h-4 w-4 mr-2" />
-            View Tasks
-          </Button>
-        </div>
+        {(session?.role === 'Admin' || session?.role === 'Manager' || session?.role === 'data_entry') && (
+          <div className="flex gap-2 w-full">
+            <Button
+              className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white shadow-md rounded-lg px-5 py-2.5 transition-all duration-300"
+              onClick={handleViewTasks}
+            >
+              <ListChecks className="h-4 w-4 mr-2" />
+              View Tasks
+            </Button>
+          </div>
+        )}
       </CardFooter>
     </Card>
   )
