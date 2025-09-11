@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { CheckCircle2, Link2, UserRound } from "lucide-react";
+import { CheckCircle2, UserRound } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useUserSession } from "@/lib/hooks/use-user-session";
+import { useRouter } from "next/navigation";
+import { BackgroundGradient } from "../ui/background-gradient";
 
 export type DETask = {
   id: string;
@@ -31,6 +32,7 @@ export type DETask = {
 };
 
 export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: string }) {
+  const router = useRouter();
   const { user } = useUserSession();
   const [loading, setLoading] = useState(false);
   const [tasks, setTasks] = useState<DETask[]>([]);
@@ -80,6 +82,35 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
     if (!qlc) return tasks;
     return tasks.filter((t) => [t.name, t.category?.name || "", t.priority || "", t.status || ""].some((s) => String(s).toLowerCase().includes(qlc)));
   }, [tasks, q]);
+
+  // Gate readiness by required categories fully QC-approved
+  const requiredCategories = [
+    "Social Assets Creation",
+    "Web2 Creation",
+    "Additional Assets Creation",
+  ];
+
+  const isReadyForPostingCreation = useMemo(() => {
+    if (!tasks || tasks.length === 0) return false;
+    // For each required category: must exist and all in that category must be qc_approved
+    return requiredCategories.every((cat) => {
+      const inCat = tasks.filter((t) => (t.category?.name || "").toLowerCase() === cat.toLowerCase());
+      if (inCat.length === 0) return false; // must have tasks for this category
+      return inCat.every((t) => t.status === "qc_approved");
+    });
+  }, [tasks]);
+
+  const [creatingPosting, setCreatingPosting] = useState(false);
+
+  const createPostingTasks = async () => {
+    if (!clientId) return;
+    if (!isReadyForPostingCreation) {
+      toast.warning("Please complete & QC-approve all tasks first.");
+      return;
+    }
+    // Follow ClientUnifiedDashboard: route to admin creation page
+    router.push(`/admin/distribution/client-agent/client/${clientId}`);
+  };
 
   const resetModal = () => {
     setSelected(null);
@@ -188,9 +219,12 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
 
   return (
     <Card className="border-0 shadow-2xl overflow-hidden bg-white/90 backdrop-blur">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold">Data Entry — Complete Tasks</CardTitle>
-      </CardHeader>
+      <div className="flex items-center justify-between pb-2">
+        <h2 className="text-2xl font-bold pl-6">Data Entry — Complete Tasks</h2>
+        <BackgroundGradient className="p-2 rounded-xl">
+          <div onClick={createPostingTasks} className="text-white cursor-pointer">Create Posting Tasks</div>
+        </BackgroundGradient>
+      </div>
       <CardContent>
         <div className="flex items-center gap-3 mb-4">
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Quick search tasks" className="h-10 rounded-xl" />
@@ -234,6 +268,14 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
             </tbody>
           </table>
         </div>
+
+        {isReadyForPostingCreation && (
+          <div className="mt-6 flex justify-end">
+            <Button onClick={createPostingTasks} disabled={creatingPosting} className="bg-indigo-600">
+              {creatingPosting ? "Creating..." : "Create Posting Tasks"}
+            </Button>
+          </div>
+        )}
 
         <Dialog open={!!selected} onOpenChange={(o) => !o && resetModal()}>
           <DialogContent className="sm:max-w-[560px]">
@@ -290,16 +332,16 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
                   </div>
                 </div>
               </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => resetModal()}>Cancel</Button>
-            <Button className="bg-emerald-600" onClick={submit}>
-              <CheckCircle2 className="h-4 w-4 mr-2" /> Submit & Approve
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </CardContent>
-  </Card>
-);
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => resetModal()}>Cancel</Button>
+              <Button className="bg-emerald-600" onClick={submit}>
+                <CheckCircle2 className="h-4 w-4 mr-2" /> Submit & Approve
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
+  );
 }
