@@ -7,12 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Calendar as CalendarIcon, Link2, UserRound } from "lucide-react";
+import { CheckCircle2, Link2, UserRound } from "lucide-react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { useUserSession } from "@/lib/hooks/use-user-session";
 
 export type DETask = {
@@ -101,6 +101,10 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
       toast.error("Completion link is required");
       return;
     }
+    if (completedAt && completedAt.getTime() > Date.now()) {
+      toast.error("Completed date cannot be in the future");
+      return;
+    }
 
     try {
       // 1) mark completed with link + credentials via agent endpoint (task is assigned to data_entry)
@@ -131,6 +135,28 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
         });
         const j2 = await r2.json();
         if (!r2.ok) throw new Error(j2?.error || "Failed to set completed date");
+      }
+
+      // 2.5) reassign to the selected 'doneBy' agent (if provided) so the task ownership reflects who actually did it
+      if (doneBy && clientId) {
+        const distBody = {
+          clientId,
+          assignments: [
+            {
+              taskId: selected.id,
+              agentId: doneBy,
+              note: "Reassigned to actual performer by data_entry",
+              dueDate: undefined,
+            },
+          ],
+        } as any;
+        const rDist = await fetch(`/api/tasks/distribute`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(distBody),
+        });
+        const jDist = await rDist.json();
+        if (!rDist.ok) throw new Error(jDist?.error || "Failed to reassign task to selected agent");
       }
 
       // 3) auto approve → qc_approved (include notes with doneBy)
@@ -239,27 +265,32 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium flex items-center gap-2"><CalendarIcon className="h-4 w-4" /> Completed At</label>
-                  <Popover open={openDate} onOpenChange={setOpenDate}>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start h-10", !completedAt && "text-muted-foreground")}> {completedAt ? format(completedAt, "PPP") : "Pick a date"} </Button>
-                    </PopoverTrigger>
-                    <PopoverContent align="start" className="p-0 w-auto">
-                      <Calendar mode="single" selected={completedAt} onSelect={setCompletedAt} initialFocus />
-                    </PopoverContent>
-                  </Popover>
+                  <label className="text-sm font-medium">Completed At</label>
+                  <div className="mt-1">
+                    <DatePicker
+                      selected={completedAt}
+                      onChange={(date: Date | null) => setCompletedAt(date || new Date())}
+                      dateFormat="MMMM d, yyyy"
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"
+                      placeholderText="Select completion date"
+                      className="w-full border border-gray-300 rounded-md px-4 py-2 text-sm"
+                      maxDate={new Date()} // Prevent future dates
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => resetModal()}>Cancel</Button>
-              <Button className="bg-emerald-600" onClick={submit}>
-                <CheckCircle2 className="h-4 w-4 mr-2" /> Submit & Approve
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
-  );
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => resetModal()}>Cancel</Button>
+            <Button className="bg-emerald-600" onClick={submit}>
+              <CheckCircle2 className="h-4 w-4 mr-2" /> Submit & Approve
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </CardContent>
+  </Card>
+);
 }
