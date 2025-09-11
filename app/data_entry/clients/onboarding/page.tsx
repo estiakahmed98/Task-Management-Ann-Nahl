@@ -6,7 +6,7 @@ import { useState } from "react";
 import { GeneralInfo } from "@/components/onboarding/general-info";
 import { WebsiteInfo } from "@/components/onboarding/website-info";
 import { SocialMediaInfo } from "@/components/onboarding/social-media-info";
-import { ReviewInfo } from "@/components/onboarding/review-info";
+import { DataEntryReviewInfo } from "@/components/onboarding/DataEntryReviewInfo";
 import { OtherInfo } from "@/components/onboarding/other-info";
 import { StepIndicator } from "@/components/onboarding/step-indicator";
 import { BiographyInfo } from "@/components/onboarding/biography-info";
@@ -24,7 +24,7 @@ const steps = [
   { id: 6, title: "Other Info", component: OtherInfo },
   { id: 7, title: "Package", component: PackageInfo },
   { id: 8, title: "Template", component: TemplateSelection },
-  { id: 9, title: "Review", component: ReviewInfo },
+  { id: 9, title: "Review", component: DataEntryReviewInfo },
 ];
 
 export default function OnboardingPage() {
