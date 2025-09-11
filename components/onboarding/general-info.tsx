@@ -1,103 +1,117 @@
-"use client"
+// app/components/onboarding/general-info.tsx
 
-import type React from "react"
-import { useEffect, useState } from "react"
-import Image from "next/image"
-import { Upload } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { StepProps } from "@/types/onboarding"
-import DatePicker from "react-datepicker"
-import "react-datepicker/dist/react-datepicker.css"
-import { useSession } from "@/lib/auth-client"
+"use client";
+
+import type React from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { StepProps } from "@/types/onboarding";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { useUserSession } from "@/lib/hooks/use-user-session";
 
 type AMUser = {
-  id: string
-  name: string | null
-  email: string | null
-}
+  id: string;
+  name: string | null;
+  email: string | null;
+};
 
 export function GeneralInfo({ formData, updateFormData, onNext }: StepProps) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // ----- AM fetching state -----
-  const [ams, setAms] = useState<AMUser[]>([])
-  const [amsLoading, setAmsLoading] = useState<boolean>(false)
-  const [amsError, setAmsError] = useState<string | null>(null)
+  const [ams, setAms] = useState<AMUser[]>([]);
+  const [amsLoading, setAmsLoading] = useState<boolean>(false);
+  const [amsError, setAmsError] = useState<string | null>(null);
 
   // ----- Session (Better Auth) -----
-  const { data: session } = useSession()
-  const currentUserId = (session as any)?.user?.id as string | undefined
-  const currentUserRole =
-    ((session as any)?.user?.role?.name as string | undefined) ??
-    ((session as any)?.user?.role as string | undefined)
-  const isAM = (currentUserRole ?? "").toLowerCase() === "am"
+  const { user: sessionUser, loading: sessionLoading } = useUserSession();
+  const currentUserId = sessionUser?.id ?? undefined;
+  const currentUserRole = sessionUser?.role ?? undefined;
+  const isAM = (currentUserRole ?? "").toLowerCase() === "am";
 
   useEffect(() => {
-    let mounted = true
+    let mounted = true;
     const loadAMs = async () => {
       try {
-        setAmsLoading(true)
-        setAmsError(null)
+        setAmsLoading(true);
+        setAmsError(null);
 
         // If your API supports role & paging, use them to minimize payloads
-        const res = await fetch("/api/users?role=am&limit=100", { cache: "no-store" })
-        const json = await res.json()
+        const res = await fetch("/api/users?role=am&limit=100", {
+          cache: "no-store",
+        });
+        const json = await res.json();
 
         // Accept both shapes: {users: [...]} (yours) or {data: [...]}
-        const raw = (json?.users ?? json?.data ?? []) as any[]
+        const raw = (json?.users ?? json?.data ?? []) as any[];
 
         const list = raw
           .filter((u) => u?.role?.name === "am") // client-side safety guard
-          .map((u) => ({ id: u.id as string, name: u.name as string | null, email: u.email as string | null }))
+          .map((u) => ({
+            id: u.id as string,
+            name: u.name as string | null,
+            email: u.email as string | null,
+          }));
 
-        if (mounted) setAms(list)
+        if (mounted) setAms(list);
       } catch {
-        if (mounted) setAmsError("Failed to load AM list")
+        if (mounted) setAmsError("Failed to load AM list");
       } finally {
-        if (mounted) setAmsLoading(false)
+        if (mounted) setAmsLoading(false);
       }
-    }
-    loadAMs()
+    };
+    loadAMs();
     return () => {
-      mounted = false
-    }
-  }, [])
+      mounted = false;
+    };
+  }, []);
 
   // If the logged-in user is an AM, force-select their ID and keep it locked
   useEffect(() => {
     if (isAM && currentUserId && formData.amId !== currentUserId) {
-      updateFormData({ amId: currentUserId })
+      updateFormData({ amId: currentUserId });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAM, currentUserId])
+  }, [isAM, currentUserId]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      updateFormData({ profilePicture: file })
-      const reader = new FileReader()
+      updateFormData({ profilePicture: file });
+      const reader = new FileReader();
       reader.onloadend = () => {
-        setPreviewUrl(reader.result as string)
-      }
-      reader.readAsDataURL(file)
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const amLabel = (u: AMUser) => {
-    const n = u.name?.trim()
-    const e = u.email?.trim()
-    if (n && e) return `${n} (${e})`
-    return n || e || u.id
-  }
+    const n = u.name?.trim();
+    const e = u.email?.trim();
+    if (n && e) return `${n} (${e})`;
+    return n || e || u.id;
+  };
 
   return (
     <div className="space-y-8">
       <div className="text-center">
         <h1 className="text-3xl font-bold">General Information</h1>
-        <p className="text-gray-500 mt-2">Let's start with some basic information about you or your business.</p>
+        <p className="text-gray-500 mt-2">
+          Let's start with some basic information about you or your business.
+        </p>
       </div>
 
       <div className="space-y-6">
@@ -118,7 +132,12 @@ export function GeneralInfo({ formData, updateFormData, onNext }: StepProps) {
           <div className="mt-1 flex items-center space-x-4">
             <div className="relative h-24 w-24 rounded-full overflow-hidden border border-gray-300">
               {previewUrl ? (
-                <Image src={previewUrl || "/placeholder.svg"} alt="Profile preview" fill className="object-cover" />
+                <Image
+                  src={previewUrl || "/placeholder.svg"}
+                  alt="Profile preview"
+                  fill
+                  className="object-cover"
+                />
               ) : (
                 <div className="h-full w-full bg-gray-100 flex items-center justify-center">
                   <span className="text-gray-400">No image</span>
@@ -130,7 +149,12 @@ export function GeneralInfo({ formData, updateFormData, onNext }: StepProps) {
                 <Upload size={16} />
                 <span>Upload</span>
               </div>
-              <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageChange}
+              />
             </label>
           </div>
         </div>
@@ -140,8 +164,12 @@ export function GeneralInfo({ formData, updateFormData, onNext }: StepProps) {
             <Label htmlFor="birthdate">Birth Date</Label>
             <div className="mt-1">
               <DatePicker
-                selected={formData.birthdate ? new Date(formData.birthdate) : null}
-                onChange={(date: Date | null) => updateFormData({ birthdate: date ? date.toISOString() : "" })}
+                selected={
+                  formData.birthdate ? new Date(formData.birthdate) : null
+                }
+                onChange={(date: Date | null) =>
+                  updateFormData({ birthdate: date ? date.toISOString() : "" })
+                }
                 dateFormat="MMMM d, yyyy"
                 showMonthDropdown
                 showYearDropdown
@@ -160,7 +188,9 @@ export function GeneralInfo({ formData, updateFormData, onNext }: StepProps) {
               onChange={(e) => updateFormData({ gender: e.target.value })}
               className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <option disabled value="">Select gender</option>
+              <option disabled value="">
+                Select gender
+              </option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
             </select>
@@ -208,7 +238,9 @@ export function GeneralInfo({ formData, updateFormData, onNext }: StepProps) {
             <Input
               id="companyaddress"
               value={formData.companyaddress || ""}
-              onChange={(e) => updateFormData({ companyaddress: e.target.value })}
+              onChange={(e) =>
+                updateFormData({ companyaddress: e.target.value })
+              }
               placeholder="Enter company address"
               className="mt-1"
             />
@@ -219,7 +251,9 @@ export function GeneralInfo({ formData, updateFormData, onNext }: StepProps) {
             <Input
               id="companywebsite"
               value={formData.companywebsite || ""}
-              onChange={(e) => updateFormData({ companywebsite: e.target.value })}
+              onChange={(e) =>
+                updateFormData({ companywebsite: e.target.value })
+              }
               placeholder="https://company.com"
               className="mt-1"
               inputMode="url"
@@ -233,45 +267,66 @@ export function GeneralInfo({ formData, updateFormData, onNext }: StepProps) {
           <div>
             <Label htmlFor="amId">Account Manager (AM)</Label>
             <Select
-              value={(isAM && currentUserId) ? currentUserId : (formData.amId || "")}
-              onValueChange={(value) => updateFormData({ amId: value === "__none__" ? "" : value })}
+              value={
+                isAM && currentUserId ? currentUserId : formData.amId || ""
+              }
+              onValueChange={(value) =>
+                updateFormData({ amId: value === "__none__" ? "" : value })
+              }
               disabled={isAM}
             >
-              <SelectTrigger className="mt-1" id="amId" aria-label="Select account manager">
-                <SelectValue placeholder={amsLoading ? "Loading AMs..." : (ams.length ? "Select account manager" : "No AMs found")} />
+              <SelectTrigger
+                className="mt-1"
+                id="amId"
+                aria-label="Select account manager"
+              >
+                <SelectValue
+                  placeholder={
+                    amsLoading
+                      ? "Loading AMs..."
+                      : ams.length
+                      ? "Select account manager"
+                      : "No AMs found"
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__" disabled>Select Account Manager</SelectItem>
+                <SelectItem value="__none__" disabled>
+                  Select Account Manager
+                </SelectItem>
                 {isAM && currentUserId
-                  ? (
-                    (() => {
-                      const me = ams.find((u) => u.id === currentUserId)
+                  ? (() => {
+                      const me = ams.find((u) => u.id === currentUserId);
                       return (
                         <SelectItem key={currentUserId} value={currentUserId}>
-                          {me ? (me.name ?? me.email ?? currentUserId) : "You"}
+                          {me ? me.name ?? me.email ?? currentUserId : "You"}
                         </SelectItem>
-                      )
+                      );
                     })()
-                  )
-                  : (
-                    ams.map((u) => (
+                  : ams.map((u) => (
                       <SelectItem key={u.id} value={u.id}>
                         {u.name}
                       </SelectItem>
-                    ))
-                  )}
+                    ))}
               </SelectContent>
             </Select>
-            {amsError && <p className="text-sm text-red-600 mt-1">{amsError}</p>}
+            {amsError && (
+              <p className="text-sm text-red-600 mt-1">{amsError}</p>
+            )}
             {isAM && (
-              <p className="text-xs text-gray-500 mt-1">As an Account Manager, this field is locked to your account.</p>
+              <p className="text-xs text-gray-500 mt-1">
+                As an Account Manager, this field is locked to your account.
+              </p>
             )}
           </div>
 
           {/* Status */}
           <div>
             <Label htmlFor="status">Status</Label>
-            <Select value={formData.status || ""} onValueChange={(value) => updateFormData({ status: value })}>
+            <Select
+              value={formData.status || ""}
+              onValueChange={(value) => updateFormData({ status: value })}
+            >
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
@@ -285,10 +340,16 @@ export function GeneralInfo({ formData, updateFormData, onNext }: StepProps) {
 
           {/* Start Date */}
           <div>
-            <Label htmlFor="startDate" className="mb-1">Start Date</Label>
+            <Label htmlFor="startDate" className="mb-1">
+              Start Date
+            </Label>
             <DatePicker
-              selected={formData.startDate ? new Date(formData.startDate) : null}
-              onChange={(date: Date | null) => updateFormData({ startDate: date ? date.toISOString() : "" })}
+              selected={
+                formData.startDate ? new Date(formData.startDate) : null
+              }
+              onChange={(date: Date | null) =>
+                updateFormData({ startDate: date ? date.toISOString() : "" })
+              }
               dateFormat="MMMM d, yyyy"
               showMonthDropdown
               showYearDropdown
@@ -300,10 +361,14 @@ export function GeneralInfo({ formData, updateFormData, onNext }: StepProps) {
 
           {/* Due Date */}
           <div>
-            <Label htmlFor="dueDate" className="mb-1">Due Date</Label>
+            <Label htmlFor="dueDate" className="mb-1">
+              Due Date
+            </Label>
             <DatePicker
               selected={formData.dueDate ? new Date(formData.dueDate) : null}
-              onChange={(date: Date | null) => updateFormData({ dueDate: date ? date.toISOString() : "" })}
+              onChange={(date: Date | null) =>
+                updateFormData({ dueDate: date ? date.toISOString() : "" })
+              }
               dateFormat="MMMM d, yyyy"
               showMonthDropdown
               showYearDropdown
@@ -313,8 +378,10 @@ export function GeneralInfo({ formData, updateFormData, onNext }: StepProps) {
             />
           </div>
         </div>
-        
-        <h2 className="text-lg font-semibold mb-4 bg-gray-200 p-2 rounded-md">This section is Optional</h2>
+
+        <h2 className="text-lg font-semibold mb-4 bg-gray-200 p-2 rounded-md">
+          This section is Optional
+        </h2>
 
         {/* ---------- Email / Phone / Password / Recovery Email ---------- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -365,7 +432,9 @@ export function GeneralInfo({ formData, updateFormData, onNext }: StepProps) {
               id="recoveryEmail"
               type="email"
               value={formData.recoveryEmail || ""}
-              onChange={(e) => updateFormData({ recoveryEmail: e.target.value })}
+              onChange={(e) =>
+                updateFormData({ recoveryEmail: e.target.value })
+              }
               placeholder="recovery@example.com"
               className="mt-1"
               autoComplete="email"
@@ -381,5 +450,5 @@ export function GeneralInfo({ formData, updateFormData, onNext }: StepProps) {
         </Button>
       </div>
     </div>
-  )
+  );
 }
