@@ -1,0 +1,265 @@
+"use client";
+
+import React, { useEffect, useMemo, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { CheckCircle2, Calendar as CalendarIcon, Link2, UserRound } from "lucide-react";
+import { useUserSession } from "@/lib/hooks/use-user-session";
+
+export type DETask = {
+  id: string;
+  name: string;
+  status: string;
+  priority: string;
+  completionLink?: string | null;
+  email?: string | null;
+  username?: string | null;
+  password?: string | null;
+  category?: { id: string; name: string } | null;
+  assignedTo?: { id: string; name?: string | null; email?: string | null } | null;
+  dueDate?: string | null;
+};
+
+export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: string }) {
+  const { user } = useUserSession();
+  const [loading, setLoading] = useState(false);
+  const [tasks, setTasks] = useState<DETask[]>([]);
+  const [agents, setAgents] = useState<Array<{ id: string; name?: string | null; email?: string | null }>>([]);
+
+  const [q, setQ] = useState("");
+  const [selected, setSelected] = useState<DETask | null>(null);
+
+  const [link, setLink] = useState("");
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [doneBy, setDoneBy] = useState<string>("");
+  const [completedAt, setCompletedAt] = useState<Date | undefined>(new Date());
+  const [openDate, setOpenDate] = useState(false);
+
+  const load = async () => {
+    if (!clientId) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/tasks/client/${clientId}`, { cache: "no-store" });
+      const data = await res.json();
+      const mine = (data as any[]).filter((t) => t?.assignedTo?.id && user?.id && t.assignedTo.id === user.id);
+      setTasks(mine);
+
+      const aRes = await fetch(`/api/users?role=agent&limit=200`, { cache: "no-store" });
+      const aJson = await aRes.json();
+      const list: Array<{ id: string; name?: string | null; email?: string | null }> = (aJson?.users ?? aJson?.data ?? [])
+        .filter((u: any) => u?.role?.name?.toLowerCase() === "agent")
+        .map((u: any) => ({ id: u.id, name: u.name ?? null, email: u.email ?? null }));
+      setAgents(list);
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to load tasks or agents");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId, user?.id]);
+
+  const filtered = useMemo(() => {
+    const qlc = q.trim().toLowerCase();
+    if (!qlc) return tasks;
+    return tasks.filter((t) => [t.name, t.category?.name || "", t.priority || "", t.status || ""].some((s) => String(s).toLowerCase().includes(qlc)));
+  }, [tasks, q]);
+
+  const resetModal = () => {
+    setSelected(null);
+    setLink("");
+    setEmail("");
+    setUsername("");
+    setPassword("");
+    setDoneBy("");
+    setCompletedAt(new Date());
+  };
+
+  const openComplete = (t: DETask) => {
+    setSelected(t);
+    setLink(t.completionLink || "");
+  };
+
+  const submit = async () => {
+    if (!user?.id || !selected) return;
+    if (!link.trim()) {
+      toast.error("Completion link is required");
+      return;
+    }
+
+    try {
+      // 1) mark completed with link + credentials via agent endpoint (task is assigned to data_entry)
+      const r1 = await fetch(`/api/tasks/agents/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: selected.id,
+          status: "completed",
+          completionLink: link.trim(),
+          username: username.trim() || undefined,
+          email: email.trim() || undefined,
+          password: password || undefined,
+        }),
+      });
+      const j1 = await r1.json();
+      if (!r1.ok) throw new Error(j1?.message || j1?.error || "Failed to complete task");
+
+      // 2) set completedAt (chosen date)
+      if (completedAt) {
+        const r2 = await fetch(`/api/tasks/${selected.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "completed",
+            completedAt: completedAt ? completedAt.toISOString() : undefined,
+          }),
+        });
+        const j2 = await r2.json();
+        if (!r2.ok) throw new Error(j2?.error || "Failed to set completed date");
+      }
+
+      // 3) auto approve → qc_approved (include notes with doneBy)
+      const r3 = await fetch(`/api/tasks/${selected.id}/approve`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ performanceRating: "Good", notes: doneBy ? `Done by agent: ${doneBy}` : undefined }),
+      });
+      const j3 = await r3.json();
+      if (!r3.ok) throw new Error(j3?.error || "Failed to approve task");
+
+      toast.success("Task completed and QC approved");
+      resetModal();
+      load();
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to submit");
+    }
+  };
+
+  return (
+    <Card className="border-0 shadow-2xl overflow-hidden bg-white/90 backdrop-blur">
+      <CardHeader>
+        <CardTitle className="text-2xl font-bold">Data Entry — Complete Tasks</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-3 mb-4">
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Quick search tasks" className="h-10 rounded-xl" />
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm border border-slate-200 rounded-xl overflow-hidden">
+            <thead className="bg-slate-50 text-slate-700">
+              <tr className="text-left">
+                <th className="px-3 py-2">Task</th>
+                <th className="px-3 py-2">Category</th>
+                <th className="px-3 py-2">Priority</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Due</th>
+                <th className="px-3 py-2 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 bg-white">
+              {loading ? (
+                <tr><td colSpan={6} className="p-6 text-center text-slate-500">Loading…</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={6} className="p-6 text-center text-slate-500">No tasks</td></tr>
+              ) : (
+                filtered.map((t) => (
+                  <tr key={t.id} className="hover:bg-slate-50/60">
+                    <td className="p-3">
+                      <div className="font-medium text-slate-900 truncate" title={t.name}>{t.name}</div>
+                    </td>
+                    <td className="p-3">
+                      <Badge variant="outline">{t.category?.name || "—"}</Badge>
+                    </td>
+                    <td className="p-3">{t.priority}</td>
+                    <td className="p-3">{t.status.replaceAll("_", " ")}</td>
+                    <td className="p-3">{t.dueDate ? format(new Date(t.dueDate), "PPP") : "—"}</td>
+                    <td className="p-3 text-right">
+                      <Button onClick={() => openComplete(t)} size="sm">Complete</Button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <Dialog open={!!selected} onOpenChange={(o) => !o && resetModal()}>
+          <DialogContent className="sm:max-w-[560px]">
+            <DialogHeader>
+              <DialogTitle>Complete Task</DialogTitle>
+              <DialogDescription>Provide completion link, credentials, who did it, and the completion date. It will be auto-QC approved.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <div>
+                <label className="text-sm font-medium">Completion Link</label>
+                <Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://…" className="mt-1" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-sm font-medium">Email</label>
+                  <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Username</label>
+                  <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="username" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Password</label>
+                  <Input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium flex items-center gap-2"><UserRound className="h-4 w-4" /> Done by (agent)</label>
+                  <Select value={doneBy} onValueChange={setDoneBy}>
+                    <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Select agent" /></SelectTrigger>
+                    <SelectContent>
+                      {agents.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>{a.name || a.email || a.id}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium flex items-center gap-2"><CalendarIcon className="h-4 w-4" /> Completed At</label>
+                  <Popover open={openDate} onOpenChange={setOpenDate}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("w-full justify-start h-10", !completedAt && "text-muted-foreground")}> {completedAt ? format(completedAt, "PPP") : "Pick a date"} </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="p-0 w-auto">
+                      <Calendar mode="single" selected={completedAt} onSelect={setCompletedAt} initialFocus />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => resetModal()}>Cancel</Button>
+              <Button className="bg-emerald-600" onClick={submit}>
+                <CheckCircle2 className="h-4 w-4 mr-2" /> Submit & Approve
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
+  );
+}

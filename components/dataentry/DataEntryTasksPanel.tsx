@@ -20,6 +20,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useUserSession } from "@/lib/hooks/use-user-session";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import {
   Rocket,
@@ -33,6 +45,8 @@ import {
   Hash,
   Link2,
   Type,
+  Calendar as CalendarIcon,
+  UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -113,6 +127,7 @@ export default function DataEntryTasksPanel({
   templateId,
   initialOnlyType = "all",
 }: Props) {
+  const { user } = useUserSession();
   const [onlyType, setOnlyType] = useState<OnlyTypeFilter>(initialOnlyType);
   const [overridePriority, setOverridePriority] = useState<PreviewTask["priority"] | undefined>(undefined);
 
@@ -120,6 +135,18 @@ export default function DataEntryTasksPanel({
   const [creating, setCreating] = useState(false);
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [q, setQ] = useState("");
+
+  // completion modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selected, setSelected] = useState<PreviewTask | null>(null);
+  const [link, setLink] = useState("");
+  const [emailVal, setEmailVal] = useState("");
+  const [usernameVal, setUsernameVal] = useState("");
+  const [passwordVal, setPasswordVal] = useState("");
+  const [doneBy, setDoneBy] = useState<string>("");
+  const [completedAt, setCompletedAt] = useState<Date | undefined>(new Date());
+  const [openDate, setOpenDate] = useState(false);
+  const [agents, setAgents] = useState<Array<{ id: string; name?: string | null; email?: string | null }>>([]);
 
   const fetchPreview = async () => {
     if (!clientId) return;
@@ -155,6 +182,21 @@ export default function DataEntryTasksPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId, templateId, onlyType]);
 
+  // load agents list for "Done by" selector
+  useEffect(() => {
+    const loadAgents = async () => {
+      try {
+        const aRes = await fetch(`/api/users?role=agent&limit=200`, { cache: "no-store" });
+        const aJson = await aRes.json();
+        const list: Array<{ id: string; name?: string | null; email?: string | null }> = (aJson?.users ?? aJson?.data ?? [])
+          .filter((u: any) => u?.role?.name?.toLowerCase() === "agent")
+          .map((u: any) => ({ id: u.id, name: u.name ?? null, email: u.email ?? null }));
+        setAgents(list);
+      } catch {}
+    };
+    loadAgents();
+  }, []);
+
   const filteredTasks = useMemo(() => {
     if (!preview) return [] as PreviewTask[];
     const qlc = q.trim().toLowerCase();
@@ -180,6 +222,73 @@ export default function DataEntryTasksPanel({
   }, [filteredTasks]);
 
   const canCreate = !!preview && preview.allApproved && filteredTasks.length > 0;
+
+  const openComplete = (t: PreviewTask) => {
+    setSelected(t);
+    setLink("");
+    setEmailVal("");
+    setUsernameVal("");
+    setPasswordVal("");
+    setDoneBy("");
+    setCompletedAt(new Date());
+    setModalOpen(true);
+  };
+
+  const submitComplete = async () => {
+    if (!user?.id || !selected) {
+      toast.error("User session not loaded");
+      return;
+    }
+    if (!link.trim()) {
+      toast.error("Completion link is required");
+      return;
+    }
+    try {
+      // 1) complete with link + credentials
+      const r1 = await fetch(`/api/tasks/agents/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: selected.id,
+          status: "completed",
+          completionLink: link.trim(),
+          username: usernameVal.trim() || undefined,
+          email: emailVal.trim() || undefined,
+          password: passwordVal || undefined,
+        }),
+      });
+      const j1 = await r1.json();
+      if (!r1.ok) throw new Error(j1?.message || j1?.error || "Failed to complete task");
+
+      // 2) set completedAt date if provided
+      if (completedAt) {
+        const r2 = await fetch(`/api/tasks/${selected.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "completed", completedAt: completedAt.toISOString() }),
+        });
+        const j2 = await r2.json();
+        if (!r2.ok) throw new Error(j2?.error || "Failed to set completed date");
+      }
+
+      // 3) auto approve
+      const r3 = await fetch(`/api/tasks/${selected.id}/approve`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ performanceRating: "Good", notes: doneBy ? `Done by agent: ${doneBy}` : undefined }),
+      });
+      const j3 = await r3.json();
+      if (!r3.ok) throw new Error(j3?.error || "Failed to approve task");
+
+      toast.success("Task completed and QC approved");
+      setModalOpen(false);
+      setSelected(null);
+      fetchPreview();
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to submit");
+    }
+  };
 
   const fireCreate = async () => {
     try {
@@ -364,6 +473,7 @@ export default function DataEntryTasksPanel({
                 <Th w="12%">Priority</Th>
                 <Th w="12%">Status</Th>
                 <Th w="14%" right>Will Create</Th>
+                <Th w="12%" right>Action</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
@@ -404,6 +514,11 @@ export default function DataEntryTasksPanel({
                     <td className="p-3 text-right align-middle">
                       <span className="font-semibold text-slate-900">× {t.frequency}</span>
                     </td>
+                    <td className="p-3 text-right align-middle">
+                      <Button size="sm" onClick={() => openComplete(t)} disabled={t.status === "qc_approved"}>
+                        Complete
+                      </Button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -416,6 +531,67 @@ export default function DataEntryTasksPanel({
           Due dates are auto-calculated per cycle; credentials & notes are copied.
         </div>
       </CardContent>
+
+      {/* Completion Modal */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Complete Task</DialogTitle>
+            <DialogDescription>Provide completion link, credentials, who did it, and the completion date. It will be auto-QC approved.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <label className="text-sm font-medium">Completion Link</label>
+              <Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://…" className="mt-1" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="text-sm font-medium">Email</label>
+                <Input value={emailVal} onChange={(e) => setEmailVal(e.target.value)} placeholder="email@example.com" />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Username</label>
+                <Input value={usernameVal} onChange={(e) => setUsernameVal(e.target.value)} placeholder="username" />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Password</label>
+                <Input value={passwordVal} onChange={(e) => setPasswordVal(e.target.value)} placeholder="password" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium flex items-center gap-2"><UserRound className="h-4 w-4" /> Done by (agent)</label>
+                <Select value={doneBy} onValueChange={setDoneBy}>
+                  <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Select agent" /></SelectTrigger>
+                  <SelectContent>
+                    {agents.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>{a.name || a.email || a.id}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium flex items-center gap-2"><CalendarIcon className="h-4 w-4" /> Completed At</label>
+                <Popover open={openDate} onOpenChange={setOpenDate}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start h-10", !completedAt && "text-muted-foreground")}> {completedAt ? format(completedAt, "PPP") : "Pick a date"} </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="p-0 w-auto">
+                    <Calendar mode="single" selected={completedAt} onSelect={setCompletedAt} initialFocus />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
+            <Button className="bg-emerald-600" onClick={submitComplete}>
+              <CheckCircle2 className="h-4 w-4 mr-2" /> Submit & Approve
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

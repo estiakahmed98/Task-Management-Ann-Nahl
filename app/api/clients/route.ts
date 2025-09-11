@@ -17,10 +17,16 @@ export async function GET(req: Request) {
 
     // ✅ নতুন: AM স্কোপিং
     const amId = searchParams.get("amId") || undefined;
+    // ✅ নতুন: data_entry/agent স্কোপিং → show only clients assigned to this user
+    const assignedAgentId = searchParams.get("assignedAgentId") || undefined;
 
     const where: any = {};
     if (status && status !== "all") where.status = status;
     if (amId) where.amId = amId; // ✅ AM ফিল্টার সার্ভার-সাইডে
+    if (assignedAgentId) {
+      // Client.teamMembers some agentId matches
+      where.teamMembers = { some: { agentId: assignedAgentId } } as any;
+    }
     if (q) {
       where.OR = [
         { name: { contains: q, mode: "insensitive" } },
@@ -49,12 +55,16 @@ export async function GET(req: Request) {
           select: { id: true, name: true, email: true },
         },
         package: { select: { id: true, name: true } },
+        // optional: include a tiny projection of team membership to help client-side if needed
+        teamMembers: assignedAgentId
+          ? { select: { agentId: true }, where: { agentId: assignedAgentId } }
+          : false as any,
       },
     });
 
     return NextResponse.json({
       clients,
-      meta: { limit, q, status: status ?? null, amId: amId ?? null },
+      meta: { limit, q, status: status ?? null, amId: amId ?? null, assignedAgentId: assignedAgentId ?? null },
     });
   } catch (err: any) {
     console.error("GET /api/clients error:", err);

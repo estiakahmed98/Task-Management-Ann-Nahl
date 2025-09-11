@@ -59,6 +59,8 @@ export default function ClientsPage() {
       setLoading(true);
       const url = new URL("/api/clients", window.location.origin);
       if (isAM && currentUserId) url.searchParams.set("amId", currentUserId);
+      // data_entry (or any non-AM) should only see clients assigned to them
+      if (!isAM && currentUserId) url.searchParams.set("assignedAgentId", currentUserId);
 
       const response = await fetch(url.toString(), { cache: "no-store" });
       if (!response.ok) throw new Error("Failed to fetch clients");

@@ -6,32 +6,28 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+type ViewMode = "grid" | "list"
+
 interface AmCeoClientOverviewHeaderProps {
-  // search
   searchQuery: string
   setSearchQuery: (query: string) => void
 
-  // status
   statusFilter: string
   setStatusFilter: (status: string) => void
 
-  // package
   packageFilter: string
   setPackageFilter: (pkg: string) => void
   packages: { id: string; name: string }[]
 
-  // account manager
-  amFilter: string
+  amFilter: string              // 'all' | stringified id
   setAmFilter: (amId: string) => void
-  accountManagers: { id: string; label: string }[]
+  accountManagers: { id: string | number; label: string }[]
 
-  // session user (NEW)
-  currentUserId?: string
+  currentUserId?: string | number
   currentUserRole?: string
 
-  // view
-  viewMode: "grid" | "list"
-  setViewMode: (mode: "grid" | "list") => void
+  viewMode: ViewMode
+  setViewMode: (mode: ViewMode) => void
 
   onAddNewClient: () => void
 }
@@ -41,34 +37,37 @@ export function AmCeoClientOverviewHeader({
   setSearchQuery,
   statusFilter,
   setStatusFilter,
-
   packageFilter,
   setPackageFilter,
   packages,
-
   amFilter,
   setAmFilter,
   accountManagers,
-
   currentUserId,
   currentUserRole,
-
   viewMode,
   setViewMode,
 }: AmCeoClientOverviewHeaderProps) {
-  const isAM = (currentUserRole ?? "").toLowerCase() === "am"
+  const isAM = (currentUserRole ?? "").trim().toLowerCase() === "am"
+  const currentUserIdStr = currentUserId != null ? String(currentUserId) : undefined
 
-  // If session user is AM, force the AM filter to their own id and keep it hidden
+  // AM হলে নিজেরটাই লক
   useEffect(() => {
-    if (isAM && currentUserId && amFilter !== currentUserId) {
-      setAmFilter(currentUserId)
+    if (isAM && currentUserIdStr && amFilter !== currentUserIdStr) {
+      setAmFilter(currentUserIdStr)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAM, currentUserId])
+  }, [isAM, currentUserIdStr])
+
+  // 🔎 Debug helpers (চাইলে রাখুন, সমস্যা বোঝা সহজ হবে)
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log("[AM FILTER/HEADER] isAM:", isAM, "currentUserIdStr:", currentUserIdStr, "amFilter:", amFilter)
+  }, [isAM, currentUserIdStr, amFilter])
 
   return (
     <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-6">
-      <h1 className="text-3xl font-bold text-gray-800">ALL AM's Overview</h1>
+      <h1 className="text-3xl font-bold text-gray-800">ALL AM&apos;s Overview</h1>
 
       <div className="flex flex-wrap items-center gap-4">
         {/* Search */}
@@ -83,7 +82,7 @@ export function AmCeoClientOverviewHeader({
         </div>
 
         {/* Status filter */}
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter ?? "all"} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[150px] border-gray-200 focus:border-cyan-500 focus:ring-cyan-500">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
@@ -97,14 +96,14 @@ export function AmCeoClientOverviewHeader({
 
         {/* Account Manager filter — hidden for AM users */}
         {!isAM && (
-          <Select value={amFilter} onValueChange={setAmFilter}>
+          <Select value={amFilter ?? "all"} onValueChange={(v) => setAmFilter(v)}>
             <SelectTrigger className="w-[220px] border-gray-200 focus:border-cyan-500 focus:ring-cyan-500">
               <SelectValue placeholder="Filter by account manager" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Account Managers</SelectItem>
               {accountManagers.map((am) => (
-                <SelectItem key={am.id} value={am.id}>
+                <SelectItem key={String(am.id)} value={String(am.id)}>
                   {am.label}
                 </SelectItem>
               ))}
@@ -113,14 +112,14 @@ export function AmCeoClientOverviewHeader({
         )}
 
         {/* Package filter */}
-        <Select value={packageFilter} onValueChange={setPackageFilter}>
+        <Select value={packageFilter ?? "all"} onValueChange={setPackageFilter}>
           <SelectTrigger className="w-[180px] border-gray-200 focus:border-cyan-500 focus:ring-cyan-500">
             <SelectValue placeholder="Filter by package" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Packages</SelectItem>
             {packages.map((pkg) => (
-              <SelectItem key={pkg.id} value={pkg.id}>
+              <SelectItem key={String(pkg.id)} value={String(pkg.id)}>
                 {pkg.name}
               </SelectItem>
             ))}
@@ -130,7 +129,7 @@ export function AmCeoClientOverviewHeader({
         {/* View mode */}
         <Tabs
           value={viewMode}
-          onValueChange={(value) => setViewMode(value as "grid" | "list")}
+          onValueChange={(value) => setViewMode(value as ViewMode)}
           className="hidden md:block"
         >
           <TabsList className="h-10 bg-gray-100 rounded-lg p-1">

@@ -6,31 +6,28 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+
 import { redirect } from "next/navigation";
 import { Toaster } from "sonner";
 import DynamicBreadcrumb from "@/components/DynamicBreadcrumb";
 import ImpersonationBanner from "@/components/auth/ImpersonationBanner";
-
-// ✅ তুমি এখন যেটা ইউজ করছো — server-side util
 import { getAuthUser } from "@/lib/getAuthUser";
 
-export default async function AmLayout({
+export default async function QcLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // ✅ কুকি ম্যানুয়ালি পার্স করার দরকার নেই
+  // const cookieHeader = (await headers()).get("cookie");
+  // const token =
+  //   cookieHeader
+  //     ?.split(";")
+  //     .find((c) => c.trim().startsWith("session-token="))
+  //     ?.split("=")[1] ?? null;
+
   const user = await getAuthUser();
-  if (!user) {
-    redirect("/");
-  }
 
-  // ✅ role নাম normalize করে নাও (user.role?.name || user.role)
-  const roleName = String(user.role?.name ?? user.role ?? "").toLowerCase();
-
-  // ✅ AM অ্যাক্সেস: am অথবা am_ceo — দুটোই এলাউ
-  const allowed = roleName === "am" || roleName === "am_ceo";
-  if (!allowed) {
+  if (!user || user.role?.name !== "am_ceo") {
     redirect("/");
   }
 
