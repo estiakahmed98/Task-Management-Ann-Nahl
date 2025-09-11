@@ -1,3 +1,5 @@
+//app/page.tsx
+
 "use client";
 
 import { LoginForm } from "./(main)/auth/sign-in/login-form";
