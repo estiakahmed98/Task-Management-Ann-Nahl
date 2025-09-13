@@ -66,7 +66,12 @@ export async function PUT(
     if (body.dataEntryReport && typeof body.dataEntryReport === "object") {
       const existingReport = (existing.dataEntryReport ?? {}) as Record<string, any>;
       const incomingReport = body.dataEntryReport as Record<string, any>;
-      const merged = { ...existingReport, ...incomingReport };
+      // Server authority: always set completedAt to now when updating a report
+      const merged = {
+        ...existingReport,
+        ...incomingReport,
+        completedAt: new Date().toISOString(),
+      };
       data.dataEntryReport = merged as Prisma.InputJsonValue;
     }
 

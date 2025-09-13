@@ -74,7 +74,7 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/qc/") ||
     pathname.startsWith("/am/") ||
     pathname.startsWith("/client/") ||
-    pathname.startsWith("/data_entry/");
+    pathname.startsWith("/data_entry/clients");
 
   if (needsAuth && !token) {
     // Redirect unauthenticated users to sign-in page
@@ -95,7 +95,7 @@ export const config = {
     "/am/:path*",
     "/am_ceo/:path*",
     "/client/:path*",
-    "/data_entry/:path*",
+    "/data_entry/clients/:path*",
     // APIs
     "/api/:path*",
   ],

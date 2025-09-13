@@ -9,12 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { CheckCircle2, UserRound, Search, Calendar, Filter, BarChart3, Clock, CheckSquare, AlertCircle } from "lucide-react";
+import { CheckCircle2, UserRound, Search, Calendar, BarChart3, AlertCircle } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useUserSession } from "@/lib/hooks/use-user-session";
 import { useRouter } from "next/navigation";
-import { BackgroundGradient } from "../ui/background-gradient";
 import CreateTasksButton from "./CreateTasksButton";
 
 export type DETask = {
@@ -121,14 +120,22 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
     return { total, completed, pending, inProgress, overdue };
   }, [tasks]);
 
-  // Count tasks completed by Data Entry (from dataEntryReport)
+  // Count tasks completed by the current Data Entry user
   const dataEntryCompletedCount = useMemo(() => {
-    try {
-      return tasks.filter((t: any) => t?.dataEntryReport?.completedByUserId && t?.dataEntryReport?.status === "Completed by Data Entry").length;
-    } catch {
-      return 0;
-    }
-  }, [tasks]);
+    if (!user?.id) return 0;
+    
+    return tasks.reduce((count, task: any) => {
+      const report = task?.dataEntryReport;
+      if (!report) return count;
+      
+      const isCompletedByMe = 
+        report.completedByUserId === user.id &&
+        typeof report.status === 'string' &&
+        report.status.trim().toLowerCase() === 'completed by data entry';
+        
+      return isCompletedByMe ? count + 1 : count;
+    }, 0);
+  }, [tasks, user?.id]);
 
   const filtered = useMemo(() => {
     let result = tasks;
@@ -252,12 +259,12 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: "completed",
+          // Agent's actual completion time from DatePicker
           completedAt: completedAt.toISOString(),
+          // Server will set dataEntryReport.completedAt
           dataEntryReport: {
             completedByUserId: user.id,
             completedByName: (user as any)?.name || (user as any)?.email || user.id,
-            // Store today's timestamp in the report as the time of logging by Data Entry
-            completedAt: new Date().toISOString(),
             status: "Completed by Data Entry",
           },
         }),
