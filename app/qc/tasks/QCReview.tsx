@@ -26,7 +26,6 @@ import {
   CheckCircle,
   ExternalLink,
   TrendingUp,
-  Clock,
   Award,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -51,19 +50,21 @@ type CategoryLite = { id: string; name: string };
 
 type Perf = "Excellent" | "Good" | "Average" | "Lazy";
 
-type QCReviewBlob = {
-  timerScore: number; // 40..70
-  keyword: number; // 0..5
-  contentQuality: number; // 0..5
-  image: number; // 0..5
-  seo: number; // 0..5
-  grammar: number; // 0..5
-  humanization: number; // 0..5
-  total: number; // 0..100
-  reviewerId?: string | null;
-  reviewedAt?: string;
-  notes?: string | null;
-} | null;
+type QCReviewBlob =
+  | {
+      timerScore: number; // 40..70
+      keyword: number; // 0..5
+      contentQuality: number; // 0..5
+      image: number; // 0..5
+      seo: number; // 0..5
+      grammar: number; // 0..5
+      humanization: number; // 0..5
+      total: number; // 0..100
+      reviewerId?: string | null;
+      reviewedAt?: string;
+      notes?: string | null;
+    }
+  | null;
 
 export type QCScores = {
   keyword: number;
@@ -205,9 +206,17 @@ export function QCReview() {
   };
   const fetchClients = async () => {
     try {
-      const r = await fetch("/api/clients", { cache: "no-store" });
-      if (r.ok) setClients(await r.json());
-    } catch {}
+      const response = await fetch("/api/clients");
+      if (!response.ok) throw new Error("Failed to fetch clients");
+      const data = await response.json();
+
+      setClients(Array.isArray(data.clients) ? data.clients : []);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching clients:", error);
+      toast.error("Failed to load clients data.");
+      setLoading(false);
+    }
   };
   const fetchCategories = async () => {
     try {
@@ -283,6 +292,34 @@ export function QCReview() {
           (await res.json()).message ?? "Failed to reassign task"
         );
       await res.json();
+
+      // ✅ Activity Log: QC Reassigned (add action)
+      try {
+        await fetch(`/api/activity`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            entityType: "task",
+            entityId: taskId,
+            action: "qc_reassigned", // <<<<<<<<<<<<<<<<<<<<<<<<
+            qcReassigned: true, // optional for servers with mapping
+            reason: reassignDialog.reassignNotes || undefined,
+            userId: user?.id,
+            details: {
+              taskName: reassignDialog.task.name,
+              previousAgentId: reassignDialog.task.assignedTo?.id ?? null,
+              previousAgentName:
+                reassignDialog.task.assignedTo?.name ||
+                reassignDialog.task.assignedTo?.email ||
+                null,
+              reassignNotes: reassignDialog.reassignNotes || null,
+            },
+          }),
+        });
+      } catch (logErr) {
+        console.warn("Activity log (qc_reassigned) failed:", logErr);
+      }
+
       toast.success(
         `Task "${reassignDialog.task.name}" re-assigned successfully.`
       );
@@ -301,7 +338,6 @@ export function QCReview() {
 
   // -------- Approve flow --------
   const handleApprove = (task: TaskRow) => {
-    // open modal with just the notes field now
     setApproveDialog({ open: true, task, loading: false });
     setQcNotes("");
   };
@@ -309,7 +345,7 @@ export function QCReview() {
   const handleApproveTask = async () => {
     if (!approveDialog.task) return;
 
-    // System performance rating (auto) — still required by your endpoint
+    // System performance rating (auto)
     const sysRating =
       approveDialog.task.performanceRating ??
       derivePerformanceRating(
@@ -329,7 +365,6 @@ export function QCReview() {
       const scores =
         qcScoresByTask[approveDialog.task.id] ?? { ...defaultScores };
 
-      // Compute a total for record (optional)
       const total =
         Math.min(
           100,
@@ -346,15 +381,13 @@ export function QCReview() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          performanceRating: sysRating, // auto
-          // stars from TaskCard
+          performanceRating: sysRating,
           keyword: scores.keyword,
           contentQuality: scores.contentQuality,
           image: scores.image,
           seo: scores.seo,
           grammar: scores.grammar,
           humanization: scores.humanization,
-          // optional rollup
           total,
           reviewerId: user?.id,
           notes: qcNotes || undefined,
@@ -364,11 +397,41 @@ export function QCReview() {
         throw new Error((await r.json()).error || "Failed to approve task");
       await r.json();
 
+      // ✅ Activity Log: QC Approved (add action)
+      try {
+        await fetch(`/api/activity`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            entityType: "task",
+            entityId: approveDialog.task.id,
+            action: "qc_approved", // <<<<<<<<<<<<<<<<<<<<<<<<
+            qcApproved: true, // optional for servers with mapping
+            qcNotes: qcNotes || undefined,
+            userId: user?.id,
+            details: {
+              taskName: approveDialog.task.name,
+              agentId: approveDialog.task.assignedTo?.id ?? null,
+              agentName:
+                approveDialog.task.assignedTo?.name ||
+                approveDialog.task.assignedTo?.email ||
+                null,
+              clientId: approveDialog.task.client?.id ?? null,
+              clientName: approveDialog.task.client?.name ?? null,
+              scores,
+              total,
+              performanceRating: sysRating,
+            },
+          }),
+        });
+      } catch (logErr) {
+        console.warn("Activity log (qc_approved) failed:", logErr);
+      }
+
       toast.success(
         `Task "${approveDialog.task.name}" approved. Rating: ${sysRating}.`
       );
       setApprovedMap((m) => ({ ...m, [approveDialog.task!.id]: true }));
-      // clear local scores for this task (optional)
       setQcScoresByTask((m) => {
         const next = { ...m };
         delete next[approveDialog.task!.id];
@@ -540,7 +603,7 @@ export function QCReview() {
         </CardContent>
       </Card>
 
-      {/* ====== Approve Dialog (NOT showing star ratings anymore) ====== */}
+      {/* ====== Approve Dialog (Only notes) ====== */}
       <Dialog
         open={approveDialog.open}
         onOpenChange={(open) => setApproveDialog((p) => ({ ...p, open }))}
@@ -559,7 +622,7 @@ export function QCReview() {
 
           {approveDialog.task && (
             <div className="space-y-4 py-1">
-              {/* Basic task block (kept minimal) */}
+              {/* Basic task block */}
               <div className="rounded-2xl p-3 border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-slate-50 shadow-sm">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
@@ -605,7 +668,7 @@ export function QCReview() {
                 </div>
               </div>
 
-              {/* ✅ KEEP ONLY THIS BLOCK FROM YOUR ORIGINAL MODAL */}
+              {/* Notes only */}
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                   <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
@@ -647,7 +710,7 @@ export function QCReview() {
         </DialogContent>
       </Dialog>
 
-      {/* Reassign dialog unchanged */}
+      {/* Reassign dialog */}
       <Dialog
         open={reassignDialog.open}
         onOpenChange={(open) => setReassignDialog((p) => ({ ...p, open }))}
