@@ -70,7 +70,9 @@ export function ClientOverviewHeader({
 
   return (
     <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-6">
-      <h1 className="text-3xl font-bold text-gray-800">Client Overview</h1>
+      <h1 className="text-3xl font-bold text-gray-800">
+        {currentUserRole?.toLowerCase() === 'data_entry' ? 'Data Entry Dashboard' : 'Client Overview'}
+      </h1>
 
       <div className="flex flex-wrap items-center gap-4">
         {/* Search */}

@@ -5,6 +5,7 @@ import type { Client } from "@/types/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart3, CheckCircle2, CalendarRange } from "lucide-react";
+import { BackgroundGradient } from "../ui/background-gradient";
 
 export type DataEntryClientStatsProps = {
   clients: Client[];
@@ -134,13 +135,16 @@ export default function DataEntryClientStats({ clients }: DataEntryClientStatsPr
         </div>
 
         <div className="flex gap-2">
-          <Button size="sm" onClick={refresh} disabled={loading}>
+            <BackgroundGradient>
+          <Button className="bg-transparent hover:bg-transparent" size="sm" onClick={refresh} disabled={loading}>
             <CalendarRange className="h-4 w-4 mr-2" />
             {loading ? "Loading..." : "Apply"}
           </Button>
+          </BackgroundGradient>
+          <BackgroundGradient>
           <Button
             size="sm"
-            variant="outline"
+            className="bg-transparent hover:bg-transparent"
             onClick={() => {
               setFrom("");
               setTo("");
@@ -149,6 +153,7 @@ export default function DataEntryClientStats({ clients }: DataEntryClientStatsPr
           >
             Reset
           </Button>
+          </BackgroundGradient>
         </div>
       </div>
 
