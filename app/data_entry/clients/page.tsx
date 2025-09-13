@@ -12,6 +12,7 @@ import type { Client } from "@/types/client";
 
 // ✅ useSession এর বদলে তোমার কাস্টম হুক
 import { useUserSession } from "@/lib/hooks/use-user-session";
+import DataEntryClientStats from "@/components/dataentry/DataEntryClientStats";
 
 export default function ClientsPage() {
   const router = useRouter();
@@ -214,6 +215,11 @@ export default function ClientsPage() {
           onAddNewClient={handleAddNewClient}
         />
         <ClientStatusSummary clients={Array.isArray(clients) ? clients : []} />
+      </div>
+
+      {/* Data Entry Client Stats */}
+      <div className="bg-white p-6 rounded-xl shadow-lg mb-8 border border-gray-100">
+        <DataEntryClientStats clients={Array.isArray(clients) ? clients : []} />
       </div>
 
       {/* Clients Grid or List */}
