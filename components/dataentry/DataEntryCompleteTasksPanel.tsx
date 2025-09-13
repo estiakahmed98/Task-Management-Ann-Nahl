@@ -38,6 +38,7 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
   const [loading, setLoading] = useState(false);
   const [tasks, setTasks] = useState<DETask[]>([]);
   const [agents, setAgents] = useState<Array<{ id: string; name?: string | null; email?: string | null }>>([]);
+  const [hasCreatedTasks, setHasCreatedTasks] = useState(false);
 
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<DETask | null>(null);
@@ -58,6 +59,13 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
       const data = await res.json();
       const mine = (data as any[]).filter((t) => t?.assignedTo?.id && user?.id && t.assignedTo.id === user.id);
       setTasks(mine);
+      
+      // Check if posting tasks already exist
+      const hasPostingTasks = mine.some((task) => 
+        task.name?.toLowerCase().includes('posting') || 
+        task.category?.name?.toLowerCase().includes('posting')
+      );
+      setHasCreatedTasks(hasPostingTasks);
 
       const aRes = await fetch(`/api/users?role=agent&limit=200`, { cache: "no-store" });
       const aJson = await aRes.json();
@@ -232,7 +240,14 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
       <div className="flex items-center justify-between pb-2">
         <h2 className="text-2xl font-bold pl-6">Data Entry — Complete Tasks</h2>
         <div className="flex items-center gap-2 pr-6">
-          <CreateTasksButton clientId={clientId} onTaskCreationComplete={load} />
+          <CreateTasksButton 
+            clientId={clientId} 
+            disabled={hasCreatedTasks}
+            onTaskCreationComplete={() => {
+              setHasCreatedTasks(true);
+              load();
+            }} 
+          />
         </div>
       </div>
       <CardContent>
@@ -270,7 +285,7 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
                     <td className="p-3">{t.status.replaceAll("_", " ")}</td>
                     <td className="p-3">{t.dueDate ? format(new Date(t.dueDate), "PPP") : "—"}</td>
                     <td className="p-3 text-right">
-                      <Button onClick={() => openComplete(t)} size="sm">Complete</Button>
+                      <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-purple-700 hover:to-blue-700" onClick={() => openComplete(t)} size="sm">Complete</Button>
                     </td>
                   </tr>
                 ))

@@ -7,11 +7,13 @@ import { Target, Loader2, ArrowRight } from "lucide-react";
 
 interface CreateTasksButtonProps {
   clientId: string;
+  disabled?: boolean;
   onTaskCreationComplete?: () => void;
 }
 
 export default function CreateTasksButton({ 
   clientId, 
+  disabled = false,
   onTaskCreationComplete 
 }: CreateTasksButtonProps) {
   const [isCreating, setIsCreating] = useState(false);
@@ -106,9 +108,9 @@ export default function CreateTasksButton({
   return (
     <Button
       onClick={createTasks}
-      disabled={isCreating}
-      className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white h-11 flex-1 rounded-xl font-semibold transition-all duration-300"
-      title="Create posting tasks for this client"
+      disabled={isCreating || disabled}
+      className={`bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white h-11 flex-1 rounded-xl font-semibold transition-all duration-300 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      title={disabled ? 'Tasks already created' : 'Create posting tasks for this client'}
     >
       {isCreating ? (
         <>
@@ -119,7 +121,6 @@ export default function CreateTasksButton({
         <>
           <Target className="h-4 w-4 mr-2" />
           Create Tasks
-          <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
         </>
       )}
     </Button>
