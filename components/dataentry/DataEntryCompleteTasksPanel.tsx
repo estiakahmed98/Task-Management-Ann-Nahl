@@ -15,6 +15,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { useUserSession } from "@/lib/hooks/use-user-session";
 import { useRouter } from "next/navigation";
 import { BackgroundGradient } from "../ui/background-gradient";
+import CreateTasksButton from "./CreateTasksButton";
 
 export type DETask = {
   id: string;
@@ -122,9 +123,18 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
     setCompletedAt(undefined);
   };
 
+  const isSimpleTask = (task: DETask | null) => {
+    if (!task?.category?.name) return false;
+    const simpleCategories = ["Social Activity", "Blog Posting"];
+    return simpleCategories.includes(task.category.name);
+  };
+
   const openComplete = (t: DETask) => {
     setSelected(t);
     setLink(t.completionLink || "");
+    setEmail(t.email || "");
+    setUsername(t.username || "");
+    setPassword(t.password || "");
     if (t.completedAt) {
       const d = new Date(t.completedAt);
       if (!isNaN(d.getTime())) setCompletedAt(d);
@@ -221,9 +231,9 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
     <Card className="border-0 shadow-2xl overflow-hidden bg-white/90 backdrop-blur">
       <div className="flex items-center justify-between pb-2">
         <h2 className="text-2xl font-bold pl-6">Data Entry — Complete Tasks</h2>
-        <BackgroundGradient className="p-2 rounded-xl">
-          <div onClick={createPostingTasks} className="text-white cursor-pointer">Create Posting Tasks</div>
-        </BackgroundGradient>
+        <div className="flex items-center gap-2 pr-6">
+          <CreateTasksButton clientId={clientId} onTaskCreationComplete={load} />
+        </div>
       </div>
       <CardContent>
         <div className="flex items-center gap-3 mb-4">
@@ -288,20 +298,23 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
                 <label className="text-sm font-medium">Completion Link</label>
                 <Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://…" className="mt-1" />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                  <label className="text-sm font-medium">Email</label>
-                  <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
+              
+              {!isSimpleTask(selected) && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-sm font-medium">Email</label>
+                    <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Username</label>
+                    <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="username" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Password</label>
+                    <Input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password" />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Username</label>
-                  <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="username" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Password</label>
-                  <Input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password" />
-                </div>
-              </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
@@ -334,8 +347,8 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => resetModal()}>Cancel</Button>
-              <Button className="bg-emerald-600" onClick={submit}>
+              <Button variant="outline" className="bg-red-500 hover:bg-red-600 text-white" onClick={() => resetModal()}>Cancel</Button>
+              <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={submit}>
                 <CheckCircle2 className="h-4 w-4 mr-2" /> Submit & Approve
               </Button>
             </DialogFooter>
