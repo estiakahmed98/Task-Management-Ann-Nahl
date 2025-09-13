@@ -491,41 +491,6 @@ export function Tasks({ clientData }: TasksProps) {
           </Accordion>
         </CardContent>
       </Card>
-
-      {/* Package Information */}
-      <Card className="shadow-lg border-0 bg-white dark:bg-slate-800">
-        <CardHeader className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 dark:from-violet-500/20 dark:to-purple-500/20">
-          <CardTitle className="flex items-center space-x-2">
-            <Activity className="h-5 w-5 text-violet-600" />
-            <span>Current Package</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <div>
-              <h4 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{clientData.package?.name ?? ""}</h4>
-              <p className="text-slate-600 dark:text-slate-400 mt-1">{clientData.package?.description ?? ""}</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-              <div>
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Status</p>
-                <Badge variant={clientData.status === "active" ? "default" : "secondary"} className="mt-1">
-                  {clientData.status ?? "inactive"}
-                </Badge>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Timeline</p>
-                <p className="text-slate-900 dark:text-slate-100 mt-1">{getTotalDays()} days total</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Tasks</p>
-                <p className="text-slate-900 dark:text-slate-100 mt-1">{totalTasks} total tasks</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
