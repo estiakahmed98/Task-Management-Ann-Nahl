@@ -25,19 +25,22 @@ export default function ClientsPage() {
   // Details now shown on dedicated route: /admin/clients/[clientId]
 
   // Fetch all clients
-  const fetchClients = useCallback(async () => {
+ const fetchClients = useCallback(async () => {
     try {
-      const response = await fetch("/api/clients")
-      if (!response.ok) throw new Error("Failed to fetch clients")
-      const data: Client[] = await response.json()
-      setClients(data)
-      setLoading(false)
+      const response = await fetch("/api/clients");
+      if (!response.ok) throw new Error("Failed to fetch clients");
+      const data = await response.json();
+
+      // ✅ শুধু array সেট করো
+      setClients(Array.isArray(data.clients) ? data.clients : []);
+      setLoading(false);
     } catch (error) {
-      console.error("Error fetching clients:", error)
-      toast.error("Failed to load clients data.")
-      setLoading(false)
+      console.error("Error fetching clients:", error);
+      toast.error("Failed to load clients data.");
+      setLoading(false);
     }
-  }, [])
+  }, []);
+
 
   // Fetch packages for names
   const fetchPackages = useCallback(async () => {
