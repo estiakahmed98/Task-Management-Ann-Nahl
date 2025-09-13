@@ -7,13 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { CheckCircle2, Calendar as CalendarIcon, Link2, UserRound } from "lucide-react";
+import { CheckCircle2, UserRound } from "lucide-react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { useUserSession } from "@/lib/hooks/use-user-session";
+import { useRouter } from "next/navigation";
+import { BackgroundGradient } from "../ui/background-gradient";
 
 export type DETask = {
   id: string;
@@ -27,9 +28,11 @@ export type DETask = {
   category?: { id: string; name: string } | null;
   assignedTo?: { id: string; name?: string | null; email?: string | null } | null;
   dueDate?: string | null;
+  completedAt?: string | null;
 };
 
 export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: string }) {
+  const router = useRouter();
   const { user } = useUserSession();
   const [loading, setLoading] = useState(false);
   const [tasks, setTasks] = useState<DETask[]>([]);
@@ -43,7 +46,7 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [doneBy, setDoneBy] = useState<string>("");
-  const [completedAt, setCompletedAt] = useState<Date | undefined>(new Date());
+  const [completedAt, setCompletedAt] = useState<Date | undefined>(undefined);
   const [openDate, setOpenDate] = useState(false);
 
   const load = async () => {
@@ -80,6 +83,35 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
     return tasks.filter((t) => [t.name, t.category?.name || "", t.priority || "", t.status || ""].some((s) => String(s).toLowerCase().includes(qlc)));
   }, [tasks, q]);
 
+  // Gate readiness by required categories fully QC-approved
+  const requiredCategories = [
+    "Social Assets Creation",
+    "Web2 Creation",
+    "Additional Assets Creation",
+  ];
+
+  const isReadyForPostingCreation = useMemo(() => {
+    if (!tasks || tasks.length === 0) return false;
+    // For each required category: must exist and all in that category must be qc_approved
+    return requiredCategories.every((cat) => {
+      const inCat = tasks.filter((t) => (t.category?.name || "").toLowerCase() === cat.toLowerCase());
+      if (inCat.length === 0) return false; // must have tasks for this category
+      return inCat.every((t) => t.status === "qc_approved");
+    });
+  }, [tasks]);
+
+  const [creatingPosting, setCreatingPosting] = useState(false);
+
+  const createPostingTasks = async () => {
+    if (!clientId) return;
+    if (!isReadyForPostingCreation) {
+      toast.warning("Please complete & QC-approve all tasks first.");
+      return;
+    }
+    // Follow ClientUnifiedDashboard: route to admin creation page
+    router.push(`/admin/distribution/client-agent/client/${clientId}`);
+  };
+
   const resetModal = () => {
     setSelected(null);
     setLink("");
@@ -87,18 +119,32 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
     setUsername("");
     setPassword("");
     setDoneBy("");
-    setCompletedAt(new Date());
+    setCompletedAt(undefined);
   };
 
   const openComplete = (t: DETask) => {
     setSelected(t);
     setLink(t.completionLink || "");
+    if (t.completedAt) {
+      const d = new Date(t.completedAt);
+      if (!isNaN(d.getTime())) setCompletedAt(d);
+    } else {
+      setCompletedAt(undefined);
+    }
   };
 
   const submit = async () => {
     if (!user?.id || !selected) return;
     if (!link.trim()) {
       toast.error("Completion link is required");
+      return;
+    }
+    if (!completedAt) {
+      toast.error("Please select a completion date");
+      return;
+    }
+    if (completedAt.getTime() > Date.now()) {
+      toast.error("Completed date cannot be in the future");
       return;
     }
 
@@ -120,17 +166,37 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
       if (!r1.ok) throw new Error(j1?.message || j1?.error || "Failed to complete task");
 
       // 2) set completedAt (chosen date)
-      if (completedAt) {
-        const r2 = await fetch(`/api/tasks/${selected.id}`, {
-          method: "PUT",
+      const r2 = await fetch(`/api/tasks/${selected.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "completed",
+          completedAt: completedAt.toISOString(),
+        }),
+      });
+      const j2 = await r2.json();
+      if (!r2.ok) throw new Error(j2?.error || "Failed to set completed date");
+
+      // 2.5) reassign to the selected 'doneBy' agent (if provided) so the task ownership reflects who actually did it
+      if (doneBy && clientId) {
+        const distBody = {
+          clientId,
+          assignments: [
+            {
+              taskId: selected.id,
+              agentId: doneBy,
+              note: "Reassigned to actual performer by data_entry",
+              dueDate: undefined,
+            },
+          ],
+        } as any;
+        const rDist = await fetch(`/api/tasks/distribute`, {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: "completed",
-            completedAt: completedAt ? completedAt.toISOString() : undefined,
-          }),
+          body: JSON.stringify(distBody),
         });
-        const j2 = await r2.json();
-        if (!r2.ok) throw new Error(j2?.error || "Failed to set completed date");
+        const jDist = await rDist.json();
+        if (!rDist.ok) throw new Error(jDist?.error || "Failed to reassign task to selected agent");
       }
 
       // 3) auto approve → qc_approved (include notes with doneBy)
@@ -153,9 +219,12 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
 
   return (
     <Card className="border-0 shadow-2xl overflow-hidden bg-white/90 backdrop-blur">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold">Data Entry — Complete Tasks</CardTitle>
-      </CardHeader>
+      <div className="flex items-center justify-between pb-2">
+        <h2 className="text-2xl font-bold pl-6">Data Entry — Complete Tasks</h2>
+        <BackgroundGradient className="p-2 rounded-xl">
+          <div onClick={createPostingTasks} className="text-white cursor-pointer">Create Posting Tasks</div>
+        </BackgroundGradient>
+      </div>
       <CardContent>
         <div className="flex items-center gap-3 mb-4">
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Quick search tasks" className="h-10 rounded-xl" />
@@ -200,6 +269,14 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
           </table>
         </div>
 
+        {isReadyForPostingCreation && (
+          <div className="mt-6 flex justify-end">
+            <Button onClick={createPostingTasks} disabled={creatingPosting} className="bg-indigo-600">
+              {creatingPosting ? "Creating..." : "Create Posting Tasks"}
+            </Button>
+          </div>
+        )}
+
         <Dialog open={!!selected} onOpenChange={(o) => !o && resetModal()}>
           <DialogContent className="sm:max-w-[560px]">
             <DialogHeader>
@@ -239,15 +316,20 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium flex items-center gap-2"><CalendarIcon className="h-4 w-4" /> Completed At</label>
-                  <Popover open={openDate} onOpenChange={setOpenDate}>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start h-10", !completedAt && "text-muted-foreground")}> {completedAt ? format(completedAt, "PPP") : "Pick a date"} </Button>
-                    </PopoverTrigger>
-                    <PopoverContent align="start" className="p-0 w-auto">
-                      <Calendar mode="single" selected={completedAt} onSelect={setCompletedAt} initialFocus />
-                    </PopoverContent>
-                  </Popover>
+                  <label className="text-sm font-medium">Completed At</label>
+                  <div className="mt-1">
+                    <DatePicker
+                      selected={completedAt}
+                      onChange={(date: Date | null) => setCompletedAt(date || new Date())}
+                      dateFormat="MMMM d, yyyy"
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"
+                      placeholderText="Select completion date"
+                      className="w-full border border-gray-300 rounded-md px-4 py-2 text-sm"
+                      maxDate={new Date()} // Prevent future dates
+                    />
+                  </div>
                 </div>
               </div>
             </div>

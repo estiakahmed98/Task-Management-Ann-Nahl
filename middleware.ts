@@ -1,27 +1,3 @@
-// import { NextRequest, NextResponse } from "next/server";
-
-// export function middleware(request: NextRequest) {
-//   const token = request.cookies.get("session-token")?.value;
-
-//   if (!token) {
-//     return NextResponse.redirect(new URL("/auth/sign-in", request.url));
-//   }
-
-//   return NextResponse.next();
-// }
-
-// export const config = {
-//   matcher: [
-//     "/admin/:path*",
-//     "/agent/:path*",
-//     "/manager/:path*",
-//     "/qc/:path*",
-//     "/am/:path*",
-//     "/client/:path*",
-//     "/data_entry/:path*",
-//   ],
-// };
-
 // middleware.ts
 import { NextRequest, NextResponse } from "next/server";
 
@@ -41,10 +17,14 @@ export function middleware(req: NextRequest) {
       return NextResponse.next();
     }
 
+    // DEVELOPMENT: relax cross-origin checks on LAN to avoid 403 while testing.
+    // We still enforce auth below.
+    const isDev = process.env.NODE_ENV !== "production";
+
     // 2) Same-origin enforcement (blocks "outside" fetches)
     //    If Origin header is present, it MUST equal our origin.
     const requestOrigin = req.headers.get("origin");
-    if (requestOrigin && requestOrigin !== origin) {
+    if (!isDev && requestOrigin && requestOrigin !== origin) {
       return new NextResponse(
         JSON.stringify({
           success: false,
@@ -56,7 +36,7 @@ export function middleware(req: NextRequest) {
 
     //    If Referer is present, it MUST start with our origin.
     const referer = req.headers.get("referer");
-    if (referer && !referer.startsWith(origin)) {
+    if (!isDev && referer && !referer.startsWith(origin)) {
       return new NextResponse(
         JSON.stringify({
           success: false,
