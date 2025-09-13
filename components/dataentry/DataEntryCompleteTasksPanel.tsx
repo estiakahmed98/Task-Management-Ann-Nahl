@@ -30,6 +30,8 @@ export type DETask = {
   assignedTo?: { id: string; name?: string | null; email?: string | null } | null;
   dueDate?: string | null;
   completedAt?: string | null;
+  // Persisted JSON: { completedByUserId, completedByName, completedAt, status }
+  dataEntryReport?: any;
 };
 
 // Status badge variant mapping
@@ -117,6 +119,15 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
     }).length;
     
     return { total, completed, pending, inProgress, overdue };
+  }, [tasks]);
+
+  // Count tasks completed by Data Entry (from dataEntryReport)
+  const dataEntryCompletedCount = useMemo(() => {
+    try {
+      return tasks.filter((t: any) => t?.dataEntryReport?.completedByUserId && t?.dataEntryReport?.status === "Completed by Data Entry").length;
+    } catch {
+      return 0;
+    }
   }, [tasks]);
 
   const filtered = useMemo(() => {
@@ -235,13 +246,20 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
       const j1 = await r1.json();
       if (!r1.ok) throw new Error(j1?.message || j1?.error || "Failed to complete task");
 
-      // 2) set completedAt (chosen date)
+      // 2) set completedAt and dataEntryReport
       const r2 = await fetch(`/api/tasks/${selected.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: "completed",
           completedAt: completedAt.toISOString(),
+          dataEntryReport: {
+            completedByUserId: user.id,
+            completedByName: (user as any)?.name || (user as any)?.email || user.id,
+            // Store today's timestamp in the report as the time of logging by Data Entry
+            completedAt: new Date().toISOString(),
+            status: "Completed by Data Entry",
+          },
         }),
       });
       const j2 = await r2.json();
@@ -299,6 +317,18 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
             </div>
             <div className="p-3 rounded-full bg-blue-200">
               <BarChart3 className="h-6 w-6 text-blue-700" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-green-700">Completed by Data Entry</p>
+              <h3 className="text-2xl font-bold text-green-900">{dataEntryCompletedCount}</h3>
+            </div>
+            <div className="p-3 rounded-full bg-green-200">
+              <AlertCircle className="h-6 w-6 text-green-700" />
             </div>
           </CardContent>
         </Card>
@@ -566,11 +596,11 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
               Cancel
             </Button>
             <Button 
-              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg" 
+              className="ml-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg" 
               onClick={submit}
             >
               <CheckCircle2 className="h-4 w-4 mr-2" /> 
-              Submit & Approve
+              Submit
             </Button>
           </DialogFooter>
         </DialogContent>

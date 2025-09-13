@@ -414,6 +414,7 @@ model Task {
   password              String?
   username              String?
   notes                 String?
+  dataEntryReport       Json?
   reassignNotes         String?
   completedAt           DateTime?
   createdAt             DateTime         @default(now())

@@ -2,6 +2,7 @@
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 // ========== READ SINGLE TASK ==========
 export async function GET(
@@ -38,20 +39,41 @@ export async function PUT(
     const body = await req.json();
     const { id } = await params;
 
-    // 1️⃣ টাস্ক আপডেট করুন
+    // Fetch existing to support merging JSON safely
+    const existing = await prisma.task.findUnique({
+      where: { id },
+      select: { dataEntryReport: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    // Build data object defensively (ignore undefineds)
+    const data: Prisma.TaskUpdateInput = {};
+
+    if (typeof body.name === "string") data.name = body.name;
+    if (typeof body.priority === "string") data.priority = body.priority as any;
+    if (typeof body.status === "string") data.status = body.status as any;
+    if (typeof body.dueDate === "string") data.dueDate = new Date(body.dueDate);
+    if (typeof body.completedAt === "string") data.completedAt = new Date(body.completedAt);
+    if (typeof body.completionLink === "string") data.completionLink = body.completionLink;
+
+    if (typeof body.categoryId === "string") data.category = { connect: { id: body.categoryId } };
+    if (typeof body.clientId === "string") data.client = { connect: { id: body.clientId } };
+    if (typeof body.assignedToId === "string") data.assignedTo = { connect: { id: body.assignedToId } };
+
+    // Merge dataEntryReport if provided
+    if (body.dataEntryReport && typeof body.dataEntryReport === "object") {
+      const existingReport = (existing.dataEntryReport ?? {}) as Record<string, any>;
+      const incomingReport = body.dataEntryReport as Record<string, any>;
+      const merged = { ...existingReport, ...incomingReport };
+      data.dataEntryReport = merged as Prisma.InputJsonValue;
+    }
+
+    // Update now with the built data
     const task = await prisma.task.update({
       where: { id },
-      data: {
-        name: body.name,
-        priority: body.priority,
-        status: body.status,
-        dueDate: body.dueDate ? new Date(body.dueDate) : null,
-        categoryId: body.categoryId,
-        clientId: body.clientId,
-        assignedToId: body.assignedToId,
-        completionLink: body.completionLink,
-        completedAt: body.completedAt ? new Date(body.completedAt) : null,
-      },
+      data,
       include: { assignedTo: true },
     });
 
@@ -74,7 +96,7 @@ export async function PUT(
     const type = body.status === "completed" ? "performance" : "general";
 
     // 4️⃣ একসাথে সব notifyUsers-কে notification পাঠান
-    await Promise.all(
+    await prisma.$transaction(
       notifyUsers.map((u) =>
         prisma.notification.create({
           data: {
