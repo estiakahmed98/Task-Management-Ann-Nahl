@@ -305,7 +305,6 @@ function buildNav(role: Role): NavItem[] {
         "agent",
         "am",
         "am_ceo",
-        "data_entry",
         "client",
       ],
     },
