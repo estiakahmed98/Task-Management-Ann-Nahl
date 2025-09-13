@@ -13,7 +13,7 @@ import {
   RotateCcw,
   Star,
 } from "lucide-react";
-import { QCScores } from "@/app/qc/tasks/QCReview";
+import { QCScores } from "@/app/qc/qc_tasks/QCReview";
 
 interface TaskCardProps {
   task: any; // your TaskRow type is complex; keep as any for now

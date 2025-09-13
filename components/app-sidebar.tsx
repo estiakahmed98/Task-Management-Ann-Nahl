@@ -236,7 +236,7 @@ function buildNav(role: Role): NavItem[] {
       url: p("agent", "/taskHistory"),
       roles: ["agent"],
     },
-    { title: "QC Review", url: p("qc", "/tasks"), roles: ["qc"] },
+    { title: "QC Review", url: p("qc", "/qc_tasks"), roles: ["qc"] },
 
     // Agents (admin, manager)
     {
