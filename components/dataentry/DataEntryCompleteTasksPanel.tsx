@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { CheckCircle2, UserRound } from "lucide-react";
+import { CheckCircle2, UserRound, Search, Calendar, Filter, BarChart3, Clock, CheckSquare, AlertCircle } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useUserSession } from "@/lib/hooks/use-user-session";
@@ -32,6 +32,22 @@ export type DETask = {
   completedAt?: string | null;
 };
 
+// Status badge variant mapping
+const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  "pending": "outline",
+  "in_progress": "secondary",
+  "completed": "default",
+  "qc_approved": "default",
+  "rejected": "destructive"
+};
+
+// Priority color mapping
+const priorityColor: Record<string, string> = {
+  "high": "text-red-600",
+  "medium": "text-yellow-600",
+  "low": "text-green-600"
+};
+
 export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: string }) {
   const router = useRouter();
   const { user } = useUserSession();
@@ -41,6 +57,8 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
   const [hasCreatedTasks, setHasCreatedTasks] = useState(false);
 
   const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
   const [selected, setSelected] = useState<DETask | null>(null);
 
   const [link, setLink] = useState("");
@@ -86,11 +104,45 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId, user?.id]);
 
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const total = tasks.length;
+    const completed = tasks.filter(t => t.status === "completed" || t.status === "qc_approved").length;
+    const pending = tasks.filter(t => t.status === "pending").length;
+    const inProgress = tasks.filter(t => t.status === "in_progress").length;
+    const overdue = tasks.filter(t => {
+      if (!t.dueDate) return false;
+      return new Date(t.dueDate) < new Date() && 
+             (t.status === "pending" || t.status === "in_progress");
+    }).length;
+    
+    return { total, completed, pending, inProgress, overdue };
+  }, [tasks]);
+
   const filtered = useMemo(() => {
+    let result = tasks;
+    
+    // Apply search filter
     const qlc = q.trim().toLowerCase();
-    if (!qlc) return tasks;
-    return tasks.filter((t) => [t.name, t.category?.name || "", t.priority || "", t.status || ""].some((s) => String(s).toLowerCase().includes(qlc)));
-  }, [tasks, q]);
+    if (qlc) {
+      result = result.filter((t) => 
+        [t.name, t.category?.name || "", t.priority || "", t.status || ""]
+          .some((s) => String(s).toLowerCase().includes(qlc))
+      );
+    }
+    
+    // Apply status filter
+    if (statusFilter !== "all") {
+      result = result.filter(t => t.status === statusFilter);
+    }
+    
+    // Apply priority filter
+    if (priorityFilter !== "all") {
+      result = result.filter(t => t.priority === priorityFilter);
+    }
+    
+    return result;
+  }, [tasks, q, statusFilter, priorityFilter]);
 
   // Gate readiness by required categories fully QC-approved
   const requiredCategories = [
@@ -236,140 +288,293 @@ export default function DataEntryCompleteTasksPanel({ clientId }: { clientId: st
   };
 
   return (
-    <Card className="border-0 shadow-2xl overflow-hidden bg-white/90 backdrop-blur">
-      <div className="flex items-center justify-between pb-2">
-        <h2 className="text-2xl font-bold pl-6">Data Entry — Complete Tasks</h2>
-        <div className="flex items-center gap-2 pr-6">
-          <CreateTasksButton 
-            clientId={clientId} 
-            disabled={hasCreatedTasks}
-            onTaskCreationComplete={() => {
-              setHasCreatedTasks(true);
-              load();
-            }} 
-          />
-        </div>
+    <div className="space-y-6">
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-blue-700">Total Tasks</p>
+              <h3 className="text-2xl font-bold text-blue-900">{stats.total}</h3>
+            </div>
+            <div className="p-3 rounded-full bg-blue-200">
+              <BarChart3 className="h-6 w-6 text-blue-700" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-red-700">Overdue</p>
+              <h3 className="text-2xl font-bold text-red-900">{stats.overdue}</h3>
+            </div>
+            <div className="p-3 rounded-full bg-red-200">
+              <AlertCircle className="h-6 w-6 text-red-700" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
-      <CardContent>
-        <div className="flex items-center gap-3 mb-4">
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Quick search tasks" className="h-10 rounded-xl" />
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm border border-slate-200 rounded-xl overflow-hidden">
-            <thead className="bg-slate-50 text-slate-700">
-              <tr className="text-left">
-                <th className="px-3 py-2">Task</th>
-                <th className="px-3 py-2">Category</th>
-                <th className="px-3 py-2">Priority</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">Due</th>
-                <th className="px-3 py-2 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 bg-white">
-              {loading ? (
-                <tr><td colSpan={6} className="p-6 text-center text-slate-500">Loading…</td></tr>
-              ) : filtered.length === 0 ? (
-                <tr><td colSpan={6} className="p-6 text-center text-slate-500">No tasks</td></tr>
-              ) : (
-                filtered.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50/60">
-                    <td className="p-3">
-                      <div className="font-medium text-slate-900 truncate" title={t.name}>{t.name}</div>
-                    </td>
-                    <td className="p-3">
-                      <Badge variant="outline">{t.category?.name || "—"}</Badge>
-                    </td>
-                    <td className="p-3">{t.priority}</td>
-                    <td className="p-3">{t.status.replaceAll("_", " ")}</td>
-                    <td className="p-3">{t.dueDate ? format(new Date(t.dueDate), "PPP") : "—"}</td>
-                    <td className="p-3 text-right">
-                      <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-purple-700 hover:to-blue-700" onClick={() => openComplete(t)} size="sm">Complete</Button>
+      {/* Tasks Panel */}
+      <Card className="border-0 shadow-xl overflow-hidden bg-white/90 backdrop-blur">
+        <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <CardTitle className="text-2xl flex items-center gap-2">
+              <BarChart3 className="h-6 w-6" />
+              Data Entry — Complete Tasks
+            </CardTitle>
+            <CreateTasksButton 
+              clientId={clientId} 
+              disabled={hasCreatedTasks}
+              onTaskCreationComplete={() => {
+                setHasCreatedTasks(true);
+                load();
+              }} 
+            />
+          </div>
+        </CardHeader>
+        
+        <CardContent className="p-6">
+          {/* Filters and Search */}
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input 
+                value={q} 
+                onChange={(e) => setQ(e.target.value)} 
+                placeholder="Search tasks..." 
+                className="pl-10 h-11 rounded-xl" 
+              />
+            </div>
+          </div>
+
+          {/* Tasks Table */}
+          <div className="border border-slate-200 rounded-xl overflow-hidden">
+            <table className="min-w-full">
+              <thead className="bg-slate-50">
+                <tr className="text-left text-slate-700">
+                  <th className="px-4 py-3 font-medium">Task</th>
+                  <th className="px-4 py-3 font-medium">Category</th>
+                  <th className="px-4 py-3 font-medium">Priority</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Due Date</th>
+                  <th className="px-4 py-3 font-medium text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 bg-white">
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-slate-500">
+                      <div className="flex justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      </div>
+                      <p className="mt-2">Loading tasks...</p>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {isReadyForPostingCreation && (
-          <div className="mt-6 flex justify-end">
-            <Button onClick={createPostingTasks} disabled={creatingPosting} className="bg-indigo-600">
-              {creatingPosting ? "Creating..." : "Create Posting Tasks"}
-            </Button>
+                ) : filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-slate-500">
+                      <p>No tasks found</p>
+                      {q || statusFilter !== "all" || priorityFilter !== "all" ? (
+                        <Button 
+                          variant="outline" 
+                          className="mt-2" 
+                          onClick={() => {
+                            setQ("");
+                            setStatusFilter("all");
+                            setPriorityFilter("all");
+                          }}
+                        >
+                          Clear filters
+                        </Button>
+                      ) : null}
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((t) => {
+                    const isOverdue = t.dueDate && new Date(t.dueDate) < new Date() && 
+                                     (t.status === "pending" || t.status === "in_progress");
+                    
+                    return (
+                      <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-slate-900 truncate max-w-[200px]" title={t.name}>
+                            {t.name}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                            {t.category?.name || "—"}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`font-medium ${priorityColor[t.priority] || "text-gray-600"}`}>
+                            {t.priority ? t.priority.charAt(0).toUpperCase() + t.priority.slice(1) : "—"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge variant={statusVariant[t.status] || "outline"} className="capitalize">
+                            {t.status.replaceAll("_", " ")}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className={`flex items-center gap-1 ${isOverdue ? "text-red-600 font-medium" : ""}`}>
+                            {t.dueDate ? (
+                              <>
+                                <Calendar className="h-4 w-4" />
+                                {format(new Date(t.dueDate), "MMM dd, yyyy")}
+                                {isOverdue && <AlertCircle className="h-4 w-4 ml-1" />}
+                              </>
+                            ) : (
+                              "—"
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <Button 
+                            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-purple-700 hover:to-blue-700 shadow-sm" 
+                            onClick={() => openComplete(t)} 
+                            size="sm"
+                            disabled={t.status === "completed" || t.status === "qc_approved"}
+                          >
+                            {t.status === "completed" || t.status === "qc_approved" ? "Completed" : "Complete"}
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
 
-        <Dialog open={!!selected} onOpenChange={(o) => !o && resetModal()}>
-          <DialogContent className="sm:max-w-[560px]">
-            <DialogHeader>
-              <DialogTitle>Complete Task</DialogTitle>
-              <DialogDescription>Provide completion link, credentials, who did it, and the completion date. It will be auto-QC approved.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3 py-2">
+          {isReadyForPostingCreation && (
+            <div className="mt-6 flex justify-end">
+              <Button 
+                onClick={createPostingTasks} 
+                disabled={creatingPosting} 
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 shadow-md hover:from-indigo-700 hover:to-purple-700"
+              >
+                {creatingPosting ? "Creating..." : "Create Posting Tasks"}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Completion Dialog */}
+      <Dialog open={!!selected} onOpenChange={(o) => !o && resetModal()}>
+        <DialogContent className="sm:max-w-[600px] rounded-xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              Complete Task: {selected?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Provide completion details. This task will be automatically QC approved upon submission.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Completion Link *</label>
+              <Input 
+                value={link} 
+                onChange={(e) => setLink(e.target.value)} 
+                placeholder="https://example.com" 
+                className="rounded-lg" 
+              />
+            </div>
+            
+            {!isSimpleTask(selected) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Email</label>
+                  <Input 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    placeholder="email@example.com" 
+                    className="rounded-lg" 
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Username</label>
+                  <Input 
+                    value={username} 
+                    onChange={(e) => setUsername(e.target.value)} 
+                    placeholder="username" 
+                    className="rounded-lg" 
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium mb-1 block">Password</label>
+                  <Input 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    placeholder="password" 
+                    type="password"
+                    className="rounded-lg" 
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">Completion Link</label>
-                <Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://…" className="mt-1" />
+                <label className="text-sm font-medium mb-1 block flex items-center gap-2">
+                  <UserRound className="h-4 w-4" /> 
+                  Done by (agent)
+                </label>
+                <Select value={doneBy} onValueChange={setDoneBy}>
+                  <SelectTrigger className="rounded-lg h-11">
+                    <SelectValue placeholder="Select agent" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agents.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.name || a.email || a.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               
-              {!isSimpleTask(selected) && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div>
-                    <label className="text-sm font-medium">Email</label>
-                    <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Username</label>
-                    <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="username" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Password</label>
-                    <Input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password" />
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-sm font-medium flex items-center gap-2"><UserRound className="h-4 w-4" /> Done by (agent)</label>
-                  <Select value={doneBy} onValueChange={setDoneBy}>
-                    <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Select agent" /></SelectTrigger>
-                    <SelectContent>
-                      {agents.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>{a.name || a.email || a.id}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Completed At</label>
-                  <div className="mt-1">
-                    <DatePicker
-                      selected={completedAt}
-                      onChange={(date: Date | null) => setCompletedAt(date || new Date())}
-                      dateFormat="MMMM d, yyyy"
-                      showMonthDropdown
-                      showYearDropdown
-                      dropdownMode="select"
-                      placeholderText="Select completion date"
-                      className="w-full border border-gray-300 rounded-md px-4 py-2 text-sm"
-                      maxDate={new Date()} // Prevent future dates
-                    />
-                  </div>
-                </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Completed At *</label>
+                <DatePicker
+                  selected={completedAt}
+                  onChange={(date: Date | null) => setCompletedAt(date || new Date())}
+                  dateFormat="MMMM d, yyyy"
+                  showMonthDropdown
+                  showYearDropdown
+                  dropdownMode="select"
+                  placeholderText="Select completion date"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm h-11"
+                  maxDate={new Date()} // Prevent future dates
+                />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" className="bg-red-500 hover:bg-red-600 text-white" onClick={() => resetModal()}>Cancel</Button>
-              <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={submit}>
-                <CheckCircle2 className="h-4 w-4 mr-2" /> Submit & Approve
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+          </div>
+          
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => resetModal()}
+              className="rounded-lg"
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg" 
+              onClick={submit}
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" /> 
+              Submit & Approve
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
