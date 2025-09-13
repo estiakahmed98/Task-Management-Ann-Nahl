@@ -1,12 +1,12 @@
 // app/admin/clients/[clientId]/page.tsx
-import { headers } from "next/headers"
-import { notFound } from "next/navigation"
-import { ClientDashboard } from "@/components/clients/clientsID/client-dashboard"
-import { Client } from "@/types/client"
+import { headers, cookies } from "next/headers";
+import { notFound } from "next/navigation";
+import { ClientDashboard } from "@/components/clients/clientsID/client-dashboard";
+import type { Client } from "@/types/client";
+
+const UNCATEGORIZED = { id: "uncategorized", name: "Uncategorized", description: "" };
 
 function normalizeClientData(apiData: any): Client {
-  const uncategorized = { id: "uncategorized", name: "Uncategorized", description: "" }
-
   return {
     ...apiData,
     companywebsite:
@@ -16,7 +16,7 @@ function normalizeClientData(apiData: any): Client {
     tasks: (apiData?.tasks ?? []).map((t: any) => ({
       ...t,
       categoryId: t?.category?.id ?? t?.categoryId ?? "uncategorized",
-      category: t?.category ?? uncategorized,
+      category: t?.category ?? UNCATEGORIZED,
       name: String(t?.name ?? ""),
       priority: String(t?.priority ?? "medium"),
       status: String(t?.status ?? "pending"),
@@ -27,38 +27,48 @@ function normalizeClientData(apiData: any): Client {
         url: String(t?.templateSiteAsset?.url ?? ""),
       },
     })),
-  }
+  };
 }
 
 async function fetchClient(clientId: string): Promise<Client | null> {
-  const h = await headers()
-  const host = h.get("host")
-  const protocol =
-    process.env.NODE_ENV === "development" || (host && host.startsWith("localhost")) ? "http" : "https"
-  const base = `${protocol}://${host ?? "localhost:3000"}`
-  const url = `${base}/api/clients/${clientId}`
+  const h = await headers();
+  const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
+  const proto =
+    h.get("x-forwarded-proto") ||
+    (host.startsWith("localhost") ? "http" : "https");
+  const base = `${proto}://${host}`;
 
-  const res = await fetch(url, { cache: "no-store" })
-  if (!res.ok) return null
-  const raw = await res.json()
-  return normalizeClientData(raw)
+  // forward cookies so protected API works
+  const cookieHeader = (await cookies()).toString();
+
+  const res = await fetch(`${base}/api/clients/${encodeURIComponent(clientId)}`, {
+    cache: "no-store",
+    headers: {
+      cookie: cookieHeader,
+    },
+  });
+
+  if (!res.ok) return null;
+
+  const raw = await res.json();
+  const data = raw?.client ?? raw; // handle {client: {...}} or plain object
+  return normalizeClientData(data);
 }
 
 export default async function ClientPage({
   params,
 }: {
-  params: Promise<{ clientId: string }>
+  params: { clientId: string }; // <-- Promise নয়
 }) {
-  const { clientId } = await params
-  const clientData = await fetchClient(clientId)
+  const clientData = await fetchClient(params.clientId);
 
   if (!clientData) {
-    notFound()
+    notFound();
   }
 
   return (
     <div className="min-h-screen">
       <ClientDashboard clientData={clientData} />
     </div>
-  )
+  );
 }
