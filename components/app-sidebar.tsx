@@ -132,31 +132,39 @@ function buildNav(role: Role): NavItem[] {
     {
       title: "Dashboard",
       url: p(role, role === "client" ? "" : ""),
-      roles: ["admin", "agent", "qc", "am","am_ceo", "manager", "data_entry", "client"],
+      roles: ["admin", "agent", "qc", "am", "am_ceo", "manager", "client"],
     },
+
+    {
+      title: "Dashboard",
+      url: p(role, "/clients"),
+      roles: ["data_entry"],
+    },
+
     {
       title: "Chat",
       url: p(role, "/chat"),
-      roles: ["admin", "qc", "agent", "am", "am_ceo","manager", "data_entry", "client"],
+      roles: ["admin", "qc", "agent", "am", "am_ceo", "manager", "data_entry", "client"],
     },
 
     // Clients (admin, manager, am, data_entry)
     {
       title: "Clients",
-      roles: ["admin", "manager", "am","data_entry"],
+      roles: ["admin", "manager", "am",],
       children: [
         {
           title: "All Clients",
           url: p(role, "/clients"),
-          roles: ["admin", "manager", "am", "data_entry"],
+          roles: ["admin", "manager", "am",],
         },
         {
           title: "Add Client",
           url: p(role, "/clients/onboarding"),
-          roles: ["admin", "manager", "am","data_entry"],
+          roles: ["admin", "manager", "am",],
         },
       ],
     },
+
     // AM Clients (am_ceo)
     {
       title: "AM Clients",
@@ -169,12 +177,6 @@ function buildNav(role: Role): NavItem[] {
         },
       ],
     },
-
-
-
-       
-
-
 
     // Packages & Templates (admin, manager)
     {
@@ -287,7 +289,7 @@ function buildNav(role: Role): NavItem[] {
     {
       title: "Notifications",
       url: p(role, "/notifications"),
-      roles: ["admin", "manager", "qc", "agent", "am", "am_ceo","data_entry", "client"],
+      roles: ["admin", "manager", "qc", "agent", "am", "am_ceo", "data_entry", "client"],
     },
   ];
 }
@@ -384,17 +386,17 @@ export function AppSidebar({ className }: { className?: string }) {
   const handleSignOut = async () => {
     try {
       await fetch("/api/auth/sign-out", { method: "POST" });
-    } catch {}
+    } catch { }
     try {
       localStorage.removeItem("chat:open");
-    } catch {}
+    } catch { }
     router.push("/auth/sign-in");
   };
 
   const handleExitImpersonation = async () => {
     try {
       await fetch("/api/impersonate/stop", { method: "POST" });
-    } catch {}
+    } catch { }
     router.refresh();
   };
 
@@ -598,7 +600,7 @@ function GroupItem({
           "hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100/50",
           "hover:shadow-sm hover:border-gray-200/50 border border-transparent text-left",
           isActive &&
-            "bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-200/50 shadow-sm"
+          "bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-200/50 shadow-sm"
         )}
         aria-expanded={open}
         aria-controls={`section-${item.title}`}
