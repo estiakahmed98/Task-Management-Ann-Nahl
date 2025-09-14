@@ -16,6 +16,10 @@ const ALLOWED_ASSET_TYPES = [
 const CAT_SOCIAL_ACTIVITY = "Social Activity";
 const CAT_BLOG_POSTING = "Blog Posting";
 
+// 👉 NEW
+const CAT_SOCIAL_COMMUNICATION = "Social Communication";
+const WEB2_FIXED_PLATFORMS = ["medium", "tumblr", "wordpress"] as const;
+
 // ---------- Helpers ----------
 function normalizeTaskPriority(v: unknown): TaskPriority {
   switch (String(v ?? "").toLowerCase()) {
@@ -235,15 +239,58 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    const totalWillCreate = tasks.reduce(
+    // --- NEW: Build Social Communication previews ---
+
+    // social_site + other_asset: প্রতি অ্যাসেটে ১টা করে SC
+    const scAssetSources = sourceTasks.filter((s) => {
+      const t = s.templateSiteAsset?.type;
+      return t === "social_site" || t === "other_asset";
+    });
+
+    const scFromAssets = scAssetSources.map((src) => ({
+      id: `${src.id}::sc-asset`,
+      name: `${baseNameOf(src.name) || "Social"} - ${CAT_SOCIAL_COMMUNICATION}`,
+      baseName: baseNameOf(src.name) || "Social",
+      status: src.status,
+      priority: src.priority,
+      assetType: (src.templateSiteAsset?.type ?? "other_asset") as
+        | "social_site"
+        | "other_asset",
+      frequency: 1,
+      categoryName: CAT_SOCIAL_COMMUNICATION,
+    }));
+
+    // ফিক্সড ৩টা web2 প্ল্যাটফর্ম (অবিকল আগের মতোই)
+    const scFromWeb2Fixed = WEB2_FIXED_PLATFORMS.map((p) => ({
+      id: `sc-web2-${p}`,
+      name: `${
+        p.charAt(0).toUpperCase() + p.slice(1)
+      } - ${CAT_SOCIAL_COMMUNICATION}`,
+      baseName: p.charAt(0).toUpperCase() + p.slice(1),
+      status: "qc_approved" as TaskStatus,
+      priority: "medium" as const,
+      assetType: "web2_site" as const,
+      frequency: 1,
+      categoryName: CAT_SOCIAL_COMMUNICATION,
+    }));
+
+    // আগের + নতুন SC প্রিভিউ একসাথে
+    const tasksWithSC = [...tasks, ...scFromAssets, ...scFromWeb2Fixed];
+
+    const totalWillCreate = tasksWithSC.reduce(
       (acc, t) => acc + (t.frequency ?? 1),
       0
     );
 
+    // const totalWillCreate = tasks.reduce(
+    //   (acc, t) => acc + (t.frequency ?? 1),
+    //   0
+    // );
+
     return NextResponse.json({
       message: "Preview of source tasks for copying.",
       assignmentId: assignment.id,
-      tasks,
+      tasks: tasksWithSC,
       countsByStatus,
       allApproved,
       totalWillCreate,
@@ -255,7 +302,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// ---------- POST: create ----------
+// ---------- POST: create (SC dueDate = last social posting cycle) ----------
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -402,7 +449,6 @@ export async function POST(req: NextRequest) {
           select: { id: true, name: true },
         });
       } catch (e) {
-        // In case two lambdas race-create, fetch again
         const again = await prisma.taskCategory.findFirst({
           where: { name },
           select: { id: true, name: true },
@@ -412,13 +458,16 @@ export async function POST(req: NextRequest) {
       }
     };
 
-    const [socialCat, blogCat] = await Promise.all([
+    // Ensure 3 categories (includes Social Communication)
+    const [socialCat, blogCat, scCat] = await Promise.all([
       ensureCategory(CAT_SOCIAL_ACTIVITY),
       ensureCategory(CAT_BLOG_POSTING),
+      ensureCategory("Social Communication"), // constant exists in your file
     ]);
     const categoryIdByName = new Map<string, string>([
       [socialCat.name, socialCat.id],
       [blogCat.name, blogCat.id],
+      [scCat.name, scCat.id],
     ]);
 
     // Expand copies: (per-asset frequency) × (package months)
@@ -428,11 +477,13 @@ export async function POST(req: NextRequest) {
       catName: string;
     }[] = [];
 
+    // NEW: Social Activity সিরিজের প্রতিটি base-এর last cycle dueDate ক্যাশ
+    const lastCycleDueByBase = new Map<string, Date>();
+
     for (const src of sourceTasks) {
       const assetType = src.templateSiteAsset?.type;
       const assetId = src.templateSiteAsset?.id;
 
-      // original frequency for this asset
       const freq = getFrequency({
         required: assetId ? requiredByAssetId.get(assetId) : undefined,
         defaultFreq: src.templateSiteAsset?.defaultPostingFrequency,
@@ -446,16 +497,50 @@ export async function POST(req: NextRequest) {
       for (let i = 1; i <= totalCopies; i++) {
         expandedCopies.push({ src, catName, name: `${base} -${i}` });
       }
+
+      // NEW: কেবল Social Activity-এর জন্য last cycle dueDate ক্যাশ করো
+      if (catName === CAT_SOCIAL_ACTIVITY) {
+        const anchor = src.createdAt || new Date();
+        const lastDue = calculateTaskDueDate(anchor, totalCopies); // uses your working-days rules
+        lastCycleDueByBase.set(base, lastDue);
+      }
     }
 
-    // De-dup by name within target cats
-    const namesToCheck = Array.from(new Set(expandedCopies.map((e) => e.name)));
+    // Prepare SC names for dedupe
+    const scNamesFromAssets = sourceTasks
+      .filter((s) => {
+        const t = s.templateSiteAsset?.type;
+        return t === "social_site" || t === "other_asset";
+      })
+      .map((s) => `${baseNameOf(s.name) || "Social"} - Social Communication`);
+
+    const scNamesFromWeb2 = ["medium", "tumblr", "wordpress"].map(
+      (p) => `${p.charAt(0).toUpperCase() + p.slice(1)} - Social Communication`
+    );
+
+    // De-dup by name within target cats (3 categories)
+    const namesToCheck = Array.from(
+      new Set([
+        ...expandedCopies.map((e) => e.name),
+        ...scNamesFromAssets,
+        ...scNamesFromWeb2,
+      ])
+    );
+
     const existingCopies = await prisma.task.findMany({
       where: {
         assignmentId: assignment.id,
         name: { in: namesToCheck },
         category: {
-          is: { name: { in: [CAT_SOCIAL_ACTIVITY, CAT_BLOG_POSTING] } },
+          is: {
+            name: {
+              in: [
+                CAT_SOCIAL_ACTIVITY,
+                CAT_BLOG_POSTING,
+                "Social Communication",
+              ],
+            },
+          },
         },
       },
       select: { name: true },
@@ -469,6 +554,7 @@ export async function POST(req: NextRequest) {
     type TaskCreate = Parameters<typeof prisma.task.create>[0]["data"];
     const payloads: TaskCreate[] = [];
 
+    // 1) Original two categories (unchanged logic)
     for (const item of expandedCopies) {
       if (skipNameSet.has(item.name)) continue;
 
@@ -478,8 +564,9 @@ export async function POST(req: NextRequest) {
       const n = extractCycleNumber(item.name);
       const cycleNumber = Number.isFinite(n) && n > 0 ? n : 1;
 
-      const assetCreatedAt = src.createdAt || new Date();
-      const dueDate = calculateTaskDueDate(assetCreatedAt, cycleNumber);
+      // Anchor to the creation moment of the new copy (not the source task time)
+      const anchor = new Date();
+      const dueDate = calculateTaskDueDate(anchor, cycleNumber);
 
       payloads.push({
         id: makeId(),
@@ -499,13 +586,79 @@ export async function POST(req: NextRequest) {
       } as TaskCreate);
     }
 
+    // Social Communication from assets (social_site + other_asset), 1 per asset
+    for (const src of sourceTasks) {
+      const t = src.templateSiteAsset?.type;
+      if (t !== "social_site" && t !== "other_asset") continue;
+
+      const base = baseNameOf(src.name) || "Social";
+      const scName = `${base} - Social Communication`;
+      if (skipNameSet.has(scName)) continue;
+
+      // NEW: ওই base-এর last social cycle due date নাও
+      let dueDate = lastCycleDueByBase.get(base);
+      if (!dueDate) {
+        // very rare fallback: আগে ক্যাশ না থাকলে এখানেই হিসাব করে নাও
+        const assetId = src.templateSiteAsset?.id;
+        const freq = getFrequency({
+          required: assetId ? requiredByAssetId.get(assetId) : undefined,
+          defaultFreq: src.templateSiteAsset?.defaultPostingFrequency,
+        });
+        const totalCopies = Math.max(1, freq * months);
+        const anchor = src.createdAt || new Date();
+        dueDate = calculateTaskDueDate(anchor, totalCopies);
+      }
+
+      const catId = categoryIdByName.get("Social Communication")!;
+      payloads.push({
+        id: makeId(),
+        name: scName,
+        status: "pending",
+        priority: overridePriority ?? src.priority,
+        idealDurationMinutes: src.idealDurationMinutes ?? undefined,
+        dueDate: dueDate.toISOString(), // EXACT last social posting due date
+        completionLink: src.completionLink ?? undefined,
+        email: src.email ?? undefined,
+        password: src.password ?? undefined,
+        username: src.username ?? undefined,
+        notes: src.notes ?? undefined,
+        assignment: { connect: { id: assignment.id } },
+        client: { connect: { id: clientId } },
+        category: { connect: { id: catId } },
+      } as TaskCreate);
+    }
+
+    // NEW: সব Social Activity বেসের মধ্যে overall last social due date
+    const maxLastSocialDue =
+      Array.from(lastCycleDueByBase.values())
+        .sort((a, b) => a.getTime() - b.getTime())
+        .pop() ?? calculateTaskDueDate(new Date(), 1); // fallback = today + 15 days (cycle 1)
+
+    for (const p of ["medium", "tumblr", "wordpress"] as const) {
+      const label = p.charAt(0).toUpperCase() + p.slice(1);
+      const scName = `${label} - Social Communication`;
+      if (skipNameSet.has(scName)) continue;
+
+      const catId = categoryIdByName.get("Social Communication")!;
+      payloads.push({
+        id: makeId(),
+        name: scName,
+        status: "pending",
+        priority: overridePriority ?? "medium",
+        dueDate: maxLastSocialDue.toISOString(), // use overall last social due date
+        assignment: { connect: { id: assignment.id } },
+        client: { connect: { id: clientId } },
+        category: { connect: { id: catId } },
+      } as TaskCreate);
+    }
+
     if (!payloads.length) {
       return NextResponse.json(
         {
           message:
-            "All frequency-based copies already exist under 'Social Activity' / 'Blog Posting'.",
+            "All copies already exist under 'Social Activity' / 'Blog Posting' / 'Social Communication'.",
           created: 0,
-          skipped: expandedCopies.length,
+          skipped: namesToCheck.length,
           assignmentId: assignment.id,
           tasks: [],
         },
@@ -545,9 +698,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(
       {
-        message: `Created ${created.length} frequency-based task copy/copies (pending, unlinked) with calculated due dates.`,
+        message: `Created ${created.length} task(s) across Social Activity, Blog Posting, and Social Communication.`,
         created: created.length,
-        skipped: skipNameSet.size,
+        skipped: Array.from(skipNameSet).length,
         assignmentId: assignment.id,
         tasks: created,
         runtime: "nodejs",

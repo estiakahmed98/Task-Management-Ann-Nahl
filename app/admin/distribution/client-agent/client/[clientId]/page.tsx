@@ -403,7 +403,7 @@ export default function CreatePostingTasksPage() {
     setLoadingExistingTasks(true);
     try {
       const res = await fetch(
-        `/api/tasks?clientId=${clientId}&categories=Social Activity,Blog Posting`,
+        `/api/tasks?clientId=${clientId}&categories=Social Activity,Blog Posting,Social Communication`,
         {
           cache: "no-store",
         }
