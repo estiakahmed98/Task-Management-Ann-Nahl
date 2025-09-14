@@ -1,11 +1,9 @@
-// app/admin/clients/page.tsx
+// app/admin/am_ceo/clients/page.tsx
 
 "use client";
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-
-import { ClientOverviewHeader } from "@/components/clients/client-overview-header";
 import { ClientStatusSummary } from "@/components/clients/client-status-summary";
 import { ClientGrid } from "@/components/clients/client-grid";
 import { ClientList } from "@/components/clients/client-list";

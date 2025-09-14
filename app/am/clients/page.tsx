@@ -1,4 +1,4 @@
-// app/admin/clients/page.tsx
+
 
 "use client";
 import { useState, useCallback, useEffect } from "react";
@@ -81,7 +81,7 @@ export default function ClientsPage() {
   }, [fetchPackages]);
 
   const handleViewClientDetails = (client: Client) => {
-  router.push(`/am_ceo/clients/${encodeURIComponent(String(client.id))}`);
+  router.push(`/am/clients/${encodeURIComponent(String(client.id))}`);
 };
 
   const handleAddNewClient = () => {
