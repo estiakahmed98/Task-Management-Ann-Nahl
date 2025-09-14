@@ -72,7 +72,11 @@ function mapSiteAssetTypeToCategory(type: string | undefined): string {
 }
 
 // ✅ NEW: Posting categories to show (order matters; after Asset Creation)
-const POSTING_CATEGORIES = ["Social Activity", "Blog Posting"] as const;
+const POSTING_CATEGORIES = [
+  "Social Activity",
+  "Blog Posting",
+  "Social Communication",
+] as const;
 
 // --- Team routing maps (ids from your Team table) ---
 const TEAM_ID_BY_CATEGORY: Record<string, string> = {
@@ -81,6 +85,7 @@ const TEAM_ID_BY_CATEGORY: Record<string, string> = {
   // ✅ NEW: both go to social-team
   "Social Activity": "social-team",
   "Blog Posting": "social-team",
+  "Social Communication": "social-team", // NEW
 
   "Content Studio": "content-studio-team",
   "Content Writing": "content-writing",

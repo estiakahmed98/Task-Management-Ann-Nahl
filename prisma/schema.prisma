@@ -27,7 +27,7 @@ enum TaskStatus {
   completed
   overdue
   cancelled
-  reassigned 
+  reassigned
   qc_approved
   data_entered
 }
@@ -36,7 +36,7 @@ enum PerformanceRating {
   Excellent
   Good
   Average
-  Poor        
+  Poor
   Lazy
 }
 
@@ -44,8 +44,8 @@ enum NotificationType {
   frequency_missed
   performance
   general
-  chat_message   
-  chat_mention   
+  chat_message
+  chat_mention
 }
 
 enum SiteAssetType {
@@ -122,19 +122,18 @@ model User {
   templateTeamMemberships TemplateTeamMember[]
 
   // ✅ Chat back-relations
-  createdConversations    Conversation[]       @relation("UserCreatedConversations")
+  createdConversations     Conversation[]            @relation("UserCreatedConversations")
   conversationParticipants ConversationParticipant[]
-  sentMessages            ChatMessage[]        @relation("MessageSender")
-  messageReactions        MessageReaction[]
+  sentMessages             ChatMessage[]             @relation("MessageSender")
+  messageReactions         MessageReaction[]
 
   managedClients Client[] @relation("AccountManagerClients")
 
   // 🆕 receipts back-relation
-  messageReceipts         MessageReceipt[]
+  messageReceipts MessageReceipt[]
 
-  lastSeenAt    DateTime?
+  lastSeenAt DateTime?
 }
-
 
 model Session {
   id             String   @id @default(cuid())
@@ -212,7 +211,7 @@ model Team {
   clientTeamMembers   ClientTeamMember[]
   templateTeamMembers TemplateTeamMember[]
   // teamwise conversation
-  conversations Conversation[] @relation("TeamConversations") 
+  conversations       Conversation[]       @relation("TeamConversations")
 }
 
 // ========== PACKAGES ==========
@@ -246,9 +245,9 @@ model Client {
   designation String?
   location    String?
 
-  email String?
-  phone String?
-  password String?
+  email         String?
+  phone         String?
+  password      String?
   recoveryEmail String?
 
   website  String?
@@ -280,6 +279,7 @@ model Client {
 
   amId           String?
   accountManager User?   @relation("AccountManagerClients", fields: [amId], references: [id])
+
   @@index([amId])
 }
 
@@ -295,8 +295,8 @@ model SocialMedia {
   phone     String?
   password  String?
   notes     String?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ========== CLIENT TEAM MEMBERS ==========
@@ -395,17 +395,17 @@ model AssignmentSiteAssetSetting {
 
 // ========== TASKS ==========
 model Task {
-  id                    String  @id
-  assignmentId          String?
-  clientId              String?
-  templateSiteAssetId   Int?
-  categoryId            String?
-  assignedToId          String?
+  id                  String  @id
+  assignmentId        String?
+  clientId            String?
+  templateSiteAssetId Int?
+  categoryId          String?
+  assignedToId        String?
 
   name                  String
-  priority              TaskPriority     @default(medium)
+  priority              TaskPriority       @default(medium)
   dueDate               DateTime?
-  status                TaskStatus       @default(pending)
+  status                TaskStatus         @default(pending)
   idealDurationMinutes  Int?
   actualDurationMinutes Int?
   performanceRating     PerformanceRating?
@@ -417,27 +417,27 @@ model Task {
   dataEntryReport       Json?
   reassignNotes         String?
   completedAt           DateTime?
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 
-  qcReview              Json?
-  qcTotalScore          Int?             @default(0)
-  pauseReasons          Json?            @default("[]")
+  qcReview             Json?
+  qcTotalScore         Int?  @default(0)
+  pauseReasons         Json? @default("[]")
+  socialCommunications Json? @default("[]") // 👈 NEW
 
-  assignment            Assignment?        @relation(fields: [assignmentId], references: [id])
-  client                Client?            @relation(fields: [clientId], references: [id])
-  templateSiteAsset     TemplateSiteAsset? @relation(fields: [templateSiteAssetId], references: [id])
-  category              TaskCategory?      @relation(fields: [categoryId], references: [id])
-  assignedTo            User?              @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  assignment        Assignment?        @relation(fields: [assignmentId], references: [id])
+  client            Client?            @relation(fields: [clientId], references: [id])
+  templateSiteAsset TemplateSiteAsset? @relation(fields: [templateSiteAssetId], references: [id])
+  category          TaskCategory?      @relation(fields: [categoryId], references: [id])
+  assignedTo        User?              @relation("AssignedTasks", fields: [assignedToId], references: [id])
 
-  comments              Comment[]
-  reports               Report[]
-  notifications         Notification[]
-  
+  comments      Comment[]
+  reports       Report[]
+  notifications Notification[]
+
   // Each Task can have its own dedicated Conversation thread.
-  conversations         Conversation[]     @relation("TaskConversations")
+  conversations Conversation[] @relation("TaskConversations")
 }
-
 
 // ========== COMMENTS ==========
 model Comment {
@@ -491,33 +491,32 @@ model Notification {
   task Task? @relation(fields: [taskId], references: [id])
 }
 
-
 // ---------- models ----------
 model Conversation {
-  id            String             @id @default(cuid())
-  type          ConversationType   @default(dm)
-  title         String?
-  createdById   String?
-  createdBy     User?              @relation("UserCreatedConversations", fields: [createdById], references: [id])
+  id          String           @id @default(cuid())
+  type        ConversationType @default(dm)
+  title       String?
+  createdById String?
+  createdBy   User?            @relation("UserCreatedConversations", fields: [createdById], references: [id])
 
-  clientId      String?
-  client        Client?            @relation("ClientConversations", fields: [clientId], references: [id])
+  clientId String?
+  client   Client? @relation("ClientConversations", fields: [clientId], references: [id])
 
-  teamId        String?
-  team          Team?              @relation("TeamConversations", fields: [teamId], references: [id])
+  teamId String?
+  team   Team?   @relation("TeamConversations", fields: [teamId], references: [id])
 
-  assignmentId  String?
-  assignment    Assignment?        @relation("AssignmentConversations", fields: [assignmentId], references: [id])
+  assignmentId String?
+  assignment   Assignment? @relation("AssignmentConversations", fields: [assignmentId], references: [id])
 
-  taskId        String?
-  task          Task?              @relation("TaskConversations", fields: [taskId], references: [id])
+  taskId String?
+  task   Task?   @relation("TaskConversations", fields: [taskId], references: [id])
 
-  isArchived    Boolean            @default(false)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  isArchived Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  participants  ConversationParticipant[]
-  messages      ChatMessage[]
+  participants ConversationParticipant[]
+  messages     ChatMessage[]
 
   @@index([type, clientId])
   @@index([type, teamId])
@@ -525,44 +524,43 @@ model Conversation {
   @@index([type, taskId])
 }
 
-
 model ConversationParticipant {
   conversationId String
   userId         String
-  role           String?   // "owner" | "member" | ইত্যাদি
+  role           String? // "owner" | "member" | ইত্যাদি
   lastReadAt     DateTime?
   isMuted        Boolean   @default(false)
   isPinned       Boolean   @default(false)
   joinedAt       DateTime  @default(now())
 
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([conversationId, userId])
   @@index([userId])
 }
 
 model ChatMessage {
-  id             String       @id @default(cuid())
+  id             String      @id @default(cuid())
   conversationId String
   senderId       String?
-  type           MessageType  @default(text)
+  type           MessageType @default(text)
   content        String?
   attachments    Json?
   replyToId      String?
   mentions       Json?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
   editedAt       DateTime?
   deletedAt      DateTime?
 
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         User?        @relation("MessageSender", fields: [senderId], references: [id])
-  replyTo        ChatMessage? @relation("MessageReplies", fields: [replyToId], references: [id])
-  replies        ChatMessage[] @relation("MessageReplies")
-  reactions      MessageReaction[]
+  conversation Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User?             @relation("MessageSender", fields: [senderId], references: [id])
+  replyTo      ChatMessage?      @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies      ChatMessage[]     @relation("MessageReplies")
+  reactions    MessageReaction[]
 
-  receipts       MessageReceipt[]
+  receipts MessageReceipt[]
 
   @@index([conversationId, createdAt])
 }
@@ -579,7 +577,6 @@ model MessageReceipt {
   @@id([messageId, userId])
   @@index([userId, messageId])
 }
-
 
 model MessageReaction {
   messageId String
