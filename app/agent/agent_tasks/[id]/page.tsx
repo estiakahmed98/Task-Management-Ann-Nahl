@@ -1,4 +1,3 @@
-// app/agent/agent_tasks/[id]/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -46,6 +45,14 @@ import {
   Download,
   Plus,
   Trash2,
+  Calendar,
+  Clock,
+  User,
+  Building,
+  Tag,
+  Globe,
+  Activity,
+  Star,
 } from "lucide-react";
 
 /* =========================================================
@@ -140,18 +147,54 @@ const fmt = (d?: string | null, fallback = "—") =>
   d ? format(new Date(d), "PPP p") : fallback;
 
 function StatusBadge({ status }: { status: TaskStatus }) {
-  const map: Record<TaskStatus, string> = {
-    pending: "bg-slate-200 text-slate-700",
-    in_progress: "bg-blue-100 text-blue-800",
-    overdue: "bg-rose-100 text-rose-800",
-    reassigned: "bg-amber-100 text-amber-800",
-    completed: "bg-emerald-100 text-emerald-800",
-    qc_approved: "bg-purple-100 text-purple-800",
-    cancelled: "bg-slate-300 text-slate-700",
+  const map: Record<
+    TaskStatus,
+    { bg: string; text: string; icon?: React.ReactNode }
+  > = {
+    pending: { bg: "bg-gradient-to-r from-gray-100 to-gray-200", text: "text-gray-800" },
+    in_progress: { bg: "bg-gradient-to-r from-blue-100 to-blue-200", text: "text-blue-800" },
+    overdue: { bg: "bg-gradient-to-r from-red-100 to-red-200", text: "text-red-800" },
+    reassigned: { bg: "bg-gradient-to-r from-orange-100 to-orange-200", text: "text-orange-800" },
+    completed: {
+      bg: "bg-gradient-to-r from-emerald-100 to-emerald-200",
+      text: "text-emerald-800",
+      icon: <CheckCircle className="w-4 h-4" />,
+    },
+    qc_approved: {
+      bg: "bg-gradient-to-r from-purple-100 to-purple-200",
+      text: "text-purple-800",
+      icon: <Star className="w-4 h-4" />,
+    },
+    cancelled: { bg: "bg-gradient-to-r from-gray-200 to-gray-300", text: "text-gray-700" },
   };
+
+  const config = map[status];
   return (
-    <Badge className={`${map[status]} border-none`}>
-      {status.replace("_", " ")}
+    <Badge
+      className={`${config.bg} ${config.text} border-none font-semibold px-4 py-2 text-sm shadow-sm`}
+    >
+      <div className="flex items-center gap-2">
+        {config.icon}
+        {status.replace("_", " ").toUpperCase()}
+      </div>
+    </Badge>
+  );
+}
+
+function PriorityBadge({ priority }: { priority: TaskPriority }) {
+  const map: Record<TaskPriority, { bg: string; text: string }> = {
+    low: { bg: "bg-gradient-to-r from-green-100 to-green-200", text: "text-green-800" },
+    medium: { bg: "bg-gradient-to-r from-yellow-100 to-yellow-200", text: "text-yellow-800" },
+    high: { bg: "bg-gradient-to-r from-orange-100 to-orange-200", text: "text-orange-800" },
+    urgent: { bg: "bg-gradient-to-r from-red-100 to-red-200", text: "text-red-800" },
+  };
+
+  const config = map[priority];
+  return (
+    <Badge
+      className={`${config.bg} ${config.text} border-none font-semibold px-4 py-2 text-sm shadow-sm`}
+    >
+      {priority.toUpperCase()}
     </Badge>
   );
 }
@@ -404,26 +447,39 @@ export default function TaskDetailsPage() {
   /* ---------------- Render ---------------- */
   if (loading && !task) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-slate-500">Loading task…</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-6"></div>
+          <div className="text-slate-700 font-semibold text-lg">
+            Loading task details...
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!task) {
     return (
-      <div className="min-h-screen p-6">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-8">
         <div className="max-w-5xl mx-auto">
           <Button
-            variant="ghost"
+            variant="outline"
             onClick={() => router.back()}
-            className="mb-4"
+            className="mb-8 bg-white shadow-lg hover:shadow-xl transition-all duration-300 border-slate-200 text-base px-6 py-3"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back
+            <ArrowLeft className="w-5 h-5 mr-2" /> Back
           </Button>
-          <Card>
-            <CardContent className="p-6 text-slate-600">
-              Task not found.
+          <Card className="shadow-2xl border-0 bg-gradient-to-br from-white to-slate-50">
+            <CardContent className="p-16 text-center">
+              <div className="text-slate-500 mb-4">
+                <Building className="w-16 h-16 mx-auto mb-6 text-slate-300" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-800 mb-4">
+                Task Not Found
+              </h2>
+              <p className="text-slate-600 text-lg">
+                The requested task could not be located.
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -432,337 +488,540 @@ export default function TaskDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20 p-4 lg:p-8">
-      <div className="space-y-6 w-full mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-6 lg:p-10">
+      <div className="w-full mx-auto space-y-10">
+        {/* Header Section */}
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
+          <div className="space-y-6">
             <Button
-              variant="ghost"
+              variant="outline"
               onClick={() => router.back()}
-              className="rounded-xl"
+              className="bg-white shadow-lg hover:shadow-xl transition-all duration-300 border-slate-200 text-base px-6 py-3"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              Back to Tasks
             </Button>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold">{task.name}</h1>
-              <div className="flex items-center gap-2 mt-1">
+
+            <div className="space-y-4">
+              <h1 className="text-4xl lg:text-5xl font-bold text-slate-900 leading-tight">
+                {task.name}
+              </h1>
+              <div className="flex flex-wrap items-center gap-4">
                 <StatusBadge status={task.status} />
-                <Badge variant="secondary" className="capitalize">
-                  Priority: {task.priority}
-                </Badge>
+                <PriorityBadge priority={task.priority} />
                 {coolingDown && (
-                  <Badge className="bg-emerald-100 text-emerald-800 border-none">
-                    Cooling down ({daysLeft}d)
+                  <Badge className="bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 border-emerald-300 font-semibold px-4 py-2 text-sm shadow-sm">
+                    <Clock className="w-4 h-4 mr-2" />
+                    Cooldown: {daysLeft}d remaining
                   </Badge>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={loadTask}>
-              <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button
+              variant="outline"
+              onClick={loadTask}
+              className="bg-white shadow-lg hover:shadow-xl transition-all duration-300 border-slate-200 text-base px-6 py-3"
+            >
+              <RefreshCw className="w-5 h-5 mr-2" />
+              Refresh
             </Button>
-            <Button variant="outline" onClick={exportCsv}>
-              <Download className="w-4 h-4 mr-2" /> Export CSV
+            <Button
+              variant="outline"
+              onClick={exportCsv}
+              className="bg-white shadow-lg hover:shadow-xl transition-all duration-300 border-slate-200 text-base px-6 py-3"
+              disabled={!sc.length}
+            >
+              <Download className="w-5 h-5 mr-2" />
+              Export CSV
             </Button>
           </div>
         </div>
 
-        {/* Top summary cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Client</CardTitle>
-              <CardDescription>Association</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {task.client?.name || "—"}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Category</CardTitle>
-              <CardDescription>Task Category</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {task.category?.name || "—"}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Template Asset</CardTitle>
-              <CardDescription>Name & Link</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="flex items-center gap-2">
-                <div className="truncate">
-                  {task.templateSiteAsset?.name || "—"}
+        {/* Overview Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <Card className="bg-gradient-to-br from-white to-blue-50 shadow-xl border-0 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl shadow-md">
+                  <Building className="w-6 h-6 text-blue-700" />
                 </div>
-                {task.templateSiteAsset?.url ? (
+                <div>
+                  <CardTitle className="text-base font-bold text-slate-700">
+                    CLIENT
+                  </CardTitle>
+                  <CardDescription className="text-sm text-slate-500">
+                    Associated Organization
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <p className="text-xl font-bold text-slate-900">
+                {task.client?.name || "No Client Assigned"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-white to-green-50 shadow-xl border-0 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-br from-green-100 to-green-200 rounded-xl shadow-md">
+                  <Tag className="w-6 h-6 text-green-700" />
+                </div>
+                <div>
+                  <CardTitle className="text-base font-bold text-slate-700">
+                    CATEGORY
+                  </CardTitle>
+                  <CardDescription className="text-sm text-slate-500">
+                    Task Classification
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <p className="text-xl font-bold text-slate-900">
+                {task.category?.name || "Uncategorized"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-white to-purple-50 shadow-xl border-0 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl shadow-md">
+                  <Globe className="w-6 h-6 text-purple-700" />
+                </div>
+                <div>
+                  <CardTitle className="text-base font-bold text-slate-700">
+                    TEMPLATE ASSET
+                  </CardTitle>
+                  <CardDescription className="text-sm text-slate-500">
+                    Resource Link
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-base font-semibold text-slate-900 truncate">
+                  {task.templateSiteAsset?.name || "No Asset"}
+                </p>
+                {task.templateSiteAsset?.url && (
                   <Link href={task.templateSiteAsset.url} target="_blank">
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" className="shrink-0 shadow-md hover:shadow-lg transition-shadow">
                       <Link2 className="w-4 h-4 mr-1" />
                       Open
                     </Button>
                   </Link>
-                ) : null}
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Timing + metrics */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Timing & Metrics</CardTitle>
-            <CardDescription>Due dates and durations</CardDescription>
+        {/* Task Metrics */}
+        <Card className="shadow-xl border-0">
+          <CardHeader className="border-b border-slate-100 pb-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-orange-100 to-orange-200 rounded-xl shadow-md">
+                <Activity className="w-6 h-6 text-orange-700" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl font-bold text-slate-900">
+                  Task Metrics & Timeline
+                </CardTitle>
+                <CardDescription className="text-base">
+                  Performance data and scheduling information
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="pt-0 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div>
-              <div className="text-slate-500">Due</div>
-              <div className="font-medium">{fmt(task.dueDate)}</div>
-            </div>
-            <div>
-              <div className="text-slate-500">Ideal Duration</div>
-              <div className="font-medium">
-                {task.idealDurationMinutes
-                  ? `${task.idealDurationMinutes}m`
-                  : "—"}
+          <CardContent className="pt-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-base font-semibold text-slate-700">
+                  <Calendar className="w-5 h-5" />
+                  Due Date
+                </div>
+                <p className="text-xl font-bold text-slate-900">
+                  {fmt(task.dueDate)}
+                </p>
               </div>
-            </div>
-            <div>
-              <div className="text-slate-500">Actual Duration</div>
-              <div className="font-medium">
-                {typeof task.actualDurationMinutes === "number"
-                  ? `${task.actualDurationMinutes}m`
-                  : "—"}
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-base font-semibold text-slate-700">
+                  <Clock className="w-5 h-5" />
+                  Ideal Duration
+                </div>
+                <p className="text-xl font-bold text-slate-900">
+                  {task.idealDurationMinutes
+                    ? `${task.idealDurationMinutes}m`
+                    : "—"}
+                </p>
               </div>
-            </div>
-            <div>
-              <div className="text-slate-500">Completed At</div>
-              <div className="font-medium">{fmt(task.completedAt)}</div>
-            </div>
-            <div>
-              <div className="text-slate-500">Created</div>
-              <div className="font-medium">{fmt(task.createdAt)}</div>
-            </div>
-            <div>
-              <div className="text-slate-500">Updated</div>
-              <div className="font-medium">{fmt(task.updatedAt)}</div>
-            </div>
-            <div>
-              <div className="text-slate-500">Performance</div>
-              <div className="font-medium">{task.performanceRating || "—"}</div>
-            </div>
-            <div>
-              <div className="text-slate-500">QC Score</div>
-              <div className="font-medium">{task.qcTotalScore ?? 0}</div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-base font-semibold text-slate-700">
+                  <Clock className="w-5 h-5" />
+                  Actual Duration
+                </div>
+                <p className="text-xl font-bold text-slate-900">
+                  {typeof task.actualDurationMinutes === "number"
+                    ? `${task.actualDurationMinutes}m`
+                    : "—"}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-base font-semibold text-slate-700">
+                  <Star className="w-5 h-5" />
+                  Performance Rating
+                </div>
+                <p className="text-xl font-bold text-slate-900">
+                  {task.performanceRating || "Not Rated"}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="text-base font-semibold text-slate-700">
+                  Completed At
+                </div>
+                <p className="text-base text-slate-800">
+                  {fmt(task.completedAt)}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="text-base font-semibold text-slate-700">
+                  Created
+                </div>
+                <p className="text-base text-slate-800">{fmt(task.createdAt)}</p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="text-base font-semibold text-slate-700">
+                  Last Updated
+                </div>
+                <p className="text-base text-slate-800">{fmt(task.updatedAt)}</p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="text-base font-semibold text-slate-700">
+                  QC Score
+                </div>
+                <p className="text-base text-slate-800">
+                  {task.qcTotalScore ?? "Not Scored"}
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Credentials + completion link */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Agent Access</CardTitle>
-            <CardDescription>Credentials and target URL</CardDescription>
+        {/* Credentials Section */}
+        <Card className="bg-gradient-to-br from-white to-indigo-50 shadow-xl border-0">
+          <CardHeader className="border-b border-slate-100 pb-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-xl shadow-md">
+                <User className="w-6 h-6 text-indigo-700" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl font-bold text-slate-900">
+                  Agent Access Credentials
+                </CardTitle>
+                <CardDescription className="text-base">
+                  Login information and target resources
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="pt-0 space-y-3">
-            <div className="grid grid-cols-12 gap-2">
-              {/* Username */}
-              <div className="col-span-12 md:col-span-4">
-                <label className="text-xs text-slate-600">Username</label>
-                <div className="flex gap-2">
-                  <Input readOnly value={task.username ?? ""} placeholder="—" />
+          <CardContent className="pt-8 space-y-8">
+            {/* Credentials Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="space-y-3">
+                <label className="text-base font-semibold text-slate-800 flex items-center gap-3">
+                  <User className="w-5 h-5" />
+                  Username
+                </label>
+                <div className="flex gap-3">
+                  <Input
+                    readOnly
+                    value={task.username ?? ""}
+                    placeholder="Not provided"
+                    className="bg-slate-50 border-slate-300 text-base py-3"
+                  />
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => copy("Username", task.username)}
+                    className="shrink-0 shadow-md hover:shadow-lg transition-shadow"
                   >
-                    <Copy className="w-4 h-4" />
+                    <Copy className="w-5 h-5" />
                   </Button>
                 </div>
               </div>
 
-              {/* Email */}
-              <div className="col-span-12 md:col-span-4">
-                <label className="text-xs text-slate-600">Email</label>
-                <div className="flex gap-2">
-                  <Input readOnly value={task.email ?? ""} placeholder="—" />
+              <div className="space-y-3">
+                <label className="text-base font-semibold text-slate-800">
+                  Email
+                </label>
+                <div className="flex gap-3">
+                  <Input
+                    readOnly
+                    value={task.email ?? ""}
+                    placeholder="Not provided"
+                    className="bg-slate-50 border-slate-300 text-base py-3"
+                  />
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => copy("Email", task.email)}
+                    className="shrink-0 shadow-md hover:shadow-lg transition-shadow"
                   >
-                    <Copy className="w-4 h-4" />
+                    <Copy className="w-5 h-5" />
                   </Button>
                 </div>
               </div>
 
-              {/* Password */}
-              <div className="col-span-12 md:col-span-4">
-                <label className="text-xs text-slate-600">Password</label>
-                <div className="flex gap-2">
+              <div className="space-y-3">
+                <label className="text-base font-semibold text-slate-800">
+                  Password
+                </label>
+                <div className="flex gap-3">
                   <Input
                     readOnly
                     type={showPw ? "text" : "password"}
                     value={task.password ?? ""}
-                    placeholder="—"
+                    placeholder="Not provided"
+                    className="bg-slate-50 border-slate-300 text-base py-3"
                   />
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => setShowPw((s) => !s)}
                     title={showPw ? "Hide" : "Show"}
+                    className="shrink-0 shadow-md hover:shadow-lg transition-shadow"
                   >
                     {showPw ? (
-                      <EyeOff className="w-4 h-4" />
+                      <EyeOff className="w-5 h-5" />
                     ) : (
-                      <Eye className="w-4 h-4" />
+                      <Eye className="w-5 h-5" />
                     )}
                   </Button>
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => copy("Password", task.password)}
+                    className="shrink-0 shadow-md hover:shadow-lg transition-shadow"
                   >
-                    <Copy className="w-4 h-4" />
+                    <Copy className="w-5 h-5" />
                   </Button>
                 </div>
               </div>
             </div>
 
-            {/* Completion / Primary URL */}
-            <div className="grid grid-cols-12 gap-2">
-              <div className="col-span-12 md:col-span-9">
-                <label className="text-xs text-slate-600">
-                  Primary URL (completionLink / template)
-                </label>
-                <Input readOnly value={primaryUrl ?? ""} placeholder="—" />
-              </div>
-              <div className="col-span-12 md:col-span-3 flex gap-2">
+            {/* Primary URL Section */}
+            <div className="space-y-4 p-6 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200 shadow-inner">
+              <label className="text-base font-bold text-slate-800 flex items-center gap-3">
+                <Globe className="w-5 h-5" />
+                Primary Target URL
+              </label>
+              <div className="flex gap-4">
+                <Input
+                  readOnly
+                  value={primaryUrl ?? ""}
+                  placeholder="No URL provided"
+                  className="bg-white border-slate-300 text-base py-3"
+                />
                 <Button
-                  className="w-full"
                   variant="outline"
                   onClick={() => copy("URL", primaryUrl)}
                   disabled={!primaryUrl}
+                  className="shrink-0 shadow-md hover:shadow-lg transition-shadow text-base px-6"
                 >
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copy URL
+                  <Copy className="w-5 h-5 mr-2" />
+                  Copy
                 </Button>
-                {primaryUrl ? (
-                  <Link href={primaryUrl} target="_blank" className="w-full">
-                    <Button className="w-full" variant="secondary">
-                      <Link2 className="w-4 h-4 mr-2" />
-                      Open
+                {primaryUrl && (
+                  <Link href={primaryUrl} target="_blank">
+                    <Button
+                      variant="default"
+                      className="shrink-0 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all text-base px-6"
+                    >
+                      <Link2 className="w-5 h-5 mr-2" />
+                      Open Site
                     </Button>
                   </Link>
-                ) : null}
+                )}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Social Communications Table */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">
-              Social Communication Submissions
-            </CardTitle>
-            <CardDescription>
-              All links stored in task.socialCommunications
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="flex justify-between items-center mb-3">
-              <div className="text-sm text-slate-600">
-                Total: <span className="font-semibold">{sc.length}</span>
+        {/* Social Communications */}
+        <Card className="bg-gradient-to-br from-white to-emerald-50 shadow-xl border-0">
+          <CardHeader className="border-b border-slate-100 pb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl shadow-md">
+                  <Activity className="w-6 h-6 text-emerald-700" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-bold text-slate-900">
+                    Social Communication Submissions
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    All submitted social media interactions and links
+                  </CardDescription>
+                </div>
               </div>
-              <div className="flex gap-2">
+              <Badge
+                variant="secondary"
+                className="text-base font-semibold px-4 py-2 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-800 shadow-sm"
+              >
+                {sc.length} total submissions
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-8">
+              <div className="text-base text-slate-700">
+                Track all social media interactions including likes, comments,
+                follows, and shares.
+              </div>
+              <div className="flex gap-4">
                 <Button
-                  variant="outline"
                   onClick={() => setOpen(true)}
                   disabled={coolingDown}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all text-base px-6 py-3"
+                  title={
+                    coolingDown ? `Available in ${daysLeft} day(s)` : undefined
+                  }
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Links
+                  <Plus className="w-5 h-5 mr-2" />
+                  Add New Links
                 </Button>
                 <Button
                   variant="outline"
                   onClick={exportCsv}
                   disabled={!sc.length}
+                  className="shadow-lg hover:shadow-xl transition-shadow text-base px-6 py-3"
                 >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export CSV
+                  <Download className="w-5 h-5 mr-2" />
+                  Export Data
                 </Button>
               </div>
             </div>
 
             {sc.length === 0 ? (
-              <div className="p-6 text-center text-slate-500 border rounded-lg bg-white">
-                No submissions yet.
+              <div className="text-center py-16 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border-2 border-dashed border-slate-300">
+                <Activity className="w-16 h-16 text-slate-400 mx-auto mb-6" />
+                <h3 className="text-xl font-bold text-slate-700 mb-3">
+                  No Submissions Yet
+                </h3>
+                <p className="text-base text-slate-600 mb-8">
+                  Start by adding your social media interaction links.
+                </p>
+                <Button
+                  onClick={() => setOpen(true)}
+                  disabled={coolingDown}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all text-base px-6 py-3"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Add Your First Links
+                </Button>
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-lg border bg-white">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-slate-50 text-slate-700">
-                    <tr>
-                      <th className="text-left px-4 py-2">#</th>
-                      <th className="text-left px-4 py-2">Type</th>
-                      <th className="text-left px-4 py-2">URL</th>
-                      <th className="text-left px-4 py-2">Notes</th>
-                      <th className="text-left px-4 py-2">Submitted At</th>
-                      <th className="text-left px-4 py-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sc.map((row, i) => (
-                      <tr
-                        key={`${row.type}-${row.url}-${i}`}
-                        className="border-t"
-                      >
-                        <td className="px-4 py-2">{i + 1}</td>
-                        <td className="px-4 py-2 capitalize">{row.type}</td>
-                        <td className="px-4 py-2">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate max-w-[360px] inline-block align-middle">
-                              {row.url}
-                            </span>
-                            <Link href={row.url} target="_blank">
-                              <Button size="sm" variant="outline">
-                                <Link2 className="w-4 h-4 mr-1" />
-                                Open
-                              </Button>
-                            </Link>
-                          </div>
-                        </td>
-                        <td className="px-4 py-2">
-                          <span className="whitespace-pre-wrap">
-                            {row.notes || "—"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2">
-                          {row.submittedAt
-                            ? format(new Date(row.submittedAt), "PPP p")
-                            : "—"}
-                        </td>
-                        <td className="px-4 py-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => copy("URL", row.url)}
-                          >
-                            <Copy className="w-4 h-4 mr-1" />
-                            Copy
-                          </Button>
-                        </td>
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-lg">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-base">
+                    <thead className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+                      <tr>
+                        <th className="text-left px-8 py-5 font-bold text-slate-800">
+                          #
+                        </th>
+                        <th className="text-left px-8 py-5 font-bold text-slate-800">
+                          Type
+                        </th>
+                        <th className="text-left px-8 py-5 font-bold text-slate-800">
+                          URL
+                        </th>
+                        <th className="text-left px-8 py-5 font-bold text-slate-800">
+                          Notes
+                        </th>
+                        <th className="text-left px-8 py-5 font-bold text-slate-800">
+                          Submitted
+                        </th>
+                        <th className="text-left px-8 py-5 font-bold text-slate-800">
+                          Actions
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {sc.map((row, i) => (
+                        <tr
+                          key={`${row.type}-${row.url}-${i}`}
+                          className="hover:bg-slate-50 transition-colors duration-200"
+                        >
+                          <td className="px-8 py-5 text-slate-700 font-semibold">
+                            {i + 1}
+                          </td>
+                          <td className="px-8 py-5">
+                            <Badge
+                              variant="secondary"
+                              className="capitalize font-semibold text-sm px-3 py-1 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-800"
+                            >
+                              {row.type}
+                            </Badge>
+                          </td>
+                          <td className="px-8 py-5">
+                            <div className="flex items-center gap-4">
+                              <span className="text-slate-800 font-mono text-sm bg-slate-100 px-3 py-2 rounded-lg truncate max-w-xs">
+                                {row.url}
+                              </span>
+                              <Link href={row.url} target="_blank">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="shrink-0 shadow-md hover:shadow-lg transition-shadow"
+                                >
+                                  <Link2 className="w-4 h-4 mr-1" />
+                                  Visit
+                                </Button>
+                              </Link>
+                            </div>
+                          </td>
+                          <td className="px-8 py-5">
+                            <span className="text-slate-700 text-sm bg-slate-50 px-3 py-2 rounded-lg">
+                              {row.notes || "No notes"}
+                            </span>
+                          </td>
+                          <td className="px-8 py-5 text-slate-700">
+                            {row.submittedAt
+                              ? format(
+                                  new Date(row.submittedAt),
+                                  "MMM dd, yyyy 'at' h:mm a"
+                                )
+                              : "—"}
+                          </td>
+                          <td className="px-8 py-5">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => copy("URL", row.url)}
+                              className="hover:bg-slate-100 shadow-md hover:shadow-lg transition-shadow"
+                            >
+                              <Copy className="w-4 h-4 mr-1" />
+                              Copy
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </CardContent>
@@ -770,60 +1029,94 @@ export default function TaskDetailsPage() {
 
         {/* Add Links Modal */}
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="sm:max-w-[720px]">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-bold">
-                Add Social Links
+          <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-white to-slate-50">
+            <DialogHeader className="border-b border-slate-100 pb-6">
+              <DialogTitle className="text-3xl font-bold text-slate-900">
+                Add Social Media Links
               </DialogTitle>
-              <DialogDescription>
-                Like / Comment / Follow / Share links for this task.
+              <DialogDescription className="text-base text-slate-700">
+                Submit your social media interactions for this task. Each link
+                will be timestamped automatically.
               </DialogDescription>
             </DialogHeader>
 
-            {/* Stepper */}
-            <div className="flex items-center gap-2 mb-2">
-              <Badge variant={step === 1 ? "default" : "secondary"}>
-                1. Overview
-              </Badge>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
-              <Badge variant={step === 2 ? "default" : "secondary"}>
-                2. Add Links
-              </Badge>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
-              <Badge variant={step === 3 ? "default" : "secondary"}>
-                3. Review
-              </Badge>
+            {/* Progress Indicator */}
+            <div className="flex items-center gap-3 py-6">
+              {[1, 2, 3].map((stepNum) => (
+                <div key={stepNum} className="flex items-center">
+                  <div
+                    className={`flex items-center justify-center w-10 h-10 rounded-full text-base font-bold transition-all duration-300 shadow-md ${
+                      step === stepNum
+                        ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg"
+                        : step > stepNum
+                        ? "bg-gradient-to-r from-green-100 to-green-200 text-green-700"
+                        : "bg-gradient-to-r from-slate-100 to-slate-200 text-slate-500"
+                    }`}
+                  >
+                    {step > stepNum ? (
+                      <CheckCircle className="w-5 h-5" />
+                    ) : (
+                      stepNum
+                    )}
+                  </div>
+                  {stepNum < 3 && (
+                    <div
+                      className={`w-16 h-1 mx-3 rounded-full transition-colors duration-300 ${
+                        step > stepNum ? "bg-gradient-to-r from-green-200 to-green-300" : "bg-gradient-to-r from-slate-200 to-slate-300"
+                      }`}
+                    />
+                  )}
+                </div>
+              ))}
             </div>
 
-            <div className="max-h-[60vh] overflow-y-auto pr-1">
+            <div className="max-h-[50vh] overflow-y-auto pr-3">
               {step === 1 && (
-                <div className="space-y-3">
-                  <Card className="bg-blue-50 border-blue-100">
-                    <CardContent className="p-4 text-sm text-blue-900">
-                      Default <strong>5 rows</strong> are pre-filled in the next
-                      step. You can add or remove rows. Each submission is
-                      timestamped.
+                <div className="space-y-8">
+                  <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 shadow-lg">
+                    <CardContent className="p-8">
+                      <div className="flex items-start gap-6">
+                        <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl shadow-md">
+                          <Activity className="w-6 h-6 text-blue-700" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-blue-900 mb-3 text-lg">
+                            Ready to Add Links
+                          </h3>
+                          <p className="text-blue-800 text-base leading-relaxed">
+                            You'll have 5 pre-configured rows in the next step,
+                            but you can add or remove rows as needed. Each
+                            submission will be automatically timestamped when
+                            saved.
+                          </p>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
 
-                  <Card>
-                    <CardContent className="p-4 text-sm grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <div className="text-slate-500">Client</div>
-                        <div className="font-medium">
-                          {task.client?.name || "—"}
+                  <Card className="shadow-lg">
+                    <CardHeader>
+                      <CardTitle className="text-xl font-bold">Task Overview</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                      <div className="space-y-2">
+                        <div className="text-base text-slate-600">Client</div>
+                        <div className="font-bold text-slate-900 text-lg">
+                          {task.client?.name || "No Client"}
                         </div>
                       </div>
-                      <div>
-                        <div className="text-slate-500">Due</div>
-                        <div className="font-medium">{fmt(task.dueDate)}</div>
+                      <div className="space-y-2">
+                        <div className="text-base text-slate-600">Due Date</div>
+                        <div className="font-bold text-slate-900 text-lg">
+                          {fmt(task.dueDate)}
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-slate-500">Ideal</div>
-                        <div className="font-medium">
+                      <div className="space-y-2">
+                        <div className="text-base text-slate-600">Duration</div>
+                        <div className="font-bold text-slate-900 text-lg">
                           {task.idealDurationMinutes
-                            ? `${task.idealDurationMinutes}m`
-                            : "—"}
+                            ? `${task.idealDurationMinutes} minutes`
+                            : "Not specified"}
                         </div>
                       </div>
                     </CardContent>
@@ -832,113 +1125,168 @@ export default function TaskDetailsPage() {
               )}
 
               {step === 2 && (
-                <div className="space-y-3">
+                <div className="space-y-6">
+                  <div className="text-base text-slate-700 mb-6 p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200">
+                    <strong>Tip:</strong> Make sure all URLs are valid and start
+                    with http:// or https://
+                  </div>
+
                   {rows.map((row, i) => (
-                    <div
+                    <Card
                       key={i}
-                      className="grid grid-cols-12 items-start gap-2 rounded-xl border p-3 bg-white"
+                      className="p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-white to-slate-50"
                     >
-                      <div className="col-span-12 md:col-span-3">
-                        <label className="text-xs font-medium text-slate-600">
-                          Type
-                        </label>
-                        <Select
-                          value={row.type}
-                          onValueChange={(v) =>
-                            setRow(i, { type: v as SCRow["type"] })
-                          }
-                        >
-                          <SelectTrigger className="h-9">
-                            <SelectValue placeholder="Type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {SC_TYPES.map((t) => (
-                              <SelectItem key={t} value={t}>
-                                {t[0].toUpperCase() + t.slice(1)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <div className="grid grid-cols-12 gap-6 items-start">
+                        <div className="col-span-12 md:col-span-3">
+                          <label className="text-base font-bold text-slate-800 mb-3 block">
+                            Interaction Type
+                          </label>
+                          <Select
+                            value={row.type}
+                            onValueChange={(v) =>
+                              setRow(i, { type: v as SCRow["type"] })
+                            }
+                          >
+                            <SelectTrigger className="text-base py-3">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SC_TYPES.map((t) => (
+                                <SelectItem key={t} value={t} className="text-base">
+                                  <span className="capitalize font-semibold">
+                                    {t}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                      <div className="col-span-12 md:col-span-6">
-                        <label className="text-xs font-medium text-slate-600">
-                          URL
-                        </label>
-                        <Input
-                          placeholder="https://..."
-                          value={row.url}
-                          onChange={(e) => setRow(i, { url: e.target.value })}
-                          className={
-                            !row.url || isHttpUrl(row.url)
-                              ? ""
-                              : "border-red-400"
-                          }
-                        />
-                        {!!row.url && !isHttpUrl(row.url) && (
-                          <div className="text-[11px] text-red-600 mt-1">
-                            Enter a valid http(s) URL
+                        <div className="col-span-12 md:col-span-6">
+                          <label className="text-base font-bold text-slate-800 mb-3 block">
+                            Social Media URL *
+                          </label>
+                          <Input
+                            placeholder="https://social-platform.com/post-or-profile-link"
+                            value={row.url}
+                            onChange={(e) => setRow(i, { url: e.target.value })}
+                            className={`text-base py-3 ${
+                              !row.url || isHttpUrl(row.url)
+                                ? ""
+                                : "border-red-400 focus:border-red-400"
+                            }`}
+                          />
+                          {!!row.url && !isHttpUrl(row.url) && (
+                            <div className="text-sm text-red-600 mt-2 flex items-center gap-2">
+                              <span>⚠️</span> Please enter a valid URL starting
+                              with http:// or https://
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="col-span-12 md:col-span-3">
+                          <label className="text-base font-bold text-slate-800 mb-3 block">
+                            Notes (Optional)
+                          </label>
+                          <Textarea
+                            rows={2}
+                            value={row.notes}
+                            onChange={(e) =>
+                              setRow(i, { notes: e.target.value })
+                            }
+                            placeholder="Additional context..."
+                            className="resize-none text-base"
+                          />
+                          <div className="flex justify-end mt-3">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeRow(i)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 shadow-md hover:shadow-lg transition-all"
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Remove
+                            </Button>
                           </div>
-                        )}
+                        </div>
                       </div>
-
-                      <div className="col-span-12 md:col-span-3">
-                        <label className="text-xs font-medium text-slate-600">
-                          Notes (optional)
-                        </label>
-                        <Textarea
-                          rows={1}
-                          value={row.notes}
-                          onChange={(e) => setRow(i, { notes: e.target.value })}
-                          placeholder="Any note…"
-                        />
-                      </div>
-
-                      <div className="col-span-12 flex justify-end">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeRow(i)}
-                          className="h-8"
-                        >
-                          <Trash2 className="w-4 h-4 mr-1" /> Remove
-                        </Button>
-                      </div>
-                    </div>
+                    </Card>
                   ))}
 
-                  <div className="flex items-center justify-between">
-                    <Button type="button" variant="outline" onClick={addRow}>
-                      <Plus className="w-4 h-4 mr-1" /> Add Row
+                  <div className="flex items-center justify-between pt-6 border-t border-slate-200">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={addRow}
+                      className="bg-gradient-to-r from-green-50 to-green-100 text-green-700 border-green-200 hover:from-green-100 hover:to-green-200 shadow-lg hover:shadow-xl transition-all text-base px-6 py-3"
+                    >
+                      <Plus className="w-5 h-5 mr-2" />
+                      Add Another Row
                     </Button>
-                    <div className="text-xs text-slate-500">
-                      At least one valid URL is required.
+                    <div className="text-base text-slate-600 font-semibold">
+                      {entries.length} valid URL
+                      {entries.length !== 1 ? "s" : ""} ready
                     </div>
                   </div>
                 </div>
               )}
 
               {step === 3 && (
-                <div className="space-y-3">
-                  <Card className="bg-emerald-50 border-emerald-100">
-                    <CardContent className="p-4 text-sm text-emerald-900">
-                      <strong>{entries.length}</strong> valid link
-                      {entries.length !== 1 ? "s" : ""} ready to submit.
+                <div className="space-y-8">
+                  <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200 shadow-lg">
+                    <CardContent className="p-8">
+                      <div className="flex items-start gap-6">
+                        <div className="p-3 bg-gradient-to-br from-green-100 to-green-200 rounded-xl shadow-md">
+                          <CheckCircle className="w-6 h-6 text-green-700" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-green-900 mb-3 text-lg">
+                            Ready to Submit
+                          </h3>
+                          <p className="text-green-800 text-base">
+                            <strong>{entries.length}</strong> valid social media
+                            link{entries.length !== 1 ? "s" : ""}
+                            ready for submission. This will also mark the task
+                            as completed.
+                          </p>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
 
-                  <Card>
-                    <CardContent className="p-0 divide-y">
+                  <Card className="shadow-lg">
+                    <CardHeader>
+                      <CardTitle className="text-xl font-bold">
+                        Submission Summary
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="divide-y divide-slate-100">
                       {entries.map((e, idx) => (
-                        <div key={idx} className="p-3 text-sm">
-                          <div className="font-medium capitalize">{e.type}</div>
-                          <div className="truncate text-slate-700">{e.url}</div>
-                          {e.notes && (
-                            <div className="text-slate-500 text-xs mt-1">
-                              {e.notes}
+                        <div key={idx} className="py-6 first:pt-0">
+                          <div className="flex items-start justify-between gap-6">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-3">
+                                <Badge
+                                  variant="secondary"
+                                  className="capitalize text-sm font-semibold bg-gradient-to-r from-slate-100 to-slate-200 text-slate-800"
+                                >
+                                  {e.type}
+                                </Badge>
+                                <span className="text-base font-bold text-slate-900">
+                                  #{idx + 1}
+                                </span>
+                              </div>
+                              <p className="text-base text-slate-700 font-mono bg-slate-50 px-3 py-2 rounded-lg truncate">
+                                {e.url}
+                              </p>
+                              {e.notes && (
+                                <p className="text-sm text-slate-600 italic">
+                                  "{e.notes}"
+                                </p>
+                              )}
                             </div>
-                          )}
+                          </div>
                         </div>
                       ))}
                     </CardContent>
@@ -947,15 +1295,16 @@ export default function TaskDetailsPage() {
               )}
             </div>
 
-            <DialogFooter className="flex gap-3">
+            <DialogFooter className="flex justify-between items-center pt-8 border-t border-slate-100">
               <Button
                 variant="outline"
                 onClick={() =>
                   setStep((s) => (s === 1 ? 1 : ((s - 1) as 1 | 2 | 3)))
                 }
                 disabled={step === 1}
+                className="flex items-center gap-3 text-base px-6 py-3 shadow-md hover:shadow-lg transition-shadow"
               >
-                <ChevronLeft className="w-4 h-4 mr-1" />
+                <ChevronLeft className="w-5 h-5" />
                 Back
               </Button>
 
@@ -965,20 +1314,28 @@ export default function TaskDetailsPage() {
                     setStep((s) => (s === 3 ? s : ((s + 1) as 1 | 2 | 3)))
                   }
                   disabled={step === 2 && !canNextFrom2}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 flex items-center gap-3 text-base px-6 py-3 shadow-lg hover:shadow-xl transition-all"
                 >
-                  Next <ChevronRight className="w-4 h-4 ml-1" />
+                  Continue
+                  <ChevronRight className="w-5 h-5" />
                 </Button>
               ) : (
                 <Button
                   onClick={submitAndComplete}
                   disabled={submitting || entries.length === 0 || coolingDown}
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                  title={
-                    coolingDown ? `Available in ${daysLeft} day(s)` : undefined
-                  }
+                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 min-w-[160px] text-base px-6 py-3 shadow-lg hover:shadow-xl transition-all"
                 >
-                  {submitting ? "Submitting…" : "Save & Complete"}
+                  {submitting ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Submitting...
+                    </div>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5 mr-2" />
+                      Save & Complete
+                    </>
+                  )}
                 </Button>
               )}
             </DialogFooter>
