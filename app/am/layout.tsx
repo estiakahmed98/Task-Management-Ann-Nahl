@@ -1,4 +1,4 @@
-//app/am/layout.tsx
+//app/qc/layout.tsx
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -12,7 +12,7 @@ import { redirect } from "next/navigation";
 import { Toaster } from "sonner";
 import DynamicBreadcrumb from "@/components/DynamicBreadcrumb";
 import ImpersonationBanner from "@/components/auth/ImpersonationBanner";
-import { getAuthUser } from "@/lib/getAuthUser";
+import { getAuthUser } from '@/lib/getAuthUser';
 
 export default async function QcLayout({
   children,
@@ -26,7 +26,7 @@ export default async function QcLayout({
       .find((c) => c.trim().startsWith("session-token="))
       ?.split("=")[1] ?? null;
 
-  const user = await getAuthUser();
+  const user = token ? await getAuthUser() : null;
 
   if (!user || user.role?.name !== "am") {
     redirect("/");
@@ -35,7 +35,7 @@ export default async function QcLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <ImpersonationBanner /> 🆕
+        <ImpersonationBanner /> {/* 🆕 */}
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
