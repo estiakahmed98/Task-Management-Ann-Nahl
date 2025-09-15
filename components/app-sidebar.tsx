@@ -87,6 +87,9 @@ const ICONS: Record<string, React.ReactNode> = {
   "Clients to Agents": <Share2 className="h-4 w-4" />,
   Tasks: <ClipboardList className="h-4 w-4" />,
   "All Tasks": <ListChecks className="h-4 w-4" />,
+  "Tasks History": <History className="h-4 w-4" />,
+  "Agent Tasks": <ListChecks className="h-4 w-4" />,
+  "Social Activity": <Share2 className="h-4 w-4" />,
   Agents: <UserCog className="h-4 w-4" />,
   "All Agents": <Users className="h-4 w-4" />,
   "Add Agent": <UserPlus className="h-4 w-4" />,
@@ -230,7 +233,13 @@ function buildNav(role: Role): NavItem[] {
         },
       ],
     },
+
     { title: "Tasks", url: p("agent", "/agent_tasks"), roles: ["agent"] },
+    {
+      title: "Social Activity",
+      url: p(role, "/social-activity"),
+      roles: ["agent"],
+    },
     {
       title: "Tasks History",
       url: p("agent", "/taskHistory"),
@@ -298,15 +307,7 @@ function buildNav(role: Role): NavItem[] {
     {
       title: "Notifications",
       url: p(role, "/notifications"),
-      roles: [
-        "admin",
-        "manager",
-        "qc",
-        "agent",
-        "am",
-        "am_ceo",
-        "client",
-      ],
+      roles: ["admin", "manager", "qc", "agent", "am", "am_ceo", "client"],
     },
   ];
 }
