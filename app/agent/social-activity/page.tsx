@@ -901,7 +901,7 @@ export default function SocialCommunicationTasksPage() {
                       >
                         {locked ? "Cooling Down" : "Submit Links"}
                       </Button>
-                      <Link href={`/tasks/${t.id}`} className="flex-1">
+                      <Link href={`/agent/agent_tasks/${t.id}`} className="flex-1">
                         <Button variant="outline" className="w-full">
                           Open Task
                         </Button>
