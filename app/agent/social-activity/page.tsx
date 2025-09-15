@@ -65,6 +65,18 @@ type Task = {
   idealDurationMinutes?: number | null;
   client?: { id: string; name?: string | null } | null;
   category?: { id: string; name: string } | null;
+  assignment?: {
+    id: string;
+    client: {
+      id: string;
+      name: string | null;
+      avatar?: string | null;
+    } | null;
+    template?: {
+      id: string;
+      name: string;
+    } | null;
+  } | null;
 
   // 🔑 agent-facing creds (as in your demo flow)
   username?: string | null;
@@ -704,10 +716,10 @@ export default function SocialCommunicationTasksPage() {
                       <StatusBadge status={locked ? "completed" : t.status} />
                     </div>
                     <CardDescription className="mt-1">
-                      {t.client?.name ? (
+                      {t.assignment?.client?.name ? (
                         <>
                           <span className="text-slate-600">Client: </span>
-                          <span className="font-medium">{t.client.name}</span>
+                          <span className="font-medium">{t.assignment.client.name}</span>
                         </>
                       ) : (
                         <span className="text-slate-500">No client</span>
