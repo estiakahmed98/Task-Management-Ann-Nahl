@@ -13,6 +13,8 @@ import { useUserSession } from "@/lib/hooks/use-user-session";
 
 export default function ClientsPage() {
   const router = useRouter();
+
+  // ✅ হুক থেকে user / loading সঠিকভাবে নাও
   const { user, loading: sessionLoading } = useUserSession();
 
   const [clients, setClients] = useState<Client[]>([]);
@@ -30,7 +32,7 @@ export default function ClientsPage() {
   const currentUserRole = user?.role ?? undefined; // hook এ role string আসে
   const isAM = (currentUserRole ?? "").toLowerCase() === "am";
 
-  // যদি AM হয়, তাহলে UI ফিল্টারও জোর করে নিজের amId-তে সেট
+  // ✅ AM হলে UI ফিল্টারও জোর করে নিজের amId-তে সেট করো
   useEffect(() => {
     if (!sessionLoading && isAM && currentUserId && amFilter !== currentUserId) {
       setAmFilter(currentUserId);
@@ -50,9 +52,35 @@ export default function ClientsPage() {
 
       const response = await fetch(url, { cache: "no-store" });
       if (!response.ok) throw new Error("Failed to fetch clients");
-      const data = await response.json();
 
-      setClients(Array.isArray(data.clients) ? data.clients : []);
+      const raw = await response.json();
+
+      // 🔒 shape-agnostic extract: [], {clients:[]}, {data:[]}, {data:{clients:[]}}
+      const list =
+        (Array.isArray(raw) && raw) ||
+        (Array.isArray(raw?.clients) && raw.clients) ||
+        (Array.isArray(raw?.data) && raw.data) ||
+        (Array.isArray(raw?.data?.clients) && raw.data.clients) ||
+        [];
+
+      // 🔧 id-গুলো string normalize করে নাও (amId, packageId, accountManager.id)
+      const normalized: Client[] = (list as any[]).map((c) => ({
+        ...c,
+        id: String(c.id),
+        amId: c?.amId != null ? String(c.amId) : c?.amId,
+        packageId: c?.packageId != null ? String(c.packageId) : c?.packageId,
+        accountManager: c?.accountManager
+          ? {
+              ...c.accountManager,
+              id:
+                c.accountManager.id != null
+                  ? String(c.accountManager.id)
+                  : c.accountManager.id,
+            }
+          : c?.accountManager,
+      }));
+
+      setClients(normalized);
     } catch (error) {
       console.error("Error fetching clients:", error);
       toast.error("Failed to load clients data.");
@@ -62,13 +90,18 @@ export default function ClientsPage() {
     }
   }, [sessionLoading, isAM, currentUserId]);
 
-  // --- Packages ফেচ ---
+  // --- Packages ফেচ (shape-agnostic) ---
   const fetchPackages = useCallback(async () => {
     try {
       const resp = await fetch("/api/packages", { cache: "no-store" });
       if (!resp.ok) throw new Error("Failed to fetch packages");
+
       const raw = await resp.json();
-      const list = Array.isArray(raw) ? raw : raw?.data ?? [];
+      const list =
+        (Array.isArray(raw) && raw) ||
+        (Array.isArray(raw?.data) && raw.data) ||
+        [];
+
       const mapped: { id: string; name: string }[] = (list as any[]).map((p) => ({
         id: String(p.id),
         name: String(p.name ?? "Unnamed"),
@@ -79,9 +112,9 @@ export default function ClientsPage() {
       const derived = Array.from(
         clients.reduce((map, c) => {
           if (c.packageId)
-            map.set(c.packageId, {
-              id: c.packageId,
-              name: c.package?.name ?? c.packageId,
+            map.set(String(c.packageId), {
+              id: String(c.packageId),
+              name: c.package?.name ?? String(c.packageId),
             });
           return map;
         }, new Map<string, { id: string; name: string }>())
@@ -117,8 +150,8 @@ export default function ClientsPage() {
           if (!id) return map;
           const nm = c.accountManager?.name ?? null;
           const email = c.accountManager?.email ?? null;
-          const label = nm ? (email ? `${nm} (${email})` : nm) : id;
-          if (!map.has(id)) map.set(id, { id, label });
+          const label = nm ? (email ? `${nm} (${email})` : nm) : String(id);
+          if (!map.has(String(id))) map.set(String(id), { id: String(id), label });
           return map;
         }, new Map<string, { id: string; label: string }>())
       ).map(([, v]) => v),
@@ -127,20 +160,29 @@ export default function ClientsPage() {
 
   // Client-side নিরাপত্তা ফিল্টার (server-side ছাড়াও)
   const filteredClients = clients.filter((client) => {
+    // status filter
     if (
       statusFilter !== "all" &&
       (client.status ?? "").toLowerCase() !== statusFilter.toLowerCase()
-    )
+    ) {
       return false;
-    if (packageFilter !== "all" && client.packageId !== packageFilter) return false;
+    }
 
-    const effectiveAmFilter = isAM && currentUserId ? currentUserId : amFilter;
-    if (
-      effectiveAmFilter !== "all" &&
-      (client.amId ?? client.accountManager?.id) !== effectiveAmFilter
-    )
+    // package filter (string compare)
+    const clientPkgId = client.packageId != null ? String(client.packageId) : null;
+    if (packageFilter !== "all" && clientPkgId !== String(packageFilter)) {
       return false;
+    }
 
+    // AM scope (string compare)
+    const effectiveAmFilter =
+      isAM && currentUserId ? String(currentUserId) : (amFilter === "all" ? "all" : String(amFilter));
+    const clientAm = client.amId ?? client.accountManager?.id ?? null;
+    if (effectiveAmFilter !== "all" && String(clientAm ?? "") !== effectiveAmFilter) {
+      return false;
+    }
+
+    // search filter
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const hit =
