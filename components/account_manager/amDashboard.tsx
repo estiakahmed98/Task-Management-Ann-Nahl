@@ -7,28 +7,12 @@ import {
   CalendarDays,
   Clock,
   TrendingUp,
-  Filter,
   AlertTriangle,
   UserCircle2,
   Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-// AM dropdown removed; selection now comes from session
 import {
   PieChart,
   Pie,
@@ -55,11 +39,7 @@ type ClientLite = {
   dueDate?: string | null;
   amId?: string | null;
   packageId?: string | null;
-  accountManager?: {
-    id?: string;
-    name?: string | null;
-    email?: string | null;
-  } | null;
+  accountManager?: { id?: string; name?: string | null; email?: string | null } | null;
 };
 
 type FetchState<T> = {
@@ -71,7 +51,6 @@ type FetchState<T> = {
 type PackageLite = { id: string; name: string };
 
 function safeParse<T = unknown>(raw: any): T {
-  // handle responses that come as a JSON string: "\"[ {..} ]\""
   if (typeof raw === "string") {
     try {
       const once = JSON.parse(raw);
@@ -85,9 +64,11 @@ function safeParse<T = unknown>(raw: any): T {
 
 export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
   const [selectedAmId, setSelectedAmId] = useState<string>(defaultAmId);
-  const [selectedClientId, setSelectedClientId] = useState<string>("");
-  const [clientOpen, setClientOpen] = useState<boolean>(false);
   const { user, loading: sessionLoading } = useUserSession();
+
+  // ---- Normalized role ----
+  const role = (user?.role ?? "").toLowerCase();
+  const isAM = role === "am";
 
   // Clients (filtered by AM server-side)
   const [clients, setClients] = useState<FetchState<ClientLite[]>>({
@@ -103,16 +84,12 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
   // Set selection from session (AM users see their own clients)
   useEffect(() => {
     if (sessionLoading) return;
-    // If logged-in user is AM, force selection to their ID
-    if (user?.role === "am" && user?.id) {
+    if (isAM && user?.id && selectedAmId !== user.id) {
       setSelectedAmId(user.id);
-      return;
-    }
-    // Otherwise keep defaultAmId (admin or other roles see all when empty)
-    if (!user?.id && defaultAmId && !selectedAmId) {
+    } else if (!isAM && !selectedAmId && defaultAmId) {
       setSelectedAmId(defaultAmId);
     }
-  }, [user, sessionLoading, defaultAmId, selectedAmId]);
+  }, [sessionLoading, isAM, user?.id, defaultAmId, selectedAmId]);
 
   // Load packages → map id→name (once)
   useEffect(() => {
@@ -124,7 +101,7 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
         const raw = await res.json();
         const list = safeParse<any[]>(raw);
         const map: Record<string, string> = {};
-        (Array.isArray(list) ? list : []).forEach((p) => {
+        (Array.isArray(list) ? list : Array.isArray((raw as any)?.data) ? (raw as any).data : []).forEach((p: any) => {
           if (p?.id) map[String(p.id)] = String(p.name ?? "Unnamed");
         });
         if (mounted) setPkgMap(map);
@@ -139,106 +116,100 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
     };
   }, []);
 
-  // Load clients for selected AM (server supports ?amId=)
+  // ---- Load clients (session-based & server-side scoped) ----
   useEffect(() => {
     let mounted = true;
     (async () => {
+      if (sessionLoading) return; // wait for session
       try {
         if (!mounted) return;
         setClients({ data: [], loading: true, error: null });
 
-        const url = selectedAmId
-          ? `/api/clients?amId=${encodeURIComponent(selectedAmId)}`
-          : "/api/clients";
+        // Build URL
+        let url = "/api/clients";
+        if (isAM) {
+          const am = selectedAmId || user?.id || "";
+          if (!am) {
+            if (mounted) setClients({ data: [], loading: false, error: null });
+            return;
+          }
+          url = `/api/clients?amId=${encodeURIComponent(am)}`;
+        } else if (selectedAmId) {
+          url = `/api/clients?amId=${encodeURIComponent(selectedAmId)}`;
+        }
+
         const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to load clients");
         const raw = await res.json();
-        const arr = safeParse<any[]>(raw);
 
-        const mapped: ClientLite[] = (Array.isArray(arr) ? arr : []).map(
-          (c) => ({
-            id: String(c.id),
-            name: String(c.name ?? "Unnamed"),
-            status: c.status ?? null,
-            progress:
-              typeof c.progress === "number"
-                ? c.progress
-                : c.progress
-                ? Number(c.progress)
-                : null,
-            startDate: c.startDate ?? null,
-            dueDate: c.dueDate ?? null,
-            amId: c.amId ?? null,
-            packageId: c.packageId ?? null,
-            accountManager: c.accountManager ?? null,
-          })
-        );
+        // Robust parsing: supports [ ... ], { clients: [...] }, { data: [...] }, { data: { clients: [...] } }
+        const arrLike =
+          (Array.isArray(raw) && raw) ||
+          (Array.isArray((raw as any)?.clients) && (raw as any).clients) ||
+          (Array.isArray((raw as any)?.data) && (raw as any).data) ||
+          (Array.isArray((raw as any)?.data?.clients) && (raw as any).data.clients) ||
+          [];
 
-        setClients({ data: mapped, loading: false, error: null });
-        // If previously selected client is not in the new list, reset filter
-        const exists = mapped.some((c) => c.id === selectedClientId);
-        if (!exists) setSelectedClientId("");
-      } catch {
-        setClients({
-          data: [],
-          loading: false,
-          error: "Failed to load clients",
-        });
+        const mapped: ClientLite[] = (arrLike as any[]).map((c) => ({
+          id: String(c.id),
+          name: String(c.name ?? "Unnamed"),
+          status: c.status ?? null,
+          progress: typeof c.progress === "number" ? c.progress : c.progress ? Number(c.progress) : null,
+          startDate: c.startDate ?? null,
+          dueDate: c.dueDate ?? null,
+          amId: c.amId ?? null,
+          packageId: c.packageId ?? null,
+          accountManager: c.accountManager ?? null,
+        }));
+
+        if (mounted) setClients({ data: mapped, loading: false, error: null });
+      } catch (e: any) {
+        if (mounted) setClients({ data: [], loading: false, error: e?.message ?? "Failed to load clients" });
       }
     })();
     return () => {
       mounted = false;
     };
-  }, [selectedAmId]);
+  }, [sessionLoading, isAM, selectedAmId, user?.id]);
 
   // ---------- Derived metrics ----------
   const now = new Date();
 
-  const filteredClients = useMemo(() => {
-    if (!selectedClientId) return clients.data;
-    return clients.data.filter((c) => c.id === selectedClientId);
-  }, [clients.data, selectedClientId]);
-
   const statusCounts = useMemo(() => {
     const acc: Record<string, number> = {};
-    for (const c of filteredClients) {
+    for (const c of clients.data) {
       const s = (c.status ?? "unknown").toString().toLowerCase();
       acc[s] = (acc[s] ?? 0) + 1;
     }
     return acc;
-  }, [filteredClients]);
+  }, [clients.data]);
 
-  const totalClients = filteredClients.length;
-  const activeClients = filteredClients.filter(
-    (c) => (c.status ?? "").toLowerCase() === "active"
-  ).length;
+  const totalClients = clients.data.length;
+  const activeClients = clients.data.filter((c) => (c.status ?? "").toLowerCase() === "active").length;
 
   const avgProgress = useMemo(() => {
-    if (!filteredClients.length) return 0;
-    const vals = filteredClients.map((c) => Number(c.progress ?? 0));
+    if (!clients.data.length) return 0;
+    const vals = clients.data.map((c) => Number(c.progress ?? 0));
     const sum = vals.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
-    return Math.round(sum / filteredClients.length);
-  }, [filteredClients]);
+    return Math.round(sum / clients.data.length);
+  }, [clients.data]);
 
   const dueIn7Days = useMemo(() => {
     const in7 = new Date(now);
     in7.setDate(in7.getDate() + 7);
-    return filteredClients.filter((c) => {
+    return clients.data.filter((c) => {
       if (!c.dueDate) return false;
       const d = new Date(c.dueDate);
       return d >= now && d <= in7;
     }).length;
-  }, [filteredClients]);
+  }, [clients.data]);
 
   const upcomingDueList = useMemo(() => {
-    return [...filteredClients]
+    return [...clients.data]
       .filter((c) => !!c.dueDate)
-      .sort(
-        (a, b) =>
-          new Date(a.dueDate as string).getTime() -
-          new Date(b.dueDate as string).getTime()
-      )
+      .sort((a, b) => new Date(a.dueDate as string).getTime() - new Date(b.dueDate as string).getTime())
       .slice(0, 8);
-  }, [filteredClients]);
+  }, [clients.data]);
 
   // Charts
   const pieData = useMemo(
@@ -259,79 +230,48 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
       { label: "81–100%", min: 81, max: 100 },
     ];
     const counts = buckets.map((b) => ({ ...b, count: 0 }));
-    for (const c of filteredClients) {
+    for (const c of clients.data) {
       const p = Number(c.progress ?? 0);
       const bucket = counts.find((b) => p >= b.min && p <= b.max);
       if (bucket) bucket.count += 1;
     }
     return counts.map((b) => ({ label: b.label, count: b.count }));
-  }, [filteredClients]);
+  }, [clients.data]);
 
   const startsByMonth = useMemo(() => {
     const months: { key: string; label: string; count: number }[] = [];
     const d = new Date(now);
     for (let i = 5; i >= 0; i--) {
       const temp = new Date(d.getFullYear(), d.getMonth() - i, 1);
-      const key = `${temp.getFullYear()}-${String(temp.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}`;
+      const key = `${temp.getFullYear()}-${String(temp.getMonth() + 1).padStart(2, "0")}`;
       const label = temp.toLocaleString("en-US", { month: "short" });
       months.push({ key, label, count: 0 });
     }
-    for (const c of filteredClients) {
+    for (const c of clients.data) {
       if (!c.startDate) continue;
       const sd = new Date(c.startDate);
-      const k = `${sd.getFullYear()}-${String(sd.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}`;
+      const k = `${sd.getFullYear()}-${String(sd.getMonth() + 1).padStart(2, "0")}`;
       const row = months.find((m) => m.key === k);
       if (row) row.count += 1;
     }
     return months;
-  }, [filteredClients, now]);
+  }, [clients.data, now]);
 
-  const COLORS = [
-    "#6366f1",
-    "#8b5cf6",
-    "#06b6d4",
-    "#10b981",
-    "#f59e0b",
-    "#ef4444",
-    "#64748b",
-    "#0ea5e9",
-  ];
+  const COLORS = ["#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444", "#64748b", "#0ea5e9"];
 
   const amLabel = useMemo(() => {
-    // If user is AM, label from session
-    if (user?.role === "am") {
+    if (isAM) {
       if (user?.name && user?.email) return `${user.name}`;
       return user?.name || user?.email || "My Clients";
     }
-    // Fallback: first client's accountManager
     const cm = clients.data[0]?.accountManager;
     if (cm?.name && cm?.email) return `${cm.name}`;
     if (cm?.name || cm?.email) return cm.name || cm.email || "All AMs";
     return selectedAmId ? "Selected AM" : "All AMs";
-  }, [user, selectedAmId, clients.data]);
-
-  const selectedClientName = useMemo(() => {
-    if (!selectedClientId) return "All Clients";
-    return (
-      clients.data.find((c) => c.id === selectedClientId)?.name ||
-      "Selected Client"
-    );
-  }, [selectedClientId, clients.data]);
+  }, [isAM, user, selectedAmId, clients.data]);
 
   const formatDate = (s?: string | null) =>
-    s
-      ? new Date(s).toLocaleDateString(undefined, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })
-      : "—";
+    s ? new Date(s).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "—";
 
   return (
     <div className="space-y-6 px-4 bg-gradient-to-br from-slate-50 to-gray-100 min-h-screen">
@@ -341,59 +281,6 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
           <h1 className="text-2xl p-2 md:text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
             {amLabel}'s Dashboard
           </h1>
-        </div>
-        {/* Client Filter (top-right) - Searchable */}
-        <div className="flex items-center gap-2 self-start md:self-auto">
-          <Popover open={clientOpen} onOpenChange={setClientOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="bg-white/80 backdrop-blur border-slate-200 shadow-sm hover:shadow transition min-w-[180px] justify-between"
-                aria-label="Filter by client"
-              >
-                <span className="inline-flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-slate-500" />
-                  {selectedClientName}
-                </span>
-                {/* caret */}
-                <span className="ml-2 text-slate-400">▾</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="p-0 w-72">
-              <Command>
-                <CommandInput placeholder="Search clients..." />
-                <CommandList>
-                  <CommandEmpty>No clients found.</CommandEmpty>
-                  <CommandGroup heading="Clients">
-                    <CommandItem
-                      value="all"
-                      onSelect={() => {
-                        setSelectedClientId("");
-                        setClientOpen(false);
-                      }}
-                    >
-                      All Clients
-                    </CommandItem>
-                    {clients.data
-                      .slice()
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((c) => (
-                        <CommandItem
-                          key={c.id}
-                          value={c.name}
-                          onSelect={() => {
-                            setSelectedClientId(c.id);
-                            setClientOpen(false);
-                          }}
-                        >
-                          {c.name}
-                        </CommandItem>
-                      ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
         </div>
       </div>
 
@@ -416,12 +303,8 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                      Total Clients
-                    </p>
-                    <p className="text-3xl font-bold text-slate-800">
-                      {totalClients}
-                    </p>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Clients</p>
+                    <p className="text-3xl font-bold text-slate-800">{totalClients}</p>
                   </div>
                   <div className="p-3 bg-indigo-500 rounded-xl shadow-lg">
                     <Users className="w-6 h-6 text-white" />
@@ -434,12 +317,8 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                      Active Clients
-                    </p>
-                    <p className="text-3xl font-bold text-slate-800">
-                      {activeClients}
-                    </p>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Active Clients</p>
+                    <p className="text-3xl font-bold text-slate-800">{activeClients}</p>
                   </div>
                   <div className="p-3 bg-emerald-500 rounded-xl shadow-lg">
                     <Activity className="w-6 h-6 text-white" />
@@ -452,12 +331,8 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                      Overall Progress
-                    </p>
-                    <p className="text-3xl font-bold text-slate-800">
-                      {avgProgress}%
-                    </p>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Avg. Progress</p>
+                    <p className="text-3xl font-bold text-slate-800">{avgProgress}%</p>
                   </div>
                   <div className="p-3 bg-violet-500 rounded-xl shadow-lg">
                     <TrendingUp className="w-6 h-6 text-white" />
@@ -470,12 +345,8 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                      Due in 7 Days
-                    </p>
-                    <p className="text-3xl font-bold text-slate-800">
-                      {dueIn7Days}
-                    </p>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Due in 7 Days</p>
+                    <p className="text-3xl font-bold text-slate-800">{dueIn7Days}</p>
                   </div>
                   <div className="p-3 bg-amber-500 rounded-xl shadow-lg">
                     <CalendarDays className="w-6 h-6 text-white" />
@@ -501,26 +372,16 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
                 {pieData.length ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie
-                        dataKey="value"
-                        data={pieData}
-                        outerRadius={90}
-                        label
-                      >
+                      <Pie dataKey="value" data={pieData} outerRadius={90} label>
                         {pieData.map((entry, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={COLORS[index % COLORS.length]}
-                          />
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
                       <RTooltip />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-sm text-slate-500">
-                    No data available
-                  </div>
+                  <div className="h-full flex items-center justify-center text-sm text-slate-500">No data available</div>
                 )}
               </CardContent>
             </Card>
@@ -539,21 +400,9 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={progressBuckets}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fill: "#64748b", fontSize: 12 }}
-                    />
-                    <YAxis
-                      allowDecimals={false}
-                      tick={{ fill: "#64748b", fontSize: 12 }}
-                    />
-                    <RTooltip
-                      contentStyle={{
-                        backgroundColor: "#f8fafc",
-                        border: "1px solid #e2e8f0",
-                        borderRadius: "8px",
-                      }}
-                    />
+                    <XAxis dataKey="label" tick={{ fill: "#64748b", fontSize: 12 }} />
+                    <YAxis allowDecimals={false} tick={{ fill: "#64748b", fontSize: 12 }} />
+                    <RTooltip contentStyle={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px" }} />
                     <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -574,48 +423,16 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={startsByMonth}>
                     <defs>
-                      <linearGradient
-                        id="colorStart"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="5%"
-                          stopColor="#3b82f6"
-                          stopOpacity={0.6}
-                        />
-                        <stop
-                          offset="95%"
-                          stopColor="#3b82f6"
-                          stopOpacity={0.1}
-                        />
+                      <linearGradient id="colorStart" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.6} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fill: "#64748b", fontSize: 12 }}
-                    />
-                    <YAxis
-                      allowDecimals={false}
-                      tick={{ fill: "#64748b", fontSize: 12 }}
-                    />
-                    <RTooltip
-                      contentStyle={{
-                        backgroundColor: "#f8fafc",
-                        border: "1px solid #e2e8f0",
-                        borderRadius: "8px",
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="count"
-                      stroke="#3b82f6"
-                      strokeWidth={2}
-                      fill="url(#colorStart)"
-                    />
+                    <XAxis dataKey="label" tick={{ fill: "#64748b", fontSize: 12 }} />
+                    <YAxis allowDecimals={false} tick={{ fill: "#64748b", fontSize: 12 }} />
+                    <RTooltip contentStyle={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px" }} />
+                    <Area type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={2} fill="url(#colorStart)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -630,23 +447,10 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
                   <CalendarDays className="w-5 h-5 text-white" />
                 </div>
                 Upcoming Due Dates
-                <Badge
-                  variant="secondary"
-                  className="ml-2 bg-slate-100 text-slate-700 hover:bg-slate-200"
-                >
+                <Badge variant="secondary" className="ml-2 bg-slate-100 text-slate-700 hover:bg-slate-200">
                   {upcomingDueList.length}
                 </Badge>
-                <span className="ml-auto text-sm text-slate-500 font-medium">
-                  Viewing: {amLabel}
-                  {selectedClientId && (
-                    <>
-                      {" "}
-                      • Client:{" "}
-                      {clients.data.find((c) => c.id === selectedClientId)
-                        ?.name || "—"}
-                    </>
-                  )}
-                </span>
+                <span className="ml-auto text-sm text-slate-500 font-medium">Viewing: {amLabel}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="overflow-x-auto">
@@ -669,37 +473,23 @@ export function AMDashboard({ defaultAmId = "" }: { defaultAmId?: string }) {
                           index % 2 === 0 ? "bg-white" : "bg-slate-50/30"
                         }`}
                       >
-                        <td className="py-3 px-4 font-medium text-slate-800">
-                          {c.name}
-                        </td>
+                        <td className="py-3 px-4 font-medium text-slate-800">{c.name}</td>
                         <td className="py-3 px-4 capitalize">
-                          <Badge
-                            variant="outline"
-                            className="border-slate-300 text-slate-700 bg-white"
-                          >
+                          <Badge variant="outline" className="border-slate-300 text-slate-700 bg-white">
                             {(c.status ?? "—").toString().replace(/_/g, " ")}
                           </Badge>
                         </td>
-                        <td className="py-3 px-4 text-slate-700 font-medium">
-                          {Number(c.progress ?? 0)}%
-                        </td>
+                        <td className="py-3 px-4 text-slate-700 font-medium">{Number(c.progress ?? 0)}%</td>
                         <td className="py-3 px-4 text-slate-600">
-                          {c.packageId
-                            ? pkgMap[c.packageId] ??
-                              (pkgLoading ? "Loading…" : c.packageId)
-                            : "—"}
+                          {c.packageId ? (pkgMap[c.packageId] ?? (pkgLoading ? "Loading…" : c.packageId)) : "—"}
                         </td>
-                        <td className="py-3 px-4 text-slate-600">
-                          {formatDate(c.dueDate)}
-                        </td>
+                        <td className="py-3 px-4 text-slate-600">{formatDate(c.dueDate)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               ) : (
-                <div className="py-12 text-center text-slate-500">
-                  No upcoming due dates found.
-                </div>
+                <div className="py-12 text-center text-slate-500">No upcoming due dates found.</div>
               )}
             </CardContent>
           </Card>

@@ -2,78 +2,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-function asPositiveInt(v: string | null, def: number, cap: number) {
-  const n = Number(v ?? "");
-  if (Number.isFinite(n) && n > 0) return Math.min(Math.floor(n), cap);
-  return def;
-}
-
+// GET /api/clients - Get all clients
 export async function GET(req: Request) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const q = (searchParams.get("q") || "").trim();
-    const status = searchParams.get("status") || undefined; // active|inactive|all
-    const limit = asPositiveInt(searchParams.get("limit"), 50, 200);
+  const { searchParams } = new URL(req.url);
+  const packageId = searchParams.get("packageId");
+  const amId = searchParams.get("amId");
 
-    // ✅ নতুন: AM স্কোপিং
-    const amId = searchParams.get("amId") || undefined;
-    // ✅ নতুন: data_entry/agent স্কোপিং → show only clients assigned to this user
-    const assignedAgentId = searchParams.get("assignedAgentId") || undefined;
+  const clients = await prisma.client.findMany({
+    where: {
+      packageId: packageId || undefined,
+      amId: amId || undefined,
+    },
+    include: {
+      socialMedias: true,
+      accountManager: { select: { id: true, name: true, email: true } }, // helpful
+    },
+  });
 
-    const where: any = {};
-    if (status && status !== "all") where.status = status;
-    if (amId) where.amId = amId; // ✅ AM ফিল্টার সার্ভার-সাইডে
-    if (assignedAgentId) {
-      // Client.teamMembers some agentId matches
-      where.teamMembers = { some: { agentId: assignedAgentId } } as any;
-    }
-    if (q) {
-      where.OR = [
-        { name: { contains: q, mode: "insensitive" } },
-        { company: { contains: q, mode: "insensitive" } },
-        { email: { contains: q, mode: "insensitive" } },
-        { designation: { contains: q, mode: "insensitive" } },
-      ];
-    }
-
-    const clients = await prisma.client.findMany({
-      where,
-      orderBy: [{ name: "asc" }],
-      take: limit,
-      select: {
-        id: true,
-        name: true,
-        company: true,
-        designation: true,
-        email: true,
-        avatar: true,
-        status: true,
-        packageId: true, // ✅ ফ্রন্টএন্ডে দরকার
-        amId: true, // ✅ AM ফিল্ড পাঠান
-        accountManager: {
-          // ✅ রিলেশনাল AM info পাঠান
-          select: { id: true, name: true, email: true },
-        },
-        package: { select: { id: true, name: true } },
-        // optional: include a tiny projection of team membership to help client-side if needed
-        teamMembers: assignedAgentId
-          ? { select: { agentId: true }, where: { agentId: assignedAgentId } }
-          : false as any,
-      },
-    });
-
-    return NextResponse.json({
-      clients,
-      meta: { limit, q, status: status ?? null, amId: amId ?? null, assignedAgentId: assignedAgentId ?? null },
-    });
-  } catch (err: any) {
-    console.error("GET /api/clients error:", err);
-    return NextResponse.json(
-      { message: "Internal Server Error", error: String(err?.message ?? err) },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(clients);
 }
+
 // POST /api/clients - Create new client
 export async function POST(req: NextRequest) {
   try {
@@ -82,7 +30,6 @@ export async function POST(req: NextRequest) {
     const {
       name,
       birthdate,
-      gender,
       company,
       designation,
       location,
@@ -110,8 +57,6 @@ export async function POST(req: NextRequest) {
 
       // ⬇️ NEW field
       amId,
-      // ⬇️ Arbitrary JSON key/value pairs
-      otherField,
     } = body;
 
     // (Optional but recommended) enforce AM role server-side
@@ -121,10 +66,7 @@ export async function POST(req: NextRequest) {
         include: { role: true },
       });
       if (!am || am.role?.name !== "am") {
-        return NextResponse.json(
-          { error: "amId is not an Account Manager" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "amId is not an Account Manager" }, { status: 400 });
       }
     }
 
@@ -137,7 +79,6 @@ export async function POST(req: NextRequest) {
       data: {
         name,
         birthdate: birthdate ? new Date(birthdate) : undefined,
-        gender,
         company,
         designation,
         location,
@@ -155,7 +96,7 @@ export async function POST(req: NextRequest) {
         companyaddress,
         biography,
         imageDrivelink,
-        avatar, // still a String? in the schema
+        avatar,             // still a String? in the schema
         progress,
         status,
         packageId,
@@ -164,9 +105,6 @@ export async function POST(req: NextRequest) {
 
         // ⬇️ NEW: link AM
         amId: amId || undefined,
-
-        // ⬇️ Persist arbitrary JSON if provided
-        otherField: otherField ?? undefined,
 
         socialMedias: {
           create: Array.isArray(socialLinks)
