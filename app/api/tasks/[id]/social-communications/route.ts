@@ -26,7 +26,8 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const taskId = params?.id;
+    // In Next.js 15+, params is async and needs to be awaited
+    const { id: taskId } = await params;
     if (!taskId) {
       return NextResponse.json({ message: "Missing task id" }, { status: 400 });
     }
