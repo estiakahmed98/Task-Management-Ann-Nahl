@@ -162,21 +162,38 @@ function buildNav(role: Role): NavItem[] {
     // Clients (admin, manager, am, data_entry)
     {
       title: "Clients",
-      roles: ["admin", "manager", "am"],
+      roles: ["admin", "manager"],
       children: [
         {
           title: "All Clients",
           url: p(role, "/clients"),
-          roles: ["admin", "manager", "am"],
+          roles: ["admin", "manager"],
         },
         {
           title: "Add Client",
           url: p(role, "/clients/onboarding"),
-          roles: ["admin", "manager", "am"],
+          roles: ["admin", "manager"],
         },
       ],
     },
 
+    // AM Clients
+    {
+      title: "Clients",
+      roles: [ "am"],
+      children: [
+        {
+          title: "All Clients",
+          url: p(role, "/am_clients"),
+          roles: [ "am"],
+        },
+        {
+          title: "Add Client",
+          url: p(role, "/am_clients/onboarding"),
+          roles: [ "am"],
+        },
+      ],
+    },
     // AM Clients (am_ceo)
     {
       title: "AM Clients",
